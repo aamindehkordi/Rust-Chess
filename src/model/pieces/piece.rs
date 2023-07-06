@@ -1,15 +1,14 @@
 use crate::model::board::Board;
 use crate::model::tile::Tile;
-use crate::model::pieces::pawn::{Pawn, Move as PawnMove};
-use crate::model::pieces::rook::{Rook, Move as RookMove};
-use crate::model::pieces::bishop::{Bishop, Move as BishopMove};
-use crate::model::pieces::knight::{Knight, Move as KnightMove};
-use crate::model::pieces::queen::{Queen, Move as QueenMove};
-use crate::model::pieces::king::{King, Move as KingMove};
+use crate::model::pieces::pawn::{Pawn};
+use crate::model::pieces::rook::{Rook};
+use crate::model::pieces::bishop::{Bishop};
+use crate::model::pieces::knight::{Knight};
+use crate::model::pieces::queen::{Queen};
+use crate::model::pieces::king::{King};
 
 
-
-#[derive(Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Color {
     White,
     Black,
@@ -18,6 +17,7 @@ pub trait Move {
     fn get_valid_move_list(&self, board: &Board) -> Vec<Tile>;
 }
 
+#[derive(Clone, PartialEq, Debug)]
 pub enum PieceType {
     Pawn(Pawn),
     Rook(Rook),
@@ -40,6 +40,7 @@ impl Move for PieceType {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
 pub struct Piece {
     piece_type: PieceType,
     color: Color,
