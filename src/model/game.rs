@@ -23,7 +23,7 @@ impl Game {
     }
 
     pub fn move_piece(&mut self, from: (usize, usize), to: (usize, usize)) {
-        let piece = self.board.get_tile(from).get_piece().clone();
+        self.board.move_piece(from, to);
 
 
 
