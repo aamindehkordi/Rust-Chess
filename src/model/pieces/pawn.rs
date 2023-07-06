@@ -1,6 +1,7 @@
 use crate::model::board::Board;
 use crate::model::pieces::piece::Color;
 use crate::model::tile::Tile;
+use crate::model::r#move::Move;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Pawn {
@@ -25,8 +26,24 @@ impl Pawn {
             has_moves: None,
         }
     }
+}
 
-    pub(crate) fn get_valid_move_list(&self, board: &Board) -> Vec<Tile> {
-        todo!()
+impl Move for Pawn {
+    fn get_valid_moves(&self, board: &Board) -> Vec<(usize, usize)> {
+        // Calculate valid moves for a pawn
+        // This will depend on the current state of the board and the pawn's rules for movement
+    }
+
+    fn execute_move(&mut self, board: &mut Board, from: (usize, usize), to: (usize, usize)) -> Result<(), &'static str> {
+        // Check if the move is valid
+        if !self.is_valid_move(board, from, to) {
+            return Err("Invalid move");
+        }
+
+        // Execute the move
+        // This will depend on the pawn's rules for movement
+        // You might need to update the pawn's state here (e.g., if it's the pawn's first move)
+
+        Ok(())
     }
 }

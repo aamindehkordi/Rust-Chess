@@ -6,15 +6,13 @@ use crate::model::pieces::bishop::{Bishop};
 use crate::model::pieces::knight::{Knight};
 use crate::model::pieces::queen::{Queen};
 use crate::model::pieces::king::{King};
+use crate::model::r#move::Move;
 
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Color {
     White,
     Black,
-}
-pub trait Move {
-    fn get_valid_move_list(&self, board: &Board) -> Vec<Tile>;
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -27,15 +25,15 @@ pub enum PieceType {
     King(King),
 }
 
-impl Move for PieceType {
-    fn get_valid_move_list(&self, board: &Board) -> Vec<Tile> {
+impl PieceType {
+    pub fn get_valid_moves(&self, board: &Board) -> Vec<(usize, usize)> {
         match self {
-            PieceType::Pawn(pawn) => pawn.get_valid_move_list(board),
-            PieceType::Rook(rook) => rook.get_valid_move_list(board),
-            PieceType::Knight(knight) => knight.get_valid_move_list(board),
-            PieceType::Bishop(bishop) => bishop.get_valid_move_list(board),
-            PieceType::Queen(queen) => queen.get_valid_move_list(board),
-            PieceType::King(king) => king.get_valid_move_list(board),
+            PieceType::Pawn(pawn) => pawn.get_valid_moves(board),
+            PieceType::Rook(rook) => rook.get_valid_moves(board),
+            PieceType::Knight(knight) => knight.get_valid_moves(board),
+            PieceType::Bishop(bishop) => bishop.get_valid_moves(board),
+            PieceType::Queen(queen) => queen.get_valid_moves(board),
+            PieceType::King(king) => king.get_valid_moves(board),
         }
     }
 }
