@@ -2,6 +2,7 @@ use crate::model::board::Board;
 use crate::model::pieces::piece::Color;
 use crate::model::tile::Tile;
 
+#[derive(Clone, PartialEq, Debug)]
 pub struct Rook {
     color: Color,
     first_move: Option<bool>,
@@ -18,14 +19,8 @@ impl Rook {
             has_moves: None,
         }
     }
-}
 
-pub trait Move {
-    fn get_valid_move_list(&self, board: &Board) -> Vec<Tile>;
-}
-
-impl Move for Rook {
-    fn get_valid_move_list(&self, board: &Board) -> Vec<Tile> {
+    pub(crate) fn get_valid_move_list(&self, board: &Board) -> Vec<Tile> {
         todo!()
     }
 }
