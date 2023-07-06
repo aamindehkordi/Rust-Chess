@@ -18,6 +18,12 @@ impl GameController {
         loop {
             self.view.display_board(&self.game); // Display the board
             let (from, to) = self.view.get_move(); // Get the move from the user
+            // Check if the move is valid
+            if !self.game.is_valid_move(from, to) {
+                self.view.display_invalid_move(); // Display invalid move message
+                continue; // Restart the loop
+            }
+
             self.game.move_piece(from, to); // Move the piece
         }
     }
