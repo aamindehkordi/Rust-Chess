@@ -47,7 +47,7 @@ impl Board {
     }
 
     /// Creates a new empty Board.
-    pub fn empty() -> Self {
+    pub fn new_empty() -> Self {
         let mut tiles = Vec::new();
         for i in 0..8 {
             let mut row = Vec::new();
@@ -60,6 +60,20 @@ impl Board {
     }
 
     // Methods
+    pub fn pick_up(&mut self, idx: (usize, usize)) -> Option<Piece> {
+        let piece = self.tiles[idx.0][idx.1].piece.clone();
+        self.tiles[idx.0][idx.1].piece = None;
+        piece
+    }
+
+    pub fn put_down(&mut self, idx: (usize, usize), piece: Option<Piece>) {
+        self.tiles[idx.0][idx.1].piece = piece;
+    }
+
+    pub fn move_piece(&mut self, from: (usize, usize), to: (usize, usize)) {
+        let piece = self.pick_up(from);
+        self.put_down(to, piece);
+    }
 
     // Getters
     pub fn get_tiles(&self) -> &Vec<Vec<Tile>> {
@@ -67,6 +81,9 @@ impl Board {
     }
     pub fn get_tile(&self, idx: (usize, usize)) -> &Tile {
         &self.tiles[idx.0][idx.1]
+    }
+    pub fn get_tile_mut(&mut self, idx: (usize, usize)) -> &mut Tile {
+        &mut self.tiles[idx.0][idx.1]
     }
     pub fn get_pieces(&self, piece: &Piece) -> Vec<(usize, usize)> {
         let mut pieces = Vec::new();
@@ -80,6 +97,9 @@ impl Board {
             }
         }
         pieces
+    }
+    pub fn get_piece(&self, idx: (usize, usize)) -> Option<&Piece> {
+        self.tiles[idx.0][idx.1].piece.as_ref()
     }
     /// Given an index, determines the proper notation for the tilee.
     /// For example, (0,0) would return "A1".
