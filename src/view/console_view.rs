@@ -58,5 +58,19 @@ impl ConsoleView {
         }
     }
 
+    pub fn display_checkmate(&self, color: &Color) {
+        match color {
+            Color::White => println!("White is in checkmate!"),
+            Color::Black => println!("Black is in checkmate!"),
+        }
+    }
+
+    pub fn display_stalemate(&self) {
+        println!("Stalemate!");
+    }
+
+    pub fn display_invalid_move(&self) {
+        println!("Invalid move!");
+    }
 
 }
