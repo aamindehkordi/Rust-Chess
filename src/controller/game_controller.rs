@@ -17,14 +17,15 @@ impl GameController {
     pub fn start_game(&mut self) {
         loop {
             self.view.display_board(&self.game); // Display the board
-            let (from, to) = self.view.get_move(); // Get the move from the user
-            // Check if the move is valid
-            if !self.game.is_valid_move(from, to) {
-                self.view.display_invalid_move(); // Display invalid move message
-                continue; // Restart the loop
+            let (from_row, from_col, to_row, to_col) = self.view.get_move().unwrap(); // Get the move from the user
+            let from = (from_row, from_col);
+            let to = (to_row, to_col);
+            if self.game.valid_move(from, to) { // Check if the move is valid
+                self.game.make_move(from, to).unwrap(); // Execute the move
+            } else {
+                println!("Invalid move");
             }
 
-            self.game.move_piece(from, to); // Move the piece
         }
     }
 }

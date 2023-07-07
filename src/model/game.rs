@@ -1,45 +1,29 @@
-
 use crate::model::board::Board;
-use crate::model::pieces::piece::Color;
+use crate::model::r#move::Move;
+use std::error::Error;
 
 pub struct Game {
-    pub(crate) board: Board,
-    current_player: &'static Color,
+    board: Board,
 }
 
 impl Game {
     pub fn new() -> Self {
-        let board = Board::new();
-        let current_player = &Color::White;
-        Self { board, current_player }
+        let mut board = Board::new();
+        Self { board }
     }
 
     pub fn get_board(&self) -> &Board {
         &self.board
     }
 
-    pub fn get_current_player(&self) -> &Color {
-        &self.current_player
+    pub fn valid_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
+        let mut piece = self.board.get_piece(from).expect("No piece at from").clone();
+        piece.get_valid_moves(&self.board).contains(&to)
     }
 
-    pub fn set_current_player(&mut self, color: Color) {
-        self.current_player = &color;
+    pub fn make_move(&mut self, from: (usize, usize), to: (usize, usize)) -> Result<(), Box<dyn Error>> {
+        let mut piece = self.board.get_piece(from).expect("No piece at from").clone();
+        piece.execute_move(&mut self.board, from, to)?;
+        Ok(())
     }
-
-    pub fn is_valid_move(&self, from: (usize, usize), to: (usize, usize)) -> bool {
-    if let Some(piece) = self.board.get_piece(from) {
-        let valid_moves = piece.get_piece_type().get_valid_moves(&self.board);
-        valid_moves.contains(&to)
-    } else {
-        false
-    }
-}
-
-
-    pub fn move_piece(&mut self, from: (usize, usize), to: (usize, usize)) {
-        self.board.move_piece(from, to);
-
-
-    }
-    // Add methods for game rules, checking game state, etc.
 }
