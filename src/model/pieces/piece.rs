@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::model::board::Board;
 use crate::model::tile::Tile;
 use crate::model::pieces::pawn::{Pawn};
@@ -9,7 +10,7 @@ use crate::model::pieces::king::{King};
 use crate::model::r#move::Move;
 
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Color {
     White,
     Black,
@@ -26,22 +27,54 @@ pub enum PieceType {
 }
 
 impl PieceType {
-    pub fn get_valid_moves(&self, board: &Board) -> Vec<(usize, usize)> {
+    pub fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
         match self {
-            PieceType::Pawn(pawn) => pawn.get_valid_moves(board),
-            PieceType::Rook(rook) => rook.get_valid_moves(board),
-            PieceType::Knight(knight) => knight.get_valid_moves(board),
-            PieceType::Bishop(bishop) => bishop.get_valid_moves(board),
-            PieceType::Queen(queen) => queen.get_valid_moves(board),
-            PieceType::King(king) => king.get_valid_moves(board),
+            PieceType::Pawn(ref mut pawn) => pawn.get_valid_moves(board),
+            PieceType::Rook(ref mut rook) => rook.get_valid_moves(board),
+            PieceType::Knight(ref mut knight) => knight.get_valid_moves(board),
+            PieceType::Bishop(ref mut bishop) => bishop.get_valid_moves(board),
+            PieceType::Queen(ref mut queen) => queen.get_valid_moves(board),
+            PieceType::King(ref mut king) => king.get_valid_moves(board),
         }
+
     }
 }
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Piece {
-    piece_type: PieceType,
-    color: Color,
+    pub(crate) piece_type: PieceType,
+    pub(crate) color: Color,
+}
+
+impl Display for Piece {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.piece_type {
+            PieceType::Pawn(ref pawn) => write!(f, "{}", pawn),
+            PieceType::Rook(ref rook) => write!(f, "{}", rook),
+            PieceType::Knight(ref knight) => write!(f, "{}", knight),
+            PieceType::Bishop(ref bishop) => write!(f, "{}", bishop),
+            PieceType::Queen(ref queen) => write!(f, "{}", queen),
+            PieceType::King(ref king) => write!(f, "{}", king),
+        }
+    }
+}
+
+impl Move for Piece {
+    fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
+        self.piece_type.get_valid_moves(board)
+    }
+
+    fn execute_move(&mut self, board: &mut Board, from: (usize, usize), to: (usize, usize)) -> Result<(), String> {
+        match self.piece_type {
+            PieceType::Pawn(ref mut pawn) => pawn.execute_move(board, from, to),
+            PieceType::Rook(ref mut rook) => rook.execute_move(board, from, to),
+            PieceType::Knight(ref mut knight) => knight.execute_move(board, from, to),
+            PieceType::Bishop(ref mut bishop) => bishop.execute_move(board, from, to),
+            PieceType::Queen(ref mut queen) => queen.execute_move(board, from, to),
+            PieceType::King(ref mut king) => king.execute_move(board, from, to),
+        }
+
+    }
 }
 
 impl Piece {
@@ -79,18 +112,6 @@ impl Piece {
             PieceType::Bishop(_) => "Bishop",
             PieceType::Queen(_) => "Queen",
             PieceType::King(_) => "King",
-        }
-    }
-
-    pub fn to_notation(&self) -> &'static str {
-        match self.piece_type {
-            PieceType::Pawn(_) => "P",
-            PieceType::Rook(_) => "R",
-            PieceType::Knight(_) => "N",
-            PieceType::Bishop(_) => "B",
-            PieceType::Queen(_) => "Q",
-            PieceType::King(_) => "K",
-
         }
     }
 }

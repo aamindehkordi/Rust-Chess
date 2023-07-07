@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::model::board::Board;
 use crate::model::pieces::piece::Color;
 use crate::model::r#move::Move;
@@ -6,6 +7,7 @@ use crate::model::tile::Tile;
 #[derive(Clone, PartialEq, Debug)]
 pub struct Bishop {
     color: Color,
+    position: (usize, usize),
     can_take: Option<bool>,
     takeable: Option<bool>,
     pinned: Option<bool>,
@@ -13,10 +15,20 @@ pub struct Bishop {
 
 }
 
+impl Display for Bishop {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.color {
+            Color::White => write!(f, "B"),
+            Color::Black => write!(f, "b"),
+        }
+    }
+}
+
 impl Bishop {
-    pub fn new(color: Color) -> Bishop {
+    pub fn new(color: Color, position: (usize, usize)) -> Bishop {
         Self {
             color,
+            position,
             can_take: None,
             takeable: None,
             pinned: None,
@@ -27,21 +39,13 @@ impl Bishop {
 }
 
 impl Move for Bishop {
-    fn get_valid_moves(&self, board: &Board) -> Vec<(usize, usize)> {
+    fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
         // Calculate valid moves for a bishop
         // This will depend on the current state of the board and the bishop's rules for movement
+        todo!()
     }
 
-    fn execute_move(&mut self, board: &mut Board, from: (usize, usize), to: (usize, usize)) -> Result<(), &'static str> {
-        // Check if the move is valid
-        if !self.is_valid_move(board, from, to) {
-            return Err("Invalid move");
-        }
-
-        // Execute the move
-        // This will depend on the bishop's rules for movement
-        // You might need to update the bishop's state here (e.g., if it's the bishop's first move)
-
+    fn execute_move(&mut self, board: &mut Board, from: (usize, usize), to: (usize, usize)) -> Result<(), String> {
         Ok(())
     }
 }
