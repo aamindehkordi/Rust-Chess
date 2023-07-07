@@ -1,3 +1,5 @@
+use std::io;
+use std::io::Write;
 use crate::model::game::Game;
 use crate::model::pieces::piece::{Color, PieceType};
 
@@ -11,45 +13,60 @@ impl ConsoleView {
     /// Displays the board to the console Facing the current player.
     pub fn display_board(&self, game: &Game) {
         let board = game.get_board();
-        let current_player = game.get_current_player();
-        let mut board_string = String::new();
-        board_string.push_str(&format!("Current player: {:?}\n", current_player));
-        board_string.push_str("  A B C D E F G H\n");
-        for (i, row) in board.get_tiles().iter().enumerate() {
-            board_string.push_str(&format!("{} ", i + 1));
-            for tile in row {
-                board_string.push_str(&format!("{} ", tile.to_string()));
+        for i in (0..8).rev() {
+            for j in 0..8 {
+                let tile = board.get_tile((i, j));
+                if let Some(piece) = tile.get_piece() {
+                    print!("{}", piece);
+                } else {
+                    print!(".");
+                }
             }
-            board_string.push_str(&format!("{}\n", i + 1));
+            println!();
         }
-        board_string.push_str("  A B C D E F G H\n");
-        println!("{}", board_string);
     }
 
     /// Prompts the user to enter a move in chess notation.
-    pub fn get_move(&self) -> ((usize, usize), (usize, usize)) {
-        println!("Enter a move in chess notation (e.g. A2 A4):");
+    /// Example: e2-e4
+    pub fn get_move(&self) -> Result<(usize, usize, usize, usize), &'static str> {
+        print!("Enter your move: ");
+        io::stdout().flush().unwrap();
         let mut input = String::new();
-        std::io::stdin()
-            .read_line(&mut input)
-            .expect("Failed to read line");
-        let mut input = input.split_whitespace();
-        let from = input.next().unwrap();
-        let to = input.next().unwrap();
-        let from = self.notation_to_coords(from);
-        let to = self.notation_to_coords(to);
-        (from, to)
+        io::stdin().read_line(&mut input).unwrap();
+        self.notation_to_coords(&input.trim())
     }
 
-    fn notation_to_coords(&self, notation: &str) -> (usize, usize) {
-        let mut chars = notation.chars();
-        let file = chars.next().unwrap();
-        let rank = chars.next().unwrap();
-        let file = (file as usize - 'A' as usize) as usize;
-        let rank = (rank.to_digit(10).unwrap() - 1) as usize;
-        (rank, file)
+    /// Converts chess notation to coordinates.
+    /// Example: e2-e4 -> (6, 4, 4, 4)
+    fn notation_to_coords(&self, notation: &str) -> Result<(usize, usize, usize, usize), &'static str> {
+        if notation.len() != 5 || &notation[2..3] != "-" { // if the notation is not 5 characters long or the 3rd character is not a dash
+            return Err("Invalid notation");
+        }
+        let from = &notation[0..2]; // get the first two characters
+        let to = &notation[3..5]; // get the last two characters
+        let from_coords = self.notation_to_coord(from)?; // convert the first two characters to coordinates
+        let to_coords = self.notation_to_coord(to)?;    // convert the last two characters to coordinates
+        Ok((from_coords.0, from_coords.1, to_coords.0, to_coords.1)) // return the coordinates
     }
 
+    /// Converts individual chess notation to coordinates.
+    /// Example: e2 -> (6, 4)
+    fn notation_to_coord(&self, notation: &str) -> Result<(usize, usize), &'static str> {
+        if notation.len() != 2 { // if the notation is not 2 characters long
+            return Err("Invalid notation");
+        }
+        let file = notation.chars().nth(0).unwrap(); // get the first character
+        let rank = notation.chars().nth(1).unwrap(); // get the second character
+        let file = match file {
+            'a'..='h' => file as usize - 'a' as usize, // convert the file to a number
+            _ => return Err("Invalid file"), // if the file is not a-h, return an error
+        };
+        let rank = match rank.to_digit(10) {
+            Some(n) if n >= 1 && n <= 8 => n as usize - 1, // convert the rank to a number
+            _ => return Err("Invalid rank"), // if the rank is not 1-8, return an error
+        };
+        Ok((rank, file)) // return the coordinates
+    }
 
     pub fn display_check(&self, color: &Color) {
         match color {
