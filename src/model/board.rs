@@ -23,22 +23,22 @@ impl Board {
             for j in 0..8 {
                 // Create the piece for the tile
                 let piece = match i {
-                    1 => Some(Piece::new(PieceType::Pawn(Pawn::new(Color::Black, (i, j))), Color::Black)),
-                    6 => Some(Piece::new(PieceType::Pawn(Pawn::new(Color::White, (i, j))), Color::White)),
+                    1 => Some(Box::new(Pawn::new(Color::White, (i, j))) as Box<dyn Piece>),
+                    6 => Some(Box::new(Pawn::new(Color::Black, (i, j))) as Box<dyn Piece>),
                     0 => match j {
-                        0 | 7 => Some(Piece::new(PieceType::Rook(Rook::new(Color::Black, (i, j))), Color::Black)),
-                        1 | 6 => Some(Piece::new(PieceType::Knight(Knight::new(Color::Black, (i, j))), Color::Black)),
-                        2 | 5 => Some(Piece::new(PieceType::Bishop(Bishop::new(Color::Black, (i, j))), Color::Black)),
-                        3 => Some(Piece::new(PieceType::Queen(Queen::new(Color::Black, (i, j))), Color::Black)),
-                        4 => Some(Piece::new(PieceType::King(King::new(Color::Black, (i, j))), Color::Black)),
+                        0 | 7 => Some(Box::new(Rook::new(Color::White, (i, j))) as Box<dyn Piece>),
+                        1 | 6 => Some(Box::new(Knight::new(Color::White, (i, j))) as Box<dyn Piece>),
+                        2 | 5 => Some(Box::new(Bishop::new(Color::White, (i, j))) as Box<dyn Piece>),
+                        3 => Some(Box::new(Queen::new(Color::White, (i, j))) as Box<dyn Piece>),
+                        4 => Some(Box::new(King::new(Color::White, (i, j))) as Box<dyn Piece>),
                         _ => None,
                     },
                     7 => match j {
-                        0 | 7 => Some(Piece::new(PieceType::Rook(Rook::new(Color::White, (i, j))), Color::White)),
-                        1 | 6 => Some(Piece::new(PieceType::Knight(Knight::new(Color::White, (i, j))), Color::White)),
-                        2 | 5 => Some(Piece::new(PieceType::Bishop(Bishop::new(Color::White, (i, j))), Color::White)),
-                        3 => Some(Piece::new(PieceType::Queen(Queen::new(Color::White, (i, j))), Color::White)),
-                        4 => Some(Piece::new(PieceType::King(King::new(Color::White, (i, j))), Color::White)),
+                        0 | 7 => Some(Box::new(Rook::new(Color::Black, (i, j))) as Box<dyn Piece>),
+                        1 | 6 => Some(Box::new(Knight::new(Color::Black, (i, j))) as Box<dyn Piece>),
+                        2 | 5 => Some(Box::new(Bishop::new(Color::Black, (i, j))) as Box<dyn Piece>),
+                        3 => Some(Box::new(Queen::new(Color::Black, (i, j))) as Box<dyn Piece>),
+                        4 => Some(Box::new(King::new(Color::Black, (i, j))) as Box<dyn Piece>),
                         _ => None,
                     },
                     _ => None,
@@ -48,6 +48,7 @@ impl Board {
         }
         Self { tiles, current_turn: Color::White }
     }
+
 
     // Getters
     pub fn get_current_player(&self) -> &Color {
@@ -62,24 +63,11 @@ impl Board {
     pub fn get_tile_mut(&mut self, idx: (usize, usize)) -> &mut Tile {
         &mut self.tiles[idx.0 * 8 + idx.1]
     }
-    pub fn get_pieces(&self, piece: &Piece) -> Vec<(usize, usize)> {
-        let mut pieces = Vec::new();
-        for i in 0..8 {
-            for j in 0..8 {
-                if let Some(p) = &self.tiles[i * 8 + j].piece {
-                    if eq(p, piece) {
-                        pieces.push((i, j));
-                    }
-                }
-            }
-        }
-        pieces
+    pub fn get_piece(&self, idx: (usize, usize)) -> Option<Box<dyn Piece>> {
+        self.tiles[idx.0 * 8 + idx.1].piece.as_ref().map(|piece| piece.clone_box())
     }
 
 
-    pub fn get_piece(&mut self, idx: (usize, usize)) -> Option<&mut Piece> {
-        self.tiles[idx.0 * 8 + idx.1].piece.as_mut()
-    }
 
 
     /// Given an index, determines the proper notation for the tile.
@@ -98,18 +86,19 @@ impl Board {
     /// Pick up a piece from a tile.
     /// Returns the piece that was picked up.
     /// Returns None if there was no piece on the tile.
-    pub fn pick_up_piece(&mut self, idx: (usize, usize)) -> Option<Piece> {
-        if let Some(piece) = self.tiles[idx.0 * 8 + idx.1].piece.take() {
-            Some(piece)
-        } else {
-            None
-        }
-
+    pub fn pick_up_piece(&mut self, idx: (usize, usize)) -> Option<Box<dyn Piece>> {
+        self.tiles[idx.0 * 8 + idx.1].piece.take()
     }
 
 
     /// Puts down the picked up piece on a tile.
-    pub fn put_down_piece(&mut self, idx: (usize, usize), piece: Piece) {
+    pub fn put_down_piece(&mut self, idx: (usize, usize), piece: Box<dyn Piece>) {
         self.tiles[idx.0 * 8 + idx.1].piece = Some(piece);
+    }
+
+    /// Moves a piece from one tile to another.
+    pub fn move_piece(&mut self, from: (usize, usize), to: (usize, usize)) {
+        let piece = self.pick_up_piece(from).unwrap();
+        self.put_down_piece(to, piece);
     }
 }
