@@ -67,6 +67,32 @@ impl Board {
         self.tiles[idx.0 * 8 + idx.1].piece.as_ref().map(|piece| piece.clone_box())
     }
 
+    pub fn find_piece(&self, piece: &Box<dyn Piece>) -> Option<(usize, usize)> {
+        for i in 0..8 {
+            for j in 0..8 {
+                if let Some(p) = &self.tiles[i * 8 + j].piece {
+                    if eq(p, piece) {
+                        return Some((i, j));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    pub fn find_king(&self, color: Color) -> Option<(usize, usize)> {
+        for i in 0..8 {
+            for j in 0..8 {
+                if let Some(p) = &self.tiles[i * 8 + j].piece {
+                    if p.get_color() == color && p.get_type() == PieceType::King {
+                        return Some((i, j));
+                    }
+                }
+            }
+        }
+        None
+    }
+
 
     /// Change the current player.
     /// Returns the new current player.

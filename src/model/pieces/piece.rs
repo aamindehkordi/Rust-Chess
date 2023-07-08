@@ -1,10 +1,21 @@
 use std::fmt::Display;
 use crate::model::board::Board;
+use crate::model::pieces::pawn::Pawn;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Color {
     White,
     Black,
+}
+
+impl Color {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Color::White, Color::White) => true,
+            (Color::Black, Color::Black) => true,
+            _ => false,
+        }
+    }
 }
 
 const BOARD_SIZE: i32 = 8;
@@ -40,30 +51,19 @@ pub trait Piece: Display {
             None
         }
     }
-    fn get_color(&self) -> &Color;
+    fn get_color(&self) -> Color;
     fn get_position(&self) -> (usize, usize);
     fn get_moves(&self) -> &Vec<(usize, usize)>;
+    fn get_type(&self) -> PieceType;
 
 }
 
+#[derive(Clone, PartialEq, Debug)]
 pub enum PieceType {
-    Pawn(Box<dyn Piece>),
-    Rook(Box<dyn Piece>),
-    Knight(Box<dyn Piece>),
-    Bishop(Box<dyn Piece>),
-    Queen(Box<dyn Piece>),
-    King(Box<dyn Piece>),
-}
-
-impl PieceType {
-    pub fn get_valid_moves(&mut self, board: &Board) {
-        match self {
-            PieceType::Pawn(ref mut piece) => piece.calc_valid_moves(board),
-            PieceType::Rook(ref mut piece) => piece.calc_valid_moves(board),
-            PieceType::Knight(ref mut piece) => piece.calc_valid_moves(board),
-            PieceType::Bishop(ref mut piece) => piece.calc_valid_moves(board),
-            PieceType::Queen(ref mut piece) => piece.calc_valid_moves(board),
-            PieceType::King(ref mut piece) => piece.calc_valid_moves(board),
-        }
-    }
+    Pawn,
+    Rook,
+    Knight,
+    Bishop,
+    Queen,
+    King,
 }

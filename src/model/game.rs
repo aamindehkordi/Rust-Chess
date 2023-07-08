@@ -17,10 +17,11 @@ impl Game {
 
     pub fn valid_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         let mut piece = self.board.get_piece(from).expect("No piece at from");
-        if piece.get_color() != self.board.get_current_player() {
-            return false;
-        }
+
+        // update that piece's moves
         piece.calc_valid_moves(&self.board);
+
+        // check if the move is in the piece's moves
         piece.get_moves().contains(&to)
 
     }

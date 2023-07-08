@@ -45,7 +45,7 @@ impl Piece for Rook {
                     self.moves.push(pos);
                     new_position = self.get_new_position(pos, direction);
                 } else {
-                    if tile.get_piece().as_ref().map_or(false, |p| p.get_color() != &self.color) {
+                    if tile.get_piece().as_ref().map_or(false, |p| p.get_color() != self.color) {
                         self.moves.push(pos);
                     }
                     break;
@@ -59,8 +59,8 @@ impl Piece for Rook {
     }
 
 
-    fn get_color(&self) -> &Color {
-        &self.color
+    fn get_color(&self) -> Color {
+        self.color.clone()
     }
 
     fn get_position(&self) -> (usize, usize) {
@@ -69,5 +69,9 @@ impl Piece for Rook {
 
     fn get_moves(&self) -> &Vec<(usize, usize)> {
         &self.moves
+    }
+
+    fn get_type(&self) -> PieceType {
+        PieceType::Rook
     }
 }

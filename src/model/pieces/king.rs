@@ -40,7 +40,7 @@ impl Piece for King {
         for &direction in &self.directions {
             if let Some(new_position) = self.get_new_position(self.position, direction) {
                 let tile = board.get_tile(new_position);
-                if tile.is_empty() || tile.get_piece().as_ref().map_or(false, |p| p.get_color() != &self.color) {
+                if tile.is_empty() || tile.get_piece().as_ref().map_or(false, |p| p.get_color() != self.color) {
                     self.moves.push(new_position);
                 }
             }
@@ -51,8 +51,8 @@ impl Piece for King {
         Box::new(self.clone())
     }
 
-    fn get_color(&self) -> &Color {
-        &self.color
+    fn get_color(&self) -> Color {
+        self.color.clone()
     }
 
     fn get_position(&self) -> (usize, usize) {
@@ -61,5 +61,9 @@ impl Piece for King {
 
     fn get_moves(&self) -> &Vec<(usize, usize)> {
         &self.moves
+    }
+
+    fn get_type(&self) -> PieceType {
+        PieceType::King
     }
 }

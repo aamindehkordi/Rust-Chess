@@ -41,8 +41,16 @@ impl Piece for Knight {
         for &direction in &self.directions {
             if let Some(new_position) = self.get_new_position(self.position, direction) {
                 let tile = board.get_tile(new_position);
-                if tile.is_empty() || tile.get_piece().as_ref().map_or(false, |p| p.get_color() != &self.color) {
+                if tile.is_empty() {
                     self.moves.push(new_position);
+                    self.has_moves = Some(true);
+
+                }
+                let piece = tile.get_piece();
+                if piece.as_ref().map_or(false, |p| p.get_color() != self.color) {
+                    self.moves.push(new_position);
+                    self.has_moves = Some(true);
+                    self.can_take = Some(true);
                 }
             }
         }
@@ -52,8 +60,8 @@ impl Piece for Knight {
         Box::new(self.clone())
     }
 
-    fn get_color(&self) -> &Color {
-        &self.color
+    fn get_color(&self) -> Color {
+        self.color.clone()
     }
 
     fn get_position(&self) -> (usize, usize) {
@@ -62,6 +70,10 @@ impl Piece for Knight {
 
     fn get_moves(&self) -> &Vec<(usize, usize)> {
         &self.moves
+    }
+
+    fn get_type(&self) -> PieceType {
+        PieceType::Knight
     }
 }
 

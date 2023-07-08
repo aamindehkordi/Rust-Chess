@@ -45,7 +45,7 @@ impl Piece for Bishop {
                 let tile = board.get_tile(pos);
                 if tile.is_empty() {
                     self.moves.push(pos);
-                } else if tile.get_piece().as_ref().map_or(false, |p| p.get_color() != &self.color) {
+                } else if tile.get_piece().as_ref().map_or(false, |p| p.get_color() != self.color) {
                     self.moves.push(pos);
                     break;
                 } else {
@@ -60,8 +60,8 @@ impl Piece for Bishop {
         Box::new(self.clone())
     }
 
-    fn get_color(&self) -> &Color {
-        &self.color
+    fn get_color(&self) -> Color {
+        self.color.clone()
     }
 
     fn get_position(&self) -> (usize, usize) {
@@ -70,5 +70,9 @@ impl Piece for Bishop {
 
     fn get_moves(&self) -> &Vec<(usize, usize)> {
         &self.moves
+    }
+
+    fn get_type(&self) -> PieceType {
+        PieceType::Bishop
     }
 }

@@ -46,12 +46,41 @@ impl Piece for Pawn {
     }
     fn calc_valid_moves(&mut self, board: &Board) {
         self.moves.clear();
-        // Check all possible moves
-        for &direction in &self.directions {
+        // Check if the tile in front of the pawn is empty
+        if let Some(new_position) = self.get_new_position(self.position, self.directions[0]) {
+            let tile = board.get_tile(new_position);
+            if tile.is_empty() {
+                self.moves.push(new_position);
+                self.has_moves = Some(true);
+            }
+        }
+        // Check if it is the first move
+        if self.first_move {
+            // Check if the two tiles in front of the pawn is empty
+            if let Some(new_position) = self.get_new_position(self.position, self.directions[0]) {
+                let tile = board.get_tile(new_position);
+                if tile.is_empty() {
+                    if let Some(new_position) = self.get_new_position(new_position, self.directions[0]) {
+                        let tile = board.get_tile(new_position);
+                        if tile.is_empty() {
+                            self.moves.push(new_position);
+                            self.has_moves = Some(true);
+                        }
+                    }
+                }
+            }
+        }
+        // Check if the pawn can take a piece
+        for &direction in &self.directions[1..] {
             if let Some(new_position) = self.get_new_position(self.position, direction) {
                 let tile = board.get_tile(new_position);
-                if tile.is_empty() || tile.get_piece().as_ref().map_or(false, |p| p.get_color() != &self.color) {
-                    self.moves.push(new_position);
+                if !tile.is_empty() {
+                    let piece = tile.get_piece();
+                    if piece.as_ref().map_or(false, |p| p.get_color() != self.color) {
+                        self.moves.push(new_position);
+                        self.has_moves = Some(true);
+                        self.can_take = Some(true);
+                    }
                 }
             }
         }
@@ -61,8 +90,19 @@ impl Piece for Pawn {
         Box::new(self.clone())
     }
 
-    fn get_color(&self) -> &Color {
-        &self.color
+    fn execute_move(&mut self, board: &mut Board, from: (usize, usize), to: (usize, usize)) -> Result<(), String> {
+        if self.moves.contains(&to) {
+            board.move_piece(from, to);
+            self.position = to;
+            self.first_move = false;
+            Ok(())
+        } else {
+            Err(format!("Invalid move from {:?} to {:?}", from, to))
+        }
+    }
+
+    fn get_color(&self) -> Color {
+        self.color.clone()
     }
 
     fn get_position(&self) -> (usize, usize) {
@@ -71,5 +111,9 @@ impl Piece for Pawn {
 
     fn get_moves(&self) -> &Vec<(usize, usize)> {
         &self.moves
+    }
+
+    fn get_type(&self) -> PieceType {
+        PieceType::Pawn
     }
 }
