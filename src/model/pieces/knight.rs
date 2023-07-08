@@ -35,11 +35,7 @@ impl Piece for Knight {
             has_moves: None,
         }
     }
-    fn clone_box(&self) -> Box<dyn Piece> {
-        Box::new(self.clone())
-    }
-
-    fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
+    fn calc_valid_moves(&mut self, board: &Board) {
         self.moves.clear();
         // Check all possible moves
         for &direction in &self.directions {
@@ -50,7 +46,10 @@ impl Piece for Knight {
                 }
             }
         }
-        self.moves.clone()
+    }
+
+    fn clone_box(&self) -> Box<dyn Piece> {
+        Box::new(self.clone())
     }
 
     fn get_color(&self) -> &Color {

@@ -10,10 +10,11 @@ pub enum Color {
 const BOARD_SIZE: i32 = 8;
 pub trait Piece: Display {
     fn new(color: Color, position: (usize, usize)) -> Self where Self: Sized;
-    fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)>;
+    fn calc_valid_moves(&mut self, board: &Board);
     fn clone_box(&self) -> Box<dyn Piece>;
     fn execute_move(&mut self, board: &mut Board, from: (usize, usize), to: (usize, usize)) -> Result<(), String> {
-        let moves = self.get_valid_moves(board);
+        self.calc_valid_moves(board);
+        let moves = self.get_moves();
         if moves.contains(&to) {
             board.move_piece(from, to);
             Ok(())
@@ -55,14 +56,14 @@ pub enum PieceType {
 }
 
 impl PieceType {
-    pub fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
+    pub fn get_valid_moves(&mut self, board: &Board) {
         match self {
-            PieceType::Pawn(ref mut piece) => piece.get_valid_moves(board),
-            PieceType::Rook(ref mut piece) => piece.get_valid_moves(board),
-            PieceType::Knight(ref mut piece) => piece.get_valid_moves(board),
-            PieceType::Bishop(ref mut piece) => piece.get_valid_moves(board),
-            PieceType::Queen(ref mut piece) => piece.get_valid_moves(board),
-            PieceType::King(ref mut piece) => piece.get_valid_moves(board),
+            PieceType::Pawn(ref mut piece) => piece.calc_valid_moves(board),
+            PieceType::Rook(ref mut piece) => piece.calc_valid_moves(board),
+            PieceType::Knight(ref mut piece) => piece.calc_valid_moves(board),
+            PieceType::Bishop(ref mut piece) => piece.calc_valid_moves(board),
+            PieceType::Queen(ref mut piece) => piece.calc_valid_moves(board),
+            PieceType::King(ref mut piece) => piece.calc_valid_moves(board),
         }
     }
 }

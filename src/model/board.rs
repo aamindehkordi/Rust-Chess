@@ -68,6 +68,14 @@ impl Board {
     }
 
 
+    /// Change the current player.
+    /// Returns the new current player.
+    pub fn change_current_player(&mut self){
+        self.current_turn = match self.current_turn {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        };
+    }
 
 
     /// Given an index, determines the proper notation for the tile.
