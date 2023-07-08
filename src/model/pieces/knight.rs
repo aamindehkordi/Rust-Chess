@@ -1,7 +1,6 @@
 use std::fmt::Display;
 use crate::model::board::Board;
-use crate::model::pieces::piece::{Color, PieceType};
-use crate::model::r#move::Move;
+use crate::model::pieces::piece::{Color, Piece, PieceType};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Knight {
@@ -23,8 +22,8 @@ impl Display for Knight {
         }
     }
 }
-impl Knight {
-    pub fn new(color:Color, position: (usize, usize)) -> Knight {
+impl Piece for Knight {
+    fn new(color: Color, position: (usize, usize)) -> Self {
         Self {
             color,
             position,
@@ -36,12 +35,15 @@ impl Knight {
             has_moves: None,
         }
     }
+    fn clone_box(&self) -> Box<dyn Piece> {
+        Box::new(self.clone())
+    }
 
-    pub fn get_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
+    fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
         self.moves.clear();
         // Check all possible moves
         for &direction in &self.directions {
-            if let Some(new_position) = get_new_position(self.position, direction) {
+            if let Some(new_position) = self.get_new_position(self.position, direction) {
                 let tile = board.get_tile(new_position);
                 if tile.is_empty() || tile.get_piece().as_ref().map_or(false, |p| p.get_color() != &self.color) {
                     self.moves.push(new_position);
@@ -51,46 +53,16 @@ impl Knight {
         self.moves.clone()
     }
 
-}
-const BOARD_SIZE: i32 = 8;
+    fn get_color(&self) -> &Color {
+        &self.color
+    }
 
-fn is_in_bounds(x: i32, y: i32) -> bool {
-    x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE
-}
+    fn get_position(&self) -> (usize, usize) {
+        self.position
+    }
 
-fn get_new_position(position: (usize, usize), direction: (i32, i32)) -> Option<(usize, usize)> {
-    let (x, y) = position;
-    let (dx, dy) = direction;
-
-    let new_x = x as i32 + dx;
-    let new_y = y as i32 + dy;
-
-    if is_in_bounds(new_x, new_y) {
-        Some((new_x as usize, new_y as usize))
-    } else {
-        None
+    fn get_moves(&self) -> &Vec<(usize, usize)> {
+        &self.moves
     }
 }
 
-impl Move for Knight {
-    fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
-        self.get_moves(board)
-    }
-
-    fn execute_move(&mut self, board: &mut Board, from: (usize, usize), to: (usize, usize)) -> Result<(), String> {
-        if let Some(mut piece) = board.pick_up_piece(from) {
-            if let PieceType::Knight(knight) = &mut piece.piece_type {
-                knight.position = to;
-            }
-            else {
-                board.put_down_piece(from, piece);
-                return Err(format!("Piece at ({}, {}) is not a knight, it is a {:?}", from.0, from.1, board.get_piece(from).unwrap().piece_type));
-            }
-            board.put_down_piece(to, piece);
-            Ok(())
-        } else {
-            Err(format!("No piece at the starting position ({}, {})", from.0, from.1))
-        }
-    }
-
-}

@@ -1,29 +1,16 @@
 use std::fmt::Display;
-// pieces/king.rs
 use crate::model::board::Board;
-use crate::model::pieces::piece::Color;
-use crate::model::r#move::Move;
-use crate::model::tile::Tile;
+use crate::model::pieces::piece::{Color, Piece, PieceType};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct King {
     color: Color,
     position: (usize, usize),
+    directions: [(i32, i32); 8],
+    moves: Vec<(usize, usize)>,
     has_moved: bool,
     in_check: Option<bool>,
     has_moves: Option<bool>,
-}
-
-impl King {
-    pub fn new(color: Color, position: (usize, usize)) -> King {
-        Self {
-            color,
-            position,
-            has_moved: false,
-            in_check: None,
-            has_moves: None,
-        }
-    }
 }
 
 impl Display for King {
@@ -35,17 +22,45 @@ impl Display for King {
     }
 }
 
-
-impl Move for King {
-    fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
-        // Calculate valid moves for a king
-        // This will depend on the current state of the board and the king's rules for movement
-        todo!()
+impl Piece for King {
+    fn new(color: Color, position: (usize, usize)) -> Self {
+        Self {
+            color,
+            position,
+            directions: [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)],
+            moves: Vec::new(),
+            has_moved: false,
+            in_check: None,
+            has_moves: None,
+        }
+    }
+    fn clone_box(&self) -> Box<dyn Piece> {
+        Box::new(self.clone())
     }
 
-    fn execute_move(&mut self, board: &mut Board, from: (usize, usize), to: (usize, usize)) -> Result<(), String> {
+    fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
+        self.moves.clear();
+        // Check all possible moves
+        for &direction in &self.directions {
+            if let Some(new_position) = self.get_new_position(self.position, direction) {
+                let tile = board.get_tile(new_position);
+                if tile.is_empty() || tile.get_piece().as_ref().map_or(false, |p| p.get_color() != &self.color) {
+                    self.moves.push(new_position);
+                }
+            }
+        }
+        self.moves.clone()
+    }
 
-        Ok(())
+    fn get_color(&self) -> &Color {
+        &self.color
+    }
+
+    fn get_position(&self) -> (usize, usize) {
+        self.position
+    }
+
+    fn get_moves(&self) -> &Vec<(usize, usize)> {
+        &self.moves
     }
 }
-

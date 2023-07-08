@@ -1,7 +1,6 @@
 use std::fmt::Display;
 use crate::model::board::Board;
-use crate::model::pieces::piece::{Color, PieceType};
-use crate::model::r#move::Move;
+use crate::model::pieces::piece::{Color, Piece, PieceType};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Rook {
@@ -23,8 +22,8 @@ impl Display for Rook {
     }
 }
 
-impl Rook {
-    pub fn new(color:Color, position: (usize, usize)) -> Rook {
+impl Piece for Rook {
+    fn new(color:Color, position: (usize, usize)) -> Rook {
         Self {
             color,
             position,
@@ -35,17 +34,20 @@ impl Rook {
             has_moves: None,
         }
     }
+    fn clone_box(&self) -> Box<dyn Piece> {
+        Box::new(self.clone())
+    }
 
-    pub fn get_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
+    fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
         self.moves.clear();
         // Check all possible moves
         for &direction in &self.directions {
-            let mut new_position = get_new_position(self.position, direction);
+            let mut new_position = self.get_new_position(self.position, direction);
             while let Some(pos) = new_position {
                 let tile = board.get_tile(pos);
                 if tile.is_empty() {
                     self.moves.push(pos);
-                    new_position = get_new_position(pos, direction);
+                    new_position = self.get_new_position(pos, direction);
                 } else {
                     if tile.get_piece().as_ref().map_or(false, |p| p.get_color() != &self.color) {
                         self.moves.push(pos);
@@ -56,46 +58,17 @@ impl Rook {
         }
         self.moves.clone()
     }
-}
 
-const BOARD_SIZE: i32 = 8;
 
-fn is_in_bounds(x: i32, y: i32) -> bool {
-    x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE
-}
-
-fn get_new_position(position: (usize, usize), direction: (i32, i32)) -> Option<(usize, usize)> {
-    let (x, y) = position;
-    let (dx, dy) = direction;
-
-    let new_x = x as i32 + dx;
-    let new_y = y as i32 + dy;
-
-    if is_in_bounds(new_x, new_y) {
-        Some((new_x as usize, new_y as usize))
-    } else {
-        None
-    }
-}
-
-impl Move for Rook {
-    fn get_valid_moves(&mut self, board: &Board) -> Vec<(usize, usize)> {
-        self.get_moves(board)
+    fn get_color(&self) -> &Color {
+        &self.color
     }
 
-    fn execute_move(&mut self, board: &mut Board, from: (usize, usize), to: (usize, usize)) -> Result<(), String> {
-        if let Some(mut piece) = board.pick_up_piece(from) {
-            if let PieceType::Rook(rook) = &mut piece.piece_type {
-                rook.position = to;
-            }
-            else {
-                board.put_down_piece(from, piece);
-                return Err(format!("Piece at ({}, {}) is not a rook, it is a {:?}", from.0, from.1, board.get_piece(from).unwrap().piece_type));
-            }
-            board.put_down_piece(to, piece);
-            Ok(())
-        } else {
-            Err(format!("No piece at the starting position ({}, {})", from.0, from.1))
-        }
+    fn get_position(&self) -> (usize, usize) {
+        self.position
+    }
+
+    fn get_moves(&self) -> &Vec<(usize, usize)> {
+        &self.moves
     }
 }
