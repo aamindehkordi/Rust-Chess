@@ -73,27 +73,6 @@ impl Piece for Bishop {
         }
     }
 
-    fn execute(&mut self, board: &mut Board, mv: Move) {
-        let to_position = mv.get_to().get_position();
-        let this = board.pick_up_piece(&self.position).unwrap();
-
-        if this.get_color() == self.color && this.get_type() == self.piece_type && this.get_position() == self.position {
-            match mv.get_move_type() {
-                MoveType::Normal => {
-                    board.move_piece(&self.position, to_position);
-                },
-                MoveType::Capture => {
-                    board.move_piece(&self.position, to_position);
-                    board.take_piece(mv.get_to());
-                },
-                _ => {},
-            }
-            self.position = to_position.clone();
-            board.put_down_piece(&self.position, Some(this));
-            self.update_moves(board.clone());
-        }
-    }
-
     fn clone_box(&self) -> Box<dyn Piece> {
         Box::new(self.clone())
     }
@@ -112,6 +91,10 @@ impl Piece for Bishop {
 
     fn get_type(&self) -> PieceType {
         PieceType::Bishop
+    }
+
+    fn set_position(&mut self, position: (usize, usize)) {
+        self.position = position;
     }
 }
 

@@ -32,7 +32,27 @@ pub trait Piece: Display {
         Move::new(mv_type, from_tile.clone(), to_tile.clone())
     }
     fn update_moves(&mut self, board: Board);
-    fn execute(&mut self, board: &mut Board, mv: Move);
+    fn execute(&mut self, board: &mut Board, mv: Move) {
+        let to_position = mv.get_to().get_position();
+        let mut this = board.pick_up_piece(&self.get_position()).unwrap();
+
+        if this.get_color() == self.get_color() && this.get_type() == self.get_type() && this.get_position() == self.get_position() {
+            match mv.get_move_type() {
+                MoveType::Normal => {
+                    board.move_piece(&self.get_position(), to_position);
+                },
+                MoveType::Capture => {
+                    board.move_piece(&self.get_position(), to_position);
+                    board.take_piece(mv.get_to());
+                },
+                _ => {},
+            }
+            self.set_position(to_position.clone());
+            this.set_position(to_position.clone());
+            board.put_down_piece(&self.get_position(), Some(this));
+            self.update_moves(board.clone());
+        }
+    }
     fn clone_box(&self) -> Box<dyn Piece>;
 
     fn is_in_bounds(&self, x: i32, y: i32) -> bool where Self: Sized {
@@ -57,7 +77,7 @@ pub trait Piece: Display {
     fn get_position(&self) -> (usize, usize);
     fn get_moves(&self) -> &Vec<Move>;
     fn get_type(&self) -> PieceType;
-
+    fn set_position(&mut self, position: (usize, usize));
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]

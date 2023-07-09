@@ -56,7 +56,7 @@ impl Piece for King {
 
     fn execute(&mut self, board: &mut Board, mv: Move) {
         let to_position = mv.get_to().get_position();
-        let this = board.pick_up_piece(&self.position).unwrap();
+        let mut this = board.pick_up_piece(&self.position).unwrap();
 
         if this.get_color() == self.color && this.get_type() == self.piece_type && this.get_position() == self.position {
             match mv.get_move_type() {
@@ -70,6 +70,7 @@ impl Piece for King {
                 _ => {},
             }
             self.position = to_position.clone();
+            this.set_position(to_position.clone());
             board.put_down_piece(&self.position, Some(this));
             self.update_moves(board.clone());
         }
@@ -93,6 +94,10 @@ impl Piece for King {
 
     fn get_type(&self) -> PieceType {
         PieceType::King
+    }
+
+    fn set_position(&mut self, position: (usize, usize)) {
+        self.position = position;
     }
 }
 
