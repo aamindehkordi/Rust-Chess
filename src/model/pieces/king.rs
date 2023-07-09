@@ -1,16 +1,19 @@
 use std::fmt::Display;
 use crate::model::board::Board;
 use crate::model::pieces::piece::{Color, Piece, PieceType};
+use crate::model::r#move::{Move, MoveType};
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq)]
 pub struct King {
     color: Color,
     position: (usize, usize),
     directions: [(i32, i32); 8],
-    moves: Vec<(usize, usize)>,
+    moves: Vec<Move>,
+    piece_type: PieceType,
     has_moved: bool,
-    in_check: Option<bool>,
-    has_moves: Option<bool>,
+    in_check: bool,
+    has_moves: bool,
+    can_take: bool,
 }
 
 impl Display for King {
@@ -29,21 +32,46 @@ impl Piece for King {
             position,
             directions: [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)],
             moves: Vec::new(),
+            piece_type: PieceType::King,
             has_moved: false,
-            in_check: None,
-            has_moves: None,
+            in_check: false,
+            has_moves: true,
+            can_take: false,
         }
     }
-    fn calc_valid_moves(&mut self, board: &Board) {
+
+    fn update_moves(&mut self, board: Board) {
         self.moves.clear();
-        // Check all possible moves
-        for &direction in &self.directions {
+
+        for direction in self.directions {
             if let Some(new_position) = self.get_new_position(self.position, direction) {
-                let tile = board.get_tile(new_position);
-                if tile.is_empty() || tile.get_piece().as_ref().map_or(false, |p| p.get_color() != self.color) {
-                    self.moves.push(new_position);
-                }
+                self.check_and_add_move(board.clone(), new_position);
             }
+        }
+
+        if self.moves.is_empty() {
+            self.has_moves = false;
+        }
+    }
+
+    fn execute(&mut self, board: &mut Board, mv: Move) {
+        let to_position = mv.get_to().get_position();
+        let this = board.pick_up_piece(&self.position).unwrap();
+
+        if this.get_color() == self.color && this.get_type() == self.piece_type && this.get_position() == self.position {
+            match mv.get_move_type() {
+                MoveType::Normal | MoveType::Castle(_) => {
+                    board.move_piece(&self.position, to_position);
+                },
+                MoveType::Capture => {
+                    board.move_piece(&self.position, to_position);
+                    board.take_piece(mv.get_to());
+                },
+                _ => {},
+            }
+            self.position = to_position.clone();
+            board.put_down_piece(&self.position, Some(this));
+            self.update_moves(board.clone());
         }
     }
 
@@ -59,11 +87,45 @@ impl Piece for King {
         self.position
     }
 
-    fn get_moves(&self) -> &Vec<(usize, usize)> {
+    fn get_moves(&self) -> &Vec<Move> {
         &self.moves
     }
 
     fn get_type(&self) -> PieceType {
         PieceType::King
     }
+}
+
+impl King {
+    fn check_and_add_move(&mut self, board: Board, new_position: (usize, usize)) {
+        let from_tile = board.get_tile(self.position).clone();
+        let mut to_tile = board.get_tile(new_position).clone();
+        to_tile.attacked(from_tile.position);
+        let mv_type = if to_tile.is_empty() {
+            MoveType::Normal
+        } else {
+            MoveType::Capture
+        };
+
+        // Create a copy of the board and make the move on the copied board.
+        let mut board_copy = board.clone();
+        board_copy.move_piece(&self.position, &new_position);
+
+        // Only add the move if it wouldn't put the king in check.
+        if !board_copy.is_king_in_check(&self.color) {
+            let mut mv = Move::new(mv_type.clone(), from_tile, to_tile);
+            mv.set_valid(true);
+            self.moves.push(mv);
+            self.has_moves = true;
+            if mv_type == MoveType::Capture {
+                self.can_take = true;
+            }
+        }
+
+    }
+
+    // A function to add castling moves could also be added here.
+    // This would involve checking if the king and rook have not moved,
+    // and if there are no pieces between them, and if the squares the king would
+    // move over are not under attack.
 }
