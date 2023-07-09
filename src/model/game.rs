@@ -1,5 +1,7 @@
 use crate::model::board::Board;
 use std::error::Error;
+use crate::model::pieces::piece::PieceType;
+use crate::model::r#move::{Move, MoveType};
 
 pub struct Game {
     board: Board,
@@ -15,21 +17,17 @@ impl Game {
         &self.board
     }
 
-    pub fn valid_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
-        let mut piece = self.board.get_piece(from).expect("No piece at from");
-
-        // update that piece's moves
-        piece.calc_valid_moves(&self.board);
-
-        // check if the move is in the piece's moves
-        piece.get_moves().contains(&to)
-
+    pub fn make_move(&mut self, from: (usize, usize), to: (usize, usize)) -> Result<(), Box<dyn Error>> {
+        let piece = self.board.get_piece(from).expect("No piece at from");
+        let mv = piece.create_move(self.get_board(), to);
+        self.execute_move(mv)?;
+        self.board.change_current_player();
+        Ok(())
     }
 
-    pub fn make_move(&mut self, from: (usize, usize), to: (usize, usize)) -> Result<(), Box<dyn Error>> {
-        let mut piece = self.board.get_piece(from).expect("No piece at from");
-        piece.execute_move(&mut self.board, from, to)?;
-        self.board.change_current_player();
+    pub fn execute_move(&mut self, mv: Move) -> Result<(), Box<dyn Error>> {
+        let from = mv.get_from().position;
+        self.board.get_piece(from).expect("No piece at from").execute(&mut self.board, mv);
         Ok(())
     }
 }
