@@ -100,7 +100,7 @@ impl Rook {
         };
 
         // Create a copy of the board and make the move on the copied board.
-        let mut board_copy = board.clone();
+        let mut board_copy = board;
         board_copy.move_piece(&self.position, &new_position);
 
         // Only add the move if it wouldn't put the king in check.

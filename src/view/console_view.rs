@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Write;
 use crate::model::game::Game;
-use crate::model::pieces::piece::{Color, PieceType};
+use crate::model::pieces::piece::{Color};
 
 pub struct ConsoleView;
 
@@ -17,7 +17,7 @@ impl ConsoleView {
             for j in 0..8 {
                 let tile = board.get_tile((i, j));
                 if let Some(piece) = tile.get_piece() {
-                    print!("{}", piece);
+                    print!("{piece}");
                 } else {
                     print!(".");
                 }
@@ -33,7 +33,7 @@ impl ConsoleView {
         io::stdout().flush().unwrap();
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
-        self.notation_to_coords(&input.trim())
+        self.notation_to_coords(input.trim())
     }
 
     /// Converts chess notation to coordinates.
@@ -55,14 +55,14 @@ impl ConsoleView {
         if notation.len() != 2 { // if the notation is not 2 characters long
             return Err("Invalid notation");
         }
-        let file = notation.chars().nth(0).unwrap(); // get the first character
+        let file = notation.chars().next().unwrap(); // get the first character
         let rank = notation.chars().nth(1).unwrap(); // get the second character
         let file = match file {
             'a'..='h' => file as usize - 'a' as usize, // convert the file to a number
             _ => return Err("Invalid file"), // if the file is not a-h, return an error
         };
         let rank = match rank.to_digit(10) {
-            Some(n) if n >= 1 && n <= 8 => n as usize - 1, // convert the rank to a number
+            Some(n) if (1..=8).contains(&n) => n as usize - 1, // convert the rank to a number
             _ => return Err("Invalid rank"), // if the rank is not 1-8, return an error
         };
         Ok((rank, file)) // return the coordinates

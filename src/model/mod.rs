@@ -1,5 +1,5 @@
-pub(crate) mod board;
-pub(crate) mod game;
-pub(crate) mod pieces;
-pub(crate) mod tile;
-pub(crate) mod r#move;
+pub mod board;
+pub mod game;
+pub mod pieces;
+pub mod tile;
+pub mod r#move;

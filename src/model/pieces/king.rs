@@ -69,8 +69,8 @@ impl Piece for King {
                 },
                 _ => {},
             }
-            self.position = to_position.clone();
-            this.set_position(to_position.clone());
+            self.position = *to_position;
+            this.set_position(*to_position);
             board.put_down_piece(&self.position, Some(this));
             self.update_moves(board.clone());
         }
@@ -113,7 +113,7 @@ impl King {
         };
 
         // Create a copy of the board and make the move on the copied board.
-        let mut board_copy = board.clone();
+        let mut board_copy = board;
         board_copy.move_piece(&self.position, &new_position);
 
         // Only add the move if it wouldn't put the king in check.

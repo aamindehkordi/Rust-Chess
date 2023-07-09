@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 use crate::model::board::Board;
 use crate::model::r#move::{Move, MoveType};
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Color {
     White,
     Black,
@@ -11,8 +11,8 @@ pub enum Color {
 impl Color {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Color::White, Color::White) => true,
-            (Color::Black, Color::Black) => true,
+            (Self::White, Self::White) => true,
+            (Self::Black, Self::Black) => true,
             _ => false,
         }
     }
@@ -47,8 +47,8 @@ pub trait Piece: Display {
                 },
                 _ => {},
             }
-            self.set_position(to_position.clone());
-            this.set_position(to_position.clone());
+            self.set_position(*to_position);
+            this.set_position(*to_position);
             board.put_down_piece(&self.get_position(), Some(this));
             self.update_moves(board.clone());
         }
@@ -56,7 +56,7 @@ pub trait Piece: Display {
     fn clone_box(&self) -> Box<dyn Piece>;
 
     fn is_in_bounds(&self, x: i32, y: i32) -> bool where Self: Sized {
-        x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE
+        (0..BOARD_SIZE).contains(&x) && (0..BOARD_SIZE).contains(&y)
     }
 
     fn get_new_position(&self, position: (usize, usize), direction: (i32, i32)) -> Option<(usize, usize)> where Self: Sized {
@@ -80,7 +80,7 @@ pub trait Piece: Display {
     fn set_position(&mut self, position: (usize, usize));
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PieceType {
     Pawn,
     Rook,
@@ -93,12 +93,12 @@ pub enum PieceType {
 impl PieceType {
     pub fn get_value(&self) -> i32 {
         match self {
-            PieceType::Pawn => 1,
-            PieceType::Rook => 5,
-            PieceType::Knight => 3,
-            PieceType::Bishop => 3,
-            PieceType::Queen => 9,
-            PieceType::King => 0,
+            Self::Pawn => 1,
+            Self::Rook => 5,
+            Self::Knight => 3,
+            Self::Bishop => 3,
+            Self::Queen => 9,
+            Self::King => 0,
         }
     }
 

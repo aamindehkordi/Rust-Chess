@@ -96,8 +96,8 @@ impl Piece for Pawn {
                 },
                 _ => {},
             }
-            self.position = to_position.clone();
-            this.set_position(to_position.clone());
+            self.position = *to_position;
+            this.set_position(*to_position);
             board.put_down_piece(&self.position, Some(this));
             self.first_move = false;
             self.update_moves(board.clone());
@@ -145,16 +145,14 @@ impl Pawn {
             } else {
                 MoveType::Normal
             }
+        } else if self.position.1 as i32 - new_position.1 as i32 != 0 {
+            MoveType::Capture
         } else {
-            if self.position.1 as i32 - new_position.1 as i32 != 0 {
-                MoveType::Capture
-            } else {
-                MoveType::Invalid
-            }
+            MoveType::Invalid
         };
 
         // Create a copy of the board and make the move on the copied board.
-        let mut board_copy = board.clone();
+        let mut board_copy = board;
         board_copy.move_piece(&self.position, &new_position);
 
         // Only add the move if it wouldn't put the king in check.

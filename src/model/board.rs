@@ -9,7 +9,7 @@ use crate::model::pieces::king::King;
 use crate::model::pieces::piece::Piece;
 use crate::model::pieces::piece::Color;
 use crate::model::pieces::piece::PieceType;
-use crate::model::r#move::{Move, MoveType, CastleType};
+
 use crate::model::tile::Tile;
 
 pub struct Board {
@@ -21,11 +21,11 @@ pub struct Board {
 impl Clone for Board {
     fn clone(&self) -> Self {
         let mut tiles = Vec::new();
-        for tile in self.tiles.iter() {
+        for tile in &self.tiles {
             tiles.push(tile.clone());
         }
         let mut taken_pieces = Vec::new();
-        for piece in self.taken_pieces.iter() {
+        for piece in &self.taken_pieces {
             taken_pieces.push(piece.clone_box());
         }
         Self {
@@ -39,7 +39,7 @@ impl Clone for Board {
 impl Board {
     pub fn new() -> Self {
         let mut tiles = Vec::new();
-        let mut taken_pieces = Vec::new();
+        let taken_pieces = Vec::new();
         for i in 0..8 {
             for j in 0..8 {
                 // Create the piece for the tile
@@ -139,8 +139,8 @@ impl Board {
                         if piece.get_color() != *color {
                             let piece_moves = piece.get_moves();
                             for piece_move in piece_moves {
-                                if king_moves.contains(&piece_move) {
-                                    println!("{:?} is in check!", color);
+                                if king_moves.contains(piece_move) {
+                                    println!("{color:?} is in check!");
                                     return true;
                                 }
                             }

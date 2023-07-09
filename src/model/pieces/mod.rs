@@ -1,7 +1,7 @@
-pub(crate) mod pawn;
-pub(crate) mod rook;
-pub(crate) mod knight;
-pub(crate) mod bishop;
-pub(crate) mod queen;
-pub(crate) mod king;
-pub(crate) mod piece;
+pub mod pawn;
+pub mod rook;
+pub mod knight;
+pub mod bishop;
+pub mod queen;
+pub mod king;
+pub mod piece;

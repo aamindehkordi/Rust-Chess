@@ -1,4 +1,4 @@
-use crate::model::pieces::piece::{Color, Piece, PieceType};
+use crate::model::pieces::piece::{Piece};
 
 pub struct Tile {
     pub(crate) position: (usize, usize),
@@ -22,7 +22,7 @@ impl PartialEq for Tile {
 
 impl Clone for Tile {
     fn clone(&self) -> Self {
-        Tile {
+        Self {
             position: self.position,
             piece: self.piece.as_ref().map(|piece| piece.clone_box()),
             attacked_by: self.attacked_by.clone(),

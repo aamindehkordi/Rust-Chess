@@ -1,7 +1,7 @@
 use crate::model::board::Board;
 use std::error::Error;
-use crate::model::pieces::piece::PieceType;
-use crate::model::r#move::{Move, MoveType};
+
+use crate::model::r#move::{Move};
 
 pub struct Game {
     board: Board,
@@ -9,7 +9,7 @@ pub struct Game {
 
 impl Game {
     pub fn new() -> Self {
-        let mut board = Board::new();
+        let board = Board::new();
         Self { board }
     }
 

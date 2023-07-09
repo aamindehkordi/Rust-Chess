@@ -1,7 +1,7 @@
-use crate::model::pieces::piece::{Piece, PieceType};
+use crate::model::pieces::piece::{PieceType};
 use crate::model::tile::Tile;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// An enum that represents the type of move.
 ///
 /// # Variants
@@ -23,7 +23,7 @@ pub enum MoveType {
     Invalid,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// An enum that represents the type of castle.
 ///
 /// # Variants
