@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use crate::model::board::Board;
-use crate::model::pieces::pawn::Pawn;
+use crate::model::r#move::{Move, MoveType};
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Color {
@@ -21,18 +21,19 @@ impl Color {
 const BOARD_SIZE: i32 = 8;
 pub trait Piece: Display {
     fn new(color: Color, position: (usize, usize)) -> Self where Self: Sized;
-    fn calc_valid_moves(&mut self, board: &Board);
-    fn clone_box(&self) -> Box<dyn Piece>;
-    fn execute_move(&mut self, board: &mut Board, from: (usize, usize), to: (usize, usize)) -> Result<(), String> {
-        self.calc_valid_moves(board);
-        let moves = self.get_moves();
-        if moves.contains(&to) {
-            board.move_piece(from, to);
-            Ok(())
+    fn create_move(&self, board: &Board, new_position: (usize, usize)) -> Move {
+        let from_tile = board.get_tile(self.get_position());
+        let to_tile = board.get_tile(new_position);
+        let mv_type = if to_tile.is_empty() {
+            MoveType::Normal
         } else {
-            Err(format!("Invalid move: {:?} to {:?}", from, to))
-        }
+            MoveType::Capture
+        };
+        Move::new(mv_type, from_tile.clone(), to_tile.clone())
     }
+    fn update_moves(&mut self, board: Board);
+    fn execute(&mut self, board: &mut Board, mv: Move);
+    fn clone_box(&self) -> Box<dyn Piece>;
 
     fn is_in_bounds(&self, x: i32, y: i32) -> bool where Self: Sized {
         x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE
@@ -51,14 +52,15 @@ pub trait Piece: Display {
             None
         }
     }
+
     fn get_color(&self) -> Color;
     fn get_position(&self) -> (usize, usize);
-    fn get_moves(&self) -> &Vec<(usize, usize)>;
+    fn get_moves(&self) -> &Vec<Move>;
     fn get_type(&self) -> PieceType;
 
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum PieceType {
     Pawn,
     Rook,
@@ -66,4 +68,19 @@ pub enum PieceType {
     Bishop,
     Queen,
     King,
+}
+
+impl PieceType {
+    pub fn get_value(&self) -> i32 {
+        match self {
+            PieceType::Pawn => 1,
+            PieceType::Rook => 5,
+            PieceType::Knight => 3,
+            PieceType::Bishop => 3,
+            PieceType::Queen => 9,
+            PieceType::King => 0,
+        }
+    }
+
+
 }
