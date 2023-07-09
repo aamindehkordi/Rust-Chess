@@ -11,5 +11,4 @@ fn main() {
     let mut controller = GameController::new();
     controller.start_game();
 
-
     }
