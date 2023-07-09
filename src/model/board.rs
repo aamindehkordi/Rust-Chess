@@ -9,16 +9,37 @@ use crate::model::pieces::king::King;
 use crate::model::pieces::piece::Piece;
 use crate::model::pieces::piece::Color;
 use crate::model::pieces::piece::PieceType;
+use crate::model::r#move::{Move, MoveType, CastleType};
 use crate::model::tile::Tile;
 
 pub struct Board {
     pub tiles: Vec<Tile>,
     pub current_turn: Color,
+    pub taken_pieces: Vec<Box<dyn Piece>>,
+}
+
+impl Clone for Board {
+    fn clone(&self) -> Self {
+        let mut tiles = Vec::new();
+        for tile in self.tiles.iter() {
+            tiles.push(tile.clone());
+        }
+        let mut taken_pieces = Vec::new();
+        for piece in self.taken_pieces.iter() {
+            taken_pieces.push(piece.clone_box());
+        }
+        Self {
+            tiles,
+            current_turn: self.current_turn.clone(),
+            taken_pieces,
+        }
+    }
 }
 
 impl Board {
     pub fn new() -> Self {
         let mut tiles = Vec::new();
+        let mut taken_pieces = Vec::new();
         for i in 0..8 {
             for j in 0..8 {
                 // Create the piece for the tile
@@ -46,8 +67,10 @@ impl Board {
                 tiles.push(Tile::new((i, j), piece));
             }
         }
-        Self { tiles, current_turn: Color::White }
+        Self { tiles, current_turn: Color::White, taken_pieces }
     }
+
+
 
 
     // Getters
@@ -64,7 +87,12 @@ impl Board {
         &mut self.tiles[idx.0 * 8 + idx.1]
     }
     pub fn get_piece(&self, idx: (usize, usize)) -> Option<Box<dyn Piece>> {
-        self.tiles[idx.0 * 8 + idx.1].piece.as_ref().map(|piece| piece.clone_box())
+        let tile = &self.tiles[idx.0 * 8 + idx.1];
+        let mut piece = tile.get_piece().as_ref().map(|piece| piece.clone_box());
+        if Option::is_some(&piece) {
+            piece.as_mut()?.update_moves(self.clone());
+        }
+        piece
     }
 
     pub fn find_piece(&self, piece: &Box<dyn Piece>) -> Option<(usize, usize)> {
@@ -80,17 +108,17 @@ impl Board {
         None
     }
 
-    pub fn find_king(&self, color: Color) -> Option<(usize, usize)> {
+    pub fn find_king(&self, color: Color) -> (usize, usize) {
         for i in 0..8 {
             for j in 0..8 {
                 if let Some(p) = &self.tiles[i * 8 + j].piece {
                     if p.get_color() == color && p.get_type() == PieceType::King {
-                        return Some((i, j));
+                        return (i, j);
                     }
                 }
             }
         }
-        None
+        panic!("King not found");
     }
 
 
@@ -101,6 +129,30 @@ impl Board {
             Color::White => Color::Black,
             Color::Black => Color::White,
         };
+    }
+
+    pub fn is_king_in_check(&self, color: &Color) -> bool {
+        let king_idx = self.find_king(color.clone());
+        if let idx = king_idx {
+            let king = self.get_piece(idx).expect("King not found");
+            let king_moves = king.get_moves();
+            for i in 0..8 {
+                for j in 0..8 {
+                    if let Some(piece) = self.get_piece((i, j)) {
+                        if piece.get_color() != *color {
+                            let piece_moves = piece.get_moves();
+                            for piece_move in piece_moves {
+                                if king_moves.contains(&piece_move) {
+                                    println!("{:?} is in check!", color);
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        false
     }
 
 
@@ -120,19 +172,26 @@ impl Board {
     /// Pick up a piece from a tile.
     /// Returns the piece that was picked up.
     /// Returns None if there was no piece on the tile.
-    pub fn pick_up_piece(&mut self, idx: (usize, usize)) -> Option<Box<dyn Piece>> {
+    pub fn pick_up_piece(&mut self, idx: &(usize, usize)) -> Option<Box<dyn Piece>> {
         self.tiles[idx.0 * 8 + idx.1].piece.take()
     }
 
 
     /// Puts down the picked up piece on a tile.
-    pub fn put_down_piece(&mut self, idx: (usize, usize), piece: Box<dyn Piece>) {
-        self.tiles[idx.0 * 8 + idx.1].piece = Some(piece);
+    pub fn put_down_piece(&mut self, idx: &(usize, usize), piece: Option<Box<dyn Piece>>) {
+        self.tiles[idx.0 * 8 + idx.1].piece = piece;
     }
 
     /// Moves a piece from one tile to another.
-    pub fn move_piece(&mut self, from: (usize, usize), to: (usize, usize)) {
-        let piece = self.pick_up_piece(from).unwrap();
+    pub fn move_piece(&mut self, from: &(usize, usize), to: &(usize, usize)) {
+        let piece = self.pick_up_piece(from);
         self.put_down_piece(to, piece);
+    }
+
+    /// Moves a taken piece to the taken pieces vector.
+    pub fn take_piece(&mut self, tile: &Tile) {
+        let idx = tile.position;
+        let piece = self.tiles[idx.0 * 8 + idx.1].piece.take().unwrap();
+        self.taken_pieces.push(piece);
     }
 }
