@@ -88,12 +88,9 @@ impl Board {
     }
     pub fn get_piece(&self, idx: (usize, usize)) -> Option<Box<dyn Piece>> {
         let tile = &self.tiles[idx.0 * 8 + idx.1];
-        let mut piece = tile.get_piece().as_ref().map(|piece| piece.clone_box());
-        if Option::is_some(&piece) {
-            piece.as_mut()?.update_moves(self.clone());
-        }
-        piece
+        tile.get_piece().as_ref().map(|piece| piece.clone_box())
     }
+
 
     pub fn find_piece(&self, piece: &Box<dyn Piece>) -> Option<(usize, usize)> {
         for i in 0..8 {
@@ -111,8 +108,8 @@ impl Board {
     pub fn find_king(&self, color: Color) -> (usize, usize) {
         for i in 0..8 {
             for j in 0..8 {
-                if let Some(p) = &self.tiles[i * 8 + j].piece {
-                    if p.get_color() == color && p.get_type() == PieceType::King {
+                if let Some(piece) = self.get_piece((i, j)) {
+                    if piece.get_color() == color && piece.get_type() == PieceType::King {
                         return (i, j);
                     }
                 }
@@ -184,9 +181,11 @@ impl Board {
 
     /// Moves a piece from one tile to another.
     pub fn move_piece(&mut self, from: &(usize, usize), to: &(usize, usize)) {
-        let piece = self.pick_up_piece(from);
-        self.put_down_piece(to, piece);
+    if let Some(mut piece) = self.pick_up_piece(from) {
+        piece.set_position(*to);
+        self.put_down_piece(to, Some(piece));
     }
+}
 
     /// Moves a taken piece to the taken pieces vector.
     pub fn take_piece(&mut self, tile: &Tile) {

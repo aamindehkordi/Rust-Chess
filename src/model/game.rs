@@ -18,8 +18,10 @@ impl Game {
     }
 
     pub fn make_move(&mut self, from: (usize, usize), to: (usize, usize)) -> Result<(), Box<dyn Error>> {
-        let piece = self.board.get_piece(from).expect("No piece at from");
+        let mut piece = self.board.get_piece(from).expect("No piece at from");
+        piece.update_moves(self.get_board().clone());
         let mv = piece.create_move(self.get_board(), to);
+
         self.execute_move(mv)?;
         self.board.change_current_player();
         Ok(())
