@@ -33,11 +33,11 @@ pub trait Piece: Display + Debug  {
         else {
             MoveType::Capture
         };
-        Move::new(mv_type, self.position(), new_position)
+        Move::new(mv_type, self.get_position(), new_position)
     }
     fn update_moves(&mut self, board: Board);
     fn execute(&mut self, board: &mut Board, mv: Move) {
-        let to_position = mv.get_to().get_position();
+        let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.get_position()).unwrap();
 
         if this.get_color() == self.get_color() && this.get_type() == self.get_type() && this.get_position() == self.get_position() {
@@ -77,18 +77,13 @@ pub trait Piece: Display + Debug  {
         }
     }
 
-    fn king_ok(&self, board: Board, mut mv: &mut Move) -> bool where Self: Sized {
-
+    fn king_ok(&mut self, board: Board, mut mv: &mut Move) -> bool where Self: Sized {
         if !board.is_king_in_check(&self.get_color()) {
             mv.set_valid(true);
-            self.moves.push(mv);
-            self.has_moves = true;
-            if mv_type == MoveType::Capture {
-                self.can_take = true;
-            }
-            return true;
+            self.push_move(mv);
+            return true
         }
-        false
+        return false
     }
 
     fn get_color(&self) -> Color;
@@ -96,6 +91,7 @@ pub trait Piece: Display + Debug  {
     fn get_moves(&self) -> &Vec<Move>;
     fn get_type(&self) -> PieceType;
     fn set_position(&mut self, position: (usize, usize));
+    fn push_move(&mut self, mv: &mut Move);
 
 }
 

@@ -185,8 +185,7 @@ impl Board {
     }
 
     /// Moves a taken piece to the taken pieces vector.
-    pub fn take_piece(&mut self, tile: &(usize, usize)) {
-        let idx = tile.position;
+    pub fn take_piece(&mut self, idx: &(usize, usize)) {
         let piece = self.tiles[idx.0 * 8 + idx.1].piece.take().unwrap();
         self.taken_pieces.push(piece);
     }
