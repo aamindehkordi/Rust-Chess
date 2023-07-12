@@ -22,6 +22,8 @@ const BOARD_SIZE: i32 = 8;
 pub trait Piece: Display + Debug  {
     fn new(color: Color, position: (usize, usize)) -> Self where Self: Sized;
     fn create_move(&self, board: &Board, new_position: (usize, usize)) -> Move {
+        let from_tile = board.get_tile(self.get_position());
+        let to_tile = board.get_tile(new_position);
         let mv_type = MoveType::Invalid;
         if to_tile.is_empty() {
             MoveType::Normal
@@ -75,11 +77,26 @@ pub trait Piece: Display + Debug  {
         }
     }
 
+    fn king_ok(&self, board: Board, mut mv: &mut Move) -> bool where Self: Sized {
+
+        if !board.is_king_in_check(&self.get_color()) {
+            mv.set_valid(true);
+            self.moves.push(mv);
+            self.has_moves = true;
+            if mv_type == MoveType::Capture {
+                self.can_take = true;
+            }
+            return true;
+        }
+        false
+    }
+
     fn get_color(&self) -> Color;
     fn get_position(&self) -> (usize, usize);
     fn get_moves(&self) -> &Vec<Move>;
     fn get_type(&self) -> PieceType;
     fn set_position(&mut self, position: (usize, usize));
+
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

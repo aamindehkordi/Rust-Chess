@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use crate::model::board::Board;
 use crate::model::pieces::piece::{Color, Piece, PieceType};
 use crate::model::r#move::{Move, MoveType};
@@ -18,6 +18,15 @@ pub struct Pawn {
 }
 
 impl Display for Pawn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.color {
+            Color::White => write!(f, "P"),
+            Color::Black => write!(f, "p"),
+        }
+    }
+}
+
+impl Debug for Pawn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.color {
             Color::White => write!(f, "P"),
@@ -47,8 +56,6 @@ impl Piece for Pawn {
     }
 
     fn create_move(&self, board: &Board, new_position: (usize, usize)) -> Move {
-        let from_tile = board.get_tile(self.position);
-        let to_tile = board.get_tile(new_position);
         let mv_type = if to_tile.is_empty() {
             if self.first_move && ((self.position.0 as i32 - new_position.0 as i32).abs() == 2) {
                 MoveType::DoublePush
@@ -139,16 +146,17 @@ impl Pawn {
     fn check_and_add_move(&mut self, board: Board, new_position: (usize, usize)) {
         let from_tile = board.get_tile(self.position).clone();
         let to_tile = board.get_tile(new_position).clone();
-        let mv_type = if to_tile.is_empty() {
+        let mut mv_type = MoveType::Invalid;
+        if to_tile.is_empty() {
             if self.first_move && ((self.position.0 as i32 - new_position.0 as i32).abs() == 2) {
-                MoveType::DoublePush
+                mv_type = MoveType::DoublePush;
             } else {
-                MoveType::Normal
+                mv_type = MoveType::Normal;
             }
         } else if self.position.1 as i32 - new_position.1 as i32 != 0 {
-            MoveType::Capture
+            mv_type = MoveType::Capture;
         } else {
-            MoveType::Invalid
+            mv_type = MoveType::Invalid;
         };
 
         // Create a copy of the board and make the move on the copied board.
@@ -156,14 +164,7 @@ impl Pawn {
         board_copy.move_piece(&self.position, &new_position);
 
         // Only add the move if it wouldn't put the king in check.
-        if !board_copy.is_king_in_check(&self.color) {
-            let mut mv = Move::new(mv_type.clone(), from_tile, to_tile);
-            mv.set_valid(true);
-            self.moves.push(mv);
-            self.has_moves = true;
-            if mv_type == MoveType::Capture {
-                self.can_take = true;
-            }
-        }
+        let mut mv = Move::new(mv_type.clone(), self.position, new_position);
+        self.king_ok(board_copy, &mut mv);
     }
 }

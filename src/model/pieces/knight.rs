@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use crate::model::board::Board;
 use crate::model::pieces::piece::{Color, Piece, PieceType};
 use crate::model::r#move::{Move, MoveType};
@@ -15,8 +15,16 @@ pub struct Knight {
     pinned: bool,
     has_moves: bool,
 }
-
 impl Display for Knight {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.color {
+            Color::White => write!(f, "N"),
+            Color::Black => write!(f, "n"),
+        }
+    }
+}
+
+impl Debug for Knight {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.color {
             Color::White => write!(f, "N"),
@@ -42,25 +50,23 @@ impl Piece for Knight {
 
     fn update_moves(&mut self, board: Board) {
         self.moves.clear();
-
         if self.pinned && !self.can_take {
             self.update_pinned();
+            self.has_moves = false;
+            self.can_take = false;
             return;
         }
-
         for direction in self.directions {
             if let Some(new_position) = self.get_new_position(self.position, direction) {
                 self.check_and_add_move(board.clone(), new_position);
             }
         }
-
         if self.moves.is_empty() {
             self.has_moves = false;
             self.can_take = false;
         }
+        println!("Updated moves for piece at position: {:?}", self.position);
     }
-
-
 
     fn clone_box(&self) -> Box<dyn Piece> {
         Box::new(self.clone())
@@ -79,7 +85,7 @@ impl Piece for Knight {
     }
 
     fn get_type(&self) -> PieceType {
-        PieceType::Knight
+        self.piece_type
     }
 
     fn set_position(&mut self, position: (usize, usize)) {
@@ -95,27 +101,32 @@ impl Knight {
     }
 
     fn check_and_add_move(&mut self, board: Board, new_position: (usize, usize)) {
+        println!("Checking move to position: {:?}", new_position);
         let from_tile = board.get_tile(self.position).clone();
         let to_tile = board.get_tile(new_position).clone();
         let mv_type = if to_tile.is_empty() {
             MoveType::Normal
-        } else {
+        } else if to_tile.get_piece().unwrap().get_color() != self.color {
             MoveType::Capture
-        };
+        } else { MoveType::Invalid };
 
-        // Create a copy of the board and make the move on the copied board.
-        let mut board_copy = board;
-        board_copy.move_piece(&self.position, &new_position);
 
-        // Only add the move if it wouldn't put the king in check.
-        if !board_copy.is_king_in_check(&self.color) {
-            let mut mv = Move::new(mv_type.clone(), from_tile, to_tile);
-            mv.set_valid(true);
-            self.moves.push(mv);
-            self.has_moves = true;
-            if mv_type == MoveType::Capture {
+        let mut mv = Move::new(mv_type, self.position, new_position);
+
+        if to_tile.is_empty() || to_tile.get_piece().as_ref().unwrap().get_color() != self.get_color() {
+            let mut board_copy = board;
+            board_copy.move_piece(&self.position, &new_position);
+
+            if !board_copy.is_king_in_check(&self.color) {
+                mv.set_valid(true);
+                self.moves.push(mv);
+                self.has_moves = true;
                 self.can_take = true;
             }
+        } else {
+            mv.set_valid(false);
+            self.has_moves = true;
+            self.can_take = true;
         }
     }
 }

@@ -70,9 +70,6 @@ impl Board {
         Self { tiles, current_turn: Color::White, taken_pieces }
     }
 
-
-
-
     // Getters
     pub fn get_current_player(&self) -> &Color {
         &self.current_turn
@@ -181,14 +178,14 @@ impl Board {
 
     /// Moves a piece from one tile to another.
     pub fn move_piece(&mut self, from: &(usize, usize), to: &(usize, usize)) {
-    if let Some(mut piece) = self.pick_up_piece(from) {
-        piece.set_position(*to);
-        self.put_down_piece(to, Some(piece));
+        if let Some(mut piece) = self.pick_up_piece(from) {
+            piece.set_position(*to);
+            self.put_down_piece(to, Some(piece));
+        }
     }
-}
 
     /// Moves a taken piece to the taken pieces vector.
-    pub fn take_piece(&mut self, tile: &Tile) {
+    pub fn take_piece(&mut self, tile: &(usize, usize)) {
         let idx = tile.position;
         let piece = self.tiles[idx.0 * 8 + idx.1].piece.take().unwrap();
         self.taken_pieces.push(piece);
