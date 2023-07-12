@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use crate::model::pieces::piece::{Piece};
 
 pub struct Tile {
@@ -27,6 +28,16 @@ impl Clone for Tile {
             piece: self.piece.as_ref().map(|piece| piece.clone_box()),
             attacked_by: self.attacked_by.clone(),
         }
+    }
+}
+
+impl Debug for Tile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let piece = match &self.piece {
+            Some(piece) => format!("{:?}", piece),
+            None => String::from("None"),
+        };
+        write!(f, "Tile {{ position: {:?}, piece: {} }}", self.position, piece)
     }
 }
 

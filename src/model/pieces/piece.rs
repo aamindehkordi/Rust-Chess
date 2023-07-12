@@ -19,17 +19,19 @@ impl Color {
 }
 
 const BOARD_SIZE: i32 = 8;
-pub trait Piece: Display {
+pub trait Piece: Display + Debug  {
     fn new(color: Color, position: (usize, usize)) -> Self where Self: Sized;
     fn create_move(&self, board: &Board, new_position: (usize, usize)) -> Move {
-        let from_tile = board.get_tile(self.get_position());
-        let to_tile = board.get_tile(new_position);
-        let mv_type = if to_tile.is_empty() {
+        let mv_type = MoveType::Invalid;
+        if to_tile.is_empty() {
             MoveType::Normal
-        } else {
+        } else if self.get_color() == to_tile.get_piece().as_ref().unwrap().get_color() {
+            MoveType::Invalid
+        }
+        else {
             MoveType::Capture
         };
-        Move::new(mv_type, from_tile.clone(), to_tile.clone())
+        Move::new(mv_type, self.position(), new_position)
     }
     fn update_moves(&mut self, board: Board);
     fn execute(&mut self, board: &mut Board, mv: Move) {
