@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use crate::model::board::Board;
 use crate::model::pieces::piece::{Color, Piece, PieceType};
 use crate::model::r#move::{Move, MoveType};
@@ -25,6 +25,15 @@ impl Display for Bishop {
     }
 }
 
+impl Debug for Bishop {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.color {
+            Color::White => write!(f, "B"),
+            Color::Black => write!(f, "b"),
+        }
+    }
+}
+
 impl Piece for Bishop {
     fn new(color: Color, position: (usize, usize)) -> Self {
         Self {
@@ -38,17 +47,6 @@ impl Piece for Bishop {
             pinned: false,
             has_moves: true,
         }
-    }
-
-    fn create_move(&self, board: &Board, new_position: (usize, usize)) -> Move {
-        let from_tile = board.get_tile(self.position);
-        let to_tile = board.get_tile(new_position);
-        let mv_type = if to_tile.is_empty() {
-            MoveType::Normal
-        } else {
-            MoveType::Capture
-        };
-        Move::new(mv_type, from_tile.clone(), to_tile.clone())
     }
 
     fn update_moves(&mut self, board: Board) {
@@ -96,6 +94,9 @@ impl Piece for Bishop {
     fn set_position(&mut self, position: (usize, usize)) {
         self.position = position;
     }
+    fn push_move(&mut self, mv: &mut Move){
+        self.moves.push(mv.clone());
+    }
 }
 
 impl Bishop {
@@ -108,10 +109,11 @@ impl Bishop {
     fn check_and_add_move(&mut self, board: Board, new_position: (usize, usize)) {
         let from_tile = board.get_tile(self.position).clone();
         let to_tile = board.get_tile(new_position).clone();
-        let mv_type = if to_tile.is_empty() {
-            MoveType::Normal
+        let mut mv_type = MoveType::Invalid;
+        if to_tile.is_empty() { // Check if the tile the piece is moving to is empty.
+            let mv_type = MoveType::Normal;
         } else {
-            MoveType::Capture
+            let mv_type = MoveType::Capture;
         };
 
         // Create a copy of the board and make the move on the copied board.
@@ -120,7 +122,7 @@ impl Bishop {
 
         // Only add the move if it wouldn't put the king in check.
         if !board_copy.is_king_in_check(&self.color) {
-            let mut mv = Move::new(mv_type.clone(), from_tile, to_tile);
+            let mut mv = Move::new(mv_type.clone(), self.position, new_position);
             mv.set_valid(true);
             self.moves.push(mv);
             self.has_moves = true;

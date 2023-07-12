@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use crate::model::board::Board;
 use crate::model::pieces::piece::{Color, Piece, PieceType};
 use crate::model::r#move::{Move, MoveType};
@@ -17,6 +17,15 @@ pub struct King {
 }
 
 impl Display for King {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.color {
+            Color::White => write!(f, "K"),
+            Color::Black => write!(f, "k"),
+        }
+    }
+}
+
+impl Debug for King {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.color {
             Color::White => write!(f, "K"),
@@ -55,7 +64,7 @@ impl Piece for King {
     }
 
     fn execute(&mut self, board: &mut Board, mv: Move) {
-        let to_position = mv.get_to().get_position();
+        let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.position).unwrap();
 
         if this.get_color() == self.color && this.get_type() == self.piece_type && this.get_position() == self.position {
@@ -99,6 +108,10 @@ impl Piece for King {
     fn set_position(&mut self, position: (usize, usize)) {
         self.position = position;
     }
+
+    fn push_move(&mut self, mv: &mut Move){
+        self.moves.push(mv.clone());
+    }
 }
 
 impl King {
@@ -106,11 +119,13 @@ impl King {
         let from_tile = board.get_tile(self.position).clone();
         let mut to_tile = board.get_tile(new_position).clone();
         to_tile.attacked(from_tile.position);
-        let mv_type = if to_tile.is_empty() {
-            MoveType::Normal
+        let mut mv_type = MoveType::Invalid;
+        if to_tile.is_empty() { // Check if the tile the piece is moving to is empty.
+            let mv_type = MoveType::Normal;
         } else {
-            MoveType::Capture
+            let mv_type = MoveType::Capture;
         };
+
 
         // Create a copy of the board and make the move on the copied board.
         let mut board_copy = board;
@@ -118,7 +133,7 @@ impl King {
 
         // Only add the move if it wouldn't put the king in check.
         if !board_copy.is_king_in_check(&self.color) {
-            let mut mv = Move::new(mv_type.clone(), from_tile, to_tile);
+            let mut mv = Move::new(mv_type.clone(), self.position, new_position);
             mv.set_valid(true);
             self.moves.push(mv);
             self.has_moves = true;

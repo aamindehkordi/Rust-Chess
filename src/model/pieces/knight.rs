@@ -91,6 +91,9 @@ impl Piece for Knight {
     fn set_position(&mut self, position: (usize, usize)) {
         self.position = position;
     }
+    fn push_move(&mut self, mv: &mut Move){
+        self.moves.push(mv.clone());
+    }
 }
 
 impl Knight {
@@ -106,7 +109,7 @@ impl Knight {
         let to_tile = board.get_tile(new_position).clone();
         let mv_type = if to_tile.is_empty() {
             MoveType::Normal
-        } else if to_tile.get_piece().unwrap().get_color() != self.color {
+        } else if to_tile.get_piece().as_ref().expect("no piece").get_color() != self.color {
             MoveType::Capture
         } else { MoveType::Invalid };
 
