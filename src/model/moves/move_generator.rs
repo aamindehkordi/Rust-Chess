@@ -1,5 +1,4 @@
 use crate::model::board::Board;
-use crate::model::moves::move_validator::MoveValidator;
 use crate::model::moves::r#move::{Move, MoveType};
 use crate::model::pieces::piece::{Piece, PieceType};
 
