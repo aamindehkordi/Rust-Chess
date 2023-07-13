@@ -59,7 +59,7 @@ impl Piece for Pawn {
         let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.position).unwrap();
 
-        if this.get_color() == self.color && this.get_type() == self.piece_type && this.get_position() == self.position {
+        if this.get_color() == self.color && this.get_type() == self.piece_type && this.get_position() == &self.position {
             match mv.get_move_type() {
                 MoveType::Normal | MoveType::DoublePush => {
                     board.move_piece(&self.position, to_position);
@@ -85,8 +85,8 @@ impl Piece for Pawn {
         self.color.clone()
     }
 
-    fn get_position(&self) -> (usize, usize) {
-        self.position
+    fn get_position(&self) -> &(usize, usize) {
+        &self.position
     }
 
     fn get_moves(&self) -> &Vec<Move> {

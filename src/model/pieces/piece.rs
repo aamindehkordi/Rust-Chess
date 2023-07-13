@@ -72,7 +72,7 @@ pub trait Piece: Display + Debug  {
     }
 
     fn get_color(&self) -> Color;
-    fn get_position(&self) -> (usize, usize);
+    fn get_position(&self) -> &(usize, usize);
     fn get_moves(&self) -> &Vec<Move>;
     fn get_type(&self) -> PieceType;
     fn get_directions(&self) -> &[(i32, i32)];

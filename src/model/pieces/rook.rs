@@ -55,8 +55,8 @@ impl Piece for Rook {
         self.color.clone()
     }
 
-    fn get_position(&self) -> (usize, usize) {
-        self.position
+    fn get_position(&self) -> &(usize, usize) {
+        &self.position
     }
 
     fn get_moves(&self) -> &Vec<Move> {
