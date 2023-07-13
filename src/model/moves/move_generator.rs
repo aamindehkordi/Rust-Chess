@@ -1,6 +1,6 @@
 use crate::model::board::Board;
 use crate::model::moves::r#move::{Move, MoveType};
-use crate::model::pieces::piece::{Piece, PieceType};
+use crate::model::pieces::piece::{Color, Piece, PieceType};
 
 pub struct MoveGenerator { }
 
@@ -41,13 +41,102 @@ impl MoveGenerator {
     }
 
     fn get_move_type_for_pawn(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
-        // Logic to get the move type for a pawn
-        todo!()
+        let mut move_type = MoveType::Invalid;
+        let color = piece.get_color();
+        let (fx, fy) = *from;
+        let (tx, ty) = *to;
+
+        // Normal move: moving one square forward
+        let normal_move = match color {
+            Color::White => fx == tx + 1 && fy == ty,
+            Color::Black => fx + 1 == tx && fy == ty,
+        };
+        if normal_move {
+            return MoveType::Normal;
+        }
+
+        // Double push: moving two squares forward on the pawn's first move
+        let double_push = match color {
+            Color::White => fx == tx + 2 && fy == ty && piece.get_moves().is_empty(),
+            Color::Black => fx + 2 == tx && fy == ty && piece.get_moves().is_empty(),
+        };
+        if double_push {
+            return MoveType::DoublePush;
+        }
+
+        // Capture: taking an opponent's piece diagonally
+        let capture = match color {
+            Color::White => fx == tx + 1 && (fy == ty + 1 || fy + 1 == ty),
+            Color::Black => fx + 1 == tx && (fy == ty + 1 || fy + 1 == ty),
+        };
+        if capture {
+            if let Some(dest_piece) = board.get_piece(*to) {
+                if dest_piece.get_color() != color {
+                    return MoveType::Capture;
+                }
+            }
+        }
+
+        // Promotion: reaching the end of the board
+        let promotion = match color {
+            Color::White => tx == 0,
+            Color::Black => tx == 7,
+        };
+        if promotion {
+            // Assume that the pawn will be promoted to a queen.
+            // In a full-featured chess game, the player should be asked what piece to promote the pawn to.
+            return MoveType::Promotion(PieceType::Queen);
+            todo!("Implement promotion to other pieces")
+        }
+        return move_type;
+
+        // En passant: capturing an opponent's pawn in passing
+        // This is quite complex and would require access to the game's history to check if the last move was a pawn double push.
+        // It is omitted here for brevity.
+        todo!("Implement en passant")
+
     }
 
-    fn generate_moves_for_pawn(&self, piece: &Box<dyn Piece>, board: &Board) -> Vec<Move> {
-        // Logic to generate moves for a pawn
-        todo!()
+
+    fn generate_moves_for_pawn(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let (x, y) = piece.get_position().clone();
+        let color = piece.get_color();
+
+        // Moving one square forward
+        let move_one_forward = match color {
+            Color::White => (x - 1, y),
+            Color::Black => (x + 1, y),
+        };
+        if is_valid_pos(move_one_forward) && board.get_piece(move_one_forward).is_none() {
+            moves.push(normal_move(piece, move_one_forward));
+        }
+
+        // Moving two squares forward on the pawn's first move
+        let move_two_forward = match color {
+            Color::White => (x - 2, y),
+            Color::Black => (x + 2, y),
+        };
+        if piece.get_moves().is_empty() && is_valid_pos(move_two_forward) && board.get_piece(move_two_forward).is_none() {
+            moves.push(double_push_move(piece, move_two_forward));
+        }
+
+        // Capturing diagonally
+        let capture_moves = match color {
+            Color::White => [(x - 1, y - 1), (x - 1, y + 1)],
+            Color::Black => [(x + 1, y - 1), (x + 1, y + 1)],
+        };
+        for &cmv in &capture_moves {
+            if let Some(dest_piece) = board.get_piece(cmv) {
+                if dest_piece.get_color() != piece.get_color() {
+                    moves.push(capture_move(piece, cmv));
+                }
+            }
+        }
+
+        // En passant and Promotion will be handled in get_move_type_for_pawn()
+
+        moves
     }
 
     fn get_move_type_for_rook(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
@@ -151,6 +240,12 @@ fn calculate_new_pos(p0: &(usize, usize), p1: (i32, i32)) -> (usize, usize) {
 
 fn is_valid_pos(pos: (usize, usize)) -> bool {
     pos.0 < 8 && pos.1 < 8
+}
+
+fn double_push_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
+    let mut mv = Move::new(MoveType::DoublePush, piece.get_position().clone(), new_pos);
+    mv.set_valid(true);
+    mv
 }
 
 fn normal_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
