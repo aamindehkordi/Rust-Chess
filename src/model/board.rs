@@ -125,6 +125,12 @@ impl Board {
         };
     }
 
+    /// Returns true if the given player is in check.
+    pub fn is_checkmate(&self, color: &Color) -> bool {
+        return if self.is_king_in_check(&color) && self.is_king_trapped(&color){ true } else { false };
+    }
+
+    /// Returns true if the given player is in check.
     pub fn is_king_in_check(&self, color: &Color) -> bool {
         let king_idx = self.find_king(color.clone());
         if let idx = king_idx {
@@ -149,6 +155,17 @@ impl Board {
         false
     }
 
+    /// Returns true if the given player's king is trapped.
+    /// A king is trapped if it has no moves.
+    pub fn is_king_trapped(&self, color: &Color) -> bool {
+        let king_idx = self.find_king(color.clone());
+        let king = self.get_piece(king_idx).expect("King not found");
+        let king_moves = king.get_moves();
+        if king_moves.len() == 0 {
+            return true;
+        }
+        false
+    }
 
     /// Given an index, determines the proper notation for the tile.
     /// For example, (0,0) would return "A1".
@@ -176,11 +193,29 @@ impl Board {
         self.tiles[idx.0 * 8 + idx.1].piece = piece;
     }
 
+    pub fn temp_move_piece(&mut self, from: &(usize, usize), to: &(usize, usize)) -> bool {
+        // copy the board
+        let mut temp_board = self.clone();
+        // pick up the piece
+        let piece = temp_board.pick_up_piece(from);
+        // put down the piece
+        temp_board.put_down_piece(to, piece);
+        // check if the king is in check
+        !temp_board.is_king_in_check(&self.current_turn)
+    }
+
     /// Moves a piece from one tile to another.
     pub fn move_piece(&mut self, from: &(usize, usize), to: &(usize, usize)) {
         if let Some(mut piece) = self.pick_up_piece(from) {
+            // check if the piece is the same color as the current player
+            if piece.get_color() != self.current_turn {
+                self.put_down_piece(from, Some(piece));
+                return;
+            }
+
             piece.set_position(*to);
             self.put_down_piece(to, Some(piece));
+            self.change_current_player();
         }
     }
 
