@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 use crate::model::board::Board;
 use crate::model::pieces::piece::{Color, Piece, PieceType};
-use crate::model::r#move::{Move, MoveType};
+use crate::model::moves::r#move::{Move, MoveType};
 
 #[derive(Clone, PartialEq)]
 pub struct King {
@@ -49,20 +49,6 @@ impl Piece for King {
         }
     }
 
-    fn update_moves(&mut self, board: Board) {
-        self.moves.clear();
-
-        for direction in self.directions {
-            if let Some(new_position) = self.get_new_position(self.position, direction) {
-                self.check_and_add_move(board.clone(), new_position);
-            }
-        }
-
-        if self.moves.is_empty() {
-            self.has_moves = false;
-        }
-    }
-
     fn execute(&mut self, board: &mut Board, mv: Move) {
         let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.position).unwrap();
@@ -81,7 +67,6 @@ impl Piece for King {
             self.position = *to_position;
             this.set_position(*to_position);
             board.put_down_piece(&self.position, Some(this));
-            self.update_moves(board.clone());
         }
     }
 

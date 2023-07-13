@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 use crate::model::board::Board;
 use crate::model::pieces::piece::{Color, Piece, PieceType};
-use crate::model::r#move::{Move, MoveType};
+use crate::model::moves::r#move::{Move, MoveType};
 
 #[derive(Clone, PartialEq)]
 pub struct Rook {
@@ -44,27 +44,6 @@ impl Piece for Rook {
             first_move: true,
             pinned: false,
             has_moves: true,
-        }
-    }
-
-    fn update_moves(&mut self, board: Board) {
-        self.moves.clear();
-
-        if self.pinned {
-            self.update_pinned();
-            return;
-        }
-
-        for direction in self.directions {
-            let mut new_position = self.get_new_position(self.position, direction);
-            while let Some(pos) = new_position {
-                self.check_and_add_move(board.clone(), pos);
-                new_position = self.get_new_position(pos, direction);
-            }
-        }
-
-        if self.moves.is_empty() {
-            self.has_moves = false;
         }
     }
 

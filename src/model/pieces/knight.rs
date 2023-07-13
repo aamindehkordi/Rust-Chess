@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 use crate::model::board::Board;
 use crate::model::pieces::piece::{Color, Piece, PieceType};
-use crate::model::r#move::{Move, MoveType};
+use crate::model::moves::r#move::{Move, MoveType};
 
 #[derive(Clone, PartialEq)]
 pub struct Knight {
@@ -48,26 +48,6 @@ impl Piece for Knight {
         }
     }
 
-    fn update_moves(&mut self, board: Board) {
-        self.moves.clear();
-        if self.pinned && !self.can_take {
-            self.update_pinned();
-            self.has_moves = false;
-            self.can_take = false;
-            return;
-        }
-        for direction in self.directions {
-            if let Some(new_position) = self.get_new_position(self.position, direction) {
-                self.check_and_add_move(board.clone(), new_position);
-            }
-        }
-        if self.moves.is_empty() {
-            self.has_moves = false;
-            self.can_take = false;
-        }
-        println!("Updated moves for piece at position: {:?}", self.position);
-    }
-
     fn clone_box(&self) -> Box<dyn Piece> {
         Box::new(self.clone())
     }
@@ -91,6 +71,7 @@ impl Piece for Knight {
     fn set_position(&mut self, position: (usize, usize)) {
         self.position = position;
     }
+
     fn push_move(&mut self, mv: &mut Move){
         self.moves.push(mv.clone());
     }
