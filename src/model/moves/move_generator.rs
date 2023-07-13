@@ -78,7 +78,7 @@ impl MoveGenerator {
             }
         }
 
-        if move_type == MoveType::Invalid { // Check if the move type is invalid
+        if move_type == MoveType::Invalid { // Check if the move type hasn't changed
             if let Some(dest_piece) = board.get_piece(to.clone()) { // Get the piece at the new position
                 if dest_piece.get_color() != piece.get_color() { // Check if the piece at the new position is of a different color
                     move_type = MoveType::Capture; // Set the move type to capture
@@ -95,8 +95,8 @@ impl MoveGenerator {
 
         let directions = piece.get_directions();
 
+        let cur_pos = piece.get_position();
         for &direction in directions {
-            let cur_pos = piece.get_position();
 
             let new_pos = calculate_new_pos(cur_pos, direction);
 

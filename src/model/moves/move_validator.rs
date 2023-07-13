@@ -22,6 +22,10 @@ impl MoveValidator {
     }
 
     pub fn is_legal(&self, mv: &Move, piece: &Box<dyn Piece>, board: &mut Board) -> bool {
+        if !mv.valid() {
+            return false;
+        }
+
         match piece.get_type() {
             PieceType::Pawn => self.is_legal_for_pawn(mv, piece, board),
             PieceType::Rook => self.is_legal_for_rook(mv, piece, board),
@@ -43,9 +47,6 @@ impl MoveValidator {
     }
 
     fn is_legal_for_knight(&self, mv: &Move, piece: &Box<dyn Piece>, board: &mut Board) -> bool {
-        if !mv.valid() {
-            return false;
-        }
         let destination = mv.get_to(); // Get the destination of the move
         let dest_piece = board.get_piece(destination.clone()); //  Get the piece at the destination
         // Check if the destination is empty or if the piece at the destination is of a different color
