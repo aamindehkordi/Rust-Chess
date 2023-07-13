@@ -69,6 +69,10 @@ impl Piece for Queen {
         PieceType::Queen
     }
 
+    fn get_directions(&self) -> &[(i32, i32)] {
+       &self.directions
+    }
+
     fn set_position(&mut self, position: (usize, usize)) {
         self.position = position;
     }

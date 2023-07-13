@@ -86,9 +86,9 @@ impl Piece for King {
         &self.moves
     }
 
-    fn get_type(&self) -> PieceType {
-        PieceType::King
-    }
+    fn get_type(&self) -> PieceType { PieceType::King }
+
+    fn get_directions(&self) -> &[(i32, i32)] { &self.directions }
 
     fn set_position(&mut self, position: (usize, usize)) {
         self.position = position;
@@ -126,7 +126,6 @@ impl King {
                 self.can_take = true;
             }
         }
-
     }
 
     // A function to add castling moves could also be added here.

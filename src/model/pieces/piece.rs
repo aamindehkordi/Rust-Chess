@@ -21,19 +21,7 @@ impl Color {
 const BOARD_SIZE: i32 = 8;
 pub trait Piece: Display + Debug  {
     fn new(color: Color, position: (usize, usize)) -> Self where Self: Sized;
-    fn create_move(&self, board: &Board, new_position: (usize, usize)) -> Move {
-        let to_tile = board.get_tile(new_position);
-        let mv_type = MoveType::Invalid;
-        if to_tile.is_empty() {
-            MoveType::Normal
-        } else if self.get_color() == to_tile.get_piece().as_ref().unwrap().get_color() {
-            MoveType::Invalid
-        }
-        else {
-            MoveType::Capture
-        };
-        Move::new(mv_type, self.get_position(), new_position)
-    }
+
     fn execute(&mut self, board: &mut Board, mv: Move) {
         let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.get_position()).unwrap();
@@ -87,6 +75,7 @@ pub trait Piece: Display + Debug  {
     fn get_position(&self) -> (usize, usize);
     fn get_moves(&self) -> &Vec<Move>;
     fn get_type(&self) -> PieceType;
+    fn get_directions(&self) -> &[(i32, i32)];
     fn set_position(&mut self, position: (usize, usize));
     fn push_move(&mut self, mv: &mut Move);
 

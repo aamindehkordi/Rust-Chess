@@ -55,33 +55,6 @@ impl Piece for Pawn {
         }
     }
 
-    fn create_move(&self, board: &Board, new_position: (usize, usize)) -> Move {
-        let to_tile = board.get_tile(new_position);
-        let mv_type = MoveType::Invalid;
-        for direction in self.directions {
-            if let Some(position) = self.get_new_position(self.position, direction) {
-                if position == new_position {
-                    if to_tile.is_empty() {
-                        if direction.1 == 0 {
-                            if self.first_move {
-                                return Move::new(MoveType::DoublePush, self.position, new_position);
-                            } else {
-                                return Move::new(MoveType::Normal, self.position, new_position);
-                            }
-                        }
-                    } else {
-                        if to_tile.get_piece().as_ref().expect("no piece").get_color() != self.color {
-                            if direction.1 == 0 {
-                                return Move::new(MoveType::Capture, self.position, new_position);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        Move::new(mv_type, self.position, new_position)
-    }
-
     fn execute(&mut self, board: &mut Board, mv: Move) {
         let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.position).unwrap();
@@ -123,6 +96,9 @@ impl Piece for Pawn {
     fn get_type(&self) -> PieceType {
         PieceType::Pawn
     }
+
+    fn get_directions(&self) -> &[(i32, i32)] { &self.directions }
+
 
     fn set_position(&mut self, position: (usize, usize)) {
         self.position = position;
