@@ -26,6 +26,7 @@ pub trait Piece: Display + Debug  {
         let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.get_position()).unwrap();
 
+        // check if the piece is the same as the one on the board
         if this.get_color() == self.get_color() && this.get_type() == self.get_type() && this.get_position() == self.get_position() {
             match mv.get_move_type() {
                 MoveType::Normal => {
@@ -40,6 +41,7 @@ pub trait Piece: Display + Debug  {
             self.set_position(*to_position);
             this.set_position(*to_position);
             board.put_down_piece(&self.get_position(), Some(this));
+            board.change_current_player();
         }
     }
     fn clone_box(&self) -> Box<dyn Piece>;

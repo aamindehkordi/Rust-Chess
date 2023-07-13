@@ -52,22 +52,20 @@ impl Piece for King {
     fn execute(&mut self, board: &mut Board, mv: Move) {
         let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.position).unwrap();
-
-        if this.get_color() == self.color && this.get_type() == self.piece_type && this.get_position() == &self.position {
-            match mv.get_move_type() {
-                MoveType::Normal | MoveType::Castle(_) => {
-                    board.move_piece(&self.position, to_position);
-                },
-                MoveType::Capture => {
-                    board.move_piece(&self.position, to_position);
-                    board.take_piece(mv.get_to());
-                },
-                _ => {},
-            }
-            self.position = *to_position;
-            this.set_position(*to_position);
-            board.put_down_piece(&self.position, Some(this));
+        match mv.get_move_type() {
+            MoveType::Normal | MoveType::Castle(_) => {
+                board.move_piece(&self.position, to_position);
+            },
+            MoveType::Capture => {
+                board.move_piece(&self.position, to_position);
+                board.take_piece(mv.get_to());
+            },
+            _ => {},
         }
+        self.position = *to_position;
+        this.set_position(*to_position);
+        board.put_down_piece(&self.position, Some(this));
+        board.change_current_player();
     }
 
     fn clone_box(&self) -> Box<dyn Piece> {
