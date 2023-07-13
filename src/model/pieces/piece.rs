@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display};
 use crate::model::board::Board;
-use crate::model::r#move::{Move, MoveType};
+use crate::model::moves::r#move::{Move, MoveType};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Color {
@@ -22,7 +22,6 @@ const BOARD_SIZE: i32 = 8;
 pub trait Piece: Display + Debug  {
     fn new(color: Color, position: (usize, usize)) -> Self where Self: Sized;
     fn create_move(&self, board: &Board, new_position: (usize, usize)) -> Move {
-        let from_tile = board.get_tile(self.get_position());
         let to_tile = board.get_tile(new_position);
         let mv_type = MoveType::Invalid;
         if to_tile.is_empty() {
@@ -35,7 +34,6 @@ pub trait Piece: Display + Debug  {
         };
         Move::new(mv_type, self.get_position(), new_position)
     }
-    fn update_moves(&mut self, board: Board);
     fn execute(&mut self, board: &mut Board, mv: Move) {
         let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.get_position()).unwrap();
@@ -54,7 +52,6 @@ pub trait Piece: Display + Debug  {
             self.set_position(*to_position);
             this.set_position(*to_position);
             board.put_down_piece(&self.get_position(), Some(this));
-            self.update_moves(board.clone());
         }
     }
     fn clone_box(&self) -> Box<dyn Piece>;

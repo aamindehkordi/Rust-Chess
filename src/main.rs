@@ -1,3 +1,4 @@
+//src/main.rs
 mod controller;
 mod model;
 mod view;
