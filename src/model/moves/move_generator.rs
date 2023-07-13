@@ -91,21 +91,28 @@ impl MoveGenerator {
     }
 
     fn generate_moves_for_knight(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
-        let mut moves = Vec::new(); // Create a vector to store the moves
-        let directions = [(1, 2), (1, -2), (-1, 2), (-1, -2), (2, 1), (2, -1), (-2, 1), (-2, -1)]; // Create an array of tuples to store the directions in which a knight can move
-        // Loop through the directions
-        for &direction in &directions {
-            let new_pos = (piece.get_position().0 as i32 + direction.0, piece.get_position().1 as i32 + direction.1); // Calculate the new position
-            if new_pos.0 >= 0 && new_pos.0 < 8 && new_pos.1 >= 0 && new_pos.1 < 8 { // Check if the new position is on the board
-               if let Some(dest_piece) = board.get_piece((new_pos.0 as usize, new_pos.1 as usize)){ // Get the piece at the new position
-                   if dest_piece.get_color() != piece.get_color() { // Check if the piece at the new position is of a different color
-                       piece.push_move(&mut Move::new(MoveType::Capture, piece.get_position(), (new_pos.0 as usize, new_pos.1 as usize))); // Add a capture move to the vector
-                   }
-               } else {
-                   piece.push_move(&mut Move::new(MoveType::Normal, piece.get_position(), (new_pos.0 as usize, new_pos.1 as usize))); // Add the move to the vector
-               }
+        let mut moves = Vec::new();
+
+        let directions = piece.get_directions();
+
+        for &direction in directions {
+            let cur_pos = piece.get_position();
+
+            let new_pos = calculate_new_pos(cur_pos, direction);
+
+            if is_valid_pos(new_pos) {
+                let dest_piece = board.get_piece(new_pos);
+
+                if let Some(dest_piece) = dest_piece {
+                    if dest_piece.get_color() != piece.get_color() {
+                        moves.push(capture_move(piece, new_pos));
+                    }
+                } else {
+                    moves.push(normal_move(piece, new_pos));
+                }
             }
         }
+
         moves
     }
 
@@ -138,4 +145,27 @@ impl MoveGenerator {
         // Logic to generate moves for a king
         todo!()
     }
+}
+
+fn calculate_new_pos(p0: &(usize, usize), p1: (i32, i32)) -> (usize, usize) {
+    let x = p0.0 as i32 + p1.0;
+    let y = p0.1 as i32 + p1.1;
+
+    (x as usize, y as usize)
+}
+
+fn is_valid_pos(pos: (usize, usize)) -> bool {
+    pos.0 < 8 && pos.1 < 8
+}
+
+fn normal_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
+    let mut mv = Move::new(MoveType::Normal, piece.get_position().clone(), new_pos);
+    mv.set_valid(true);
+    mv
+}
+
+fn capture_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
+    let mut mv = Move::new(MoveType::Capture, piece.get_position().clone(), new_pos);
+    mv.set_valid(true);
+    mv
 }
