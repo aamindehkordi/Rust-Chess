@@ -1,12 +1,12 @@
 use crate::model::board::Board;
-use crate::model::moves::r#move::{Move, MoveType};
+use crate::model::moves::r#move::{Move, MoveType, CastleType};
 use crate::model::pieces::piece::{Color, Piece, PieceType};
 
 pub struct MoveGenerator { }
 
 impl MoveGenerator {
     pub fn new() -> Self {
-        Self { }
+        Self {}
     }
 
     pub fn generate_moves(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
@@ -94,7 +94,6 @@ impl MoveGenerator {
         // This is quite complex and would require access to the game's history to check if the last move was a pawn double push.
         // It is omitted here for brevity.
         todo!("Implement en passant")
-
     }
 
 
@@ -107,15 +106,15 @@ impl MoveGenerator {
             Color::Black => -1,
         };
 
-       // Moving one square forward
-        let move_one_forward = ((pos.0 as i32 + direction)as usize, pos.1);
+        // Moving one square forward
+        let move_one_forward = ((pos.0 as i32 + direction) as usize, pos.1);
 
         // Moving two squares forward on the pawn's first move
         let move_two_forward = ((pos.0 as i32 + 2 * direction) as usize, pos.1);
 
         // Capturing diagonally
         let capture_moves = [((pos.0 as i32 + direction) as usize, (pos.1 as i32 + direction) as usize), ((pos.0 as i32 + direction) as usize, (pos.1 as i32 - direction) as usize)];
-            // wrong [(pos.0 + 1, (pos.1 as i32 + direction) as usize), (pos.0 - 1, (pos.1 as i32 + direction) as usize)];
+        // wrong [(pos.0 + 1, (pos.1 as i32 + direction) as usize), (pos.0 - 1, (pos.1 as i32 + direction) as usize)];
 
         if is_valid_pos(move_one_forward) && board.get_piece(move_one_forward).is_none() {
             moves.push(normal_move(piece, move_one_forward));
@@ -145,13 +144,75 @@ impl MoveGenerator {
     }
 
     fn get_move_type_for_rook(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
-        // Logic to get the move type for a rook
-        todo!()
+        let (fx, fy) = *from;
+        let (tx, ty) = *to;
+        let mut move_type = MoveType::Invalid;
+        let color = piece.get_color();
+
+        // Moving along the same rank (row) or file (column)
+        if fx == tx || fy == ty {
+            // Check if there are any pieces between the source and destination squares
+            let min_x = fx.min(tx);
+            let max_x = fx.max(tx);
+            let min_y = fy.min(ty);
+            let max_y = fy.max(ty);
+
+            for x in (min_x+1)..max_x {
+                if board.get_piece((x, fy)).is_some() {
+                    return move_type;
+                }
+            }
+
+            for y in (min_y+1)..max_y {
+                if board.get_piece((fx, y)).is_some() {
+                    return move_type;
+                }
+            }
+
+            // If the destination square is occupied by an enemy piece, it's a capture move
+            if let Some(dest_piece) = board.get_piece(*to) {
+                if dest_piece.get_color() != color {
+                    return MoveType::Capture;
+                }
+            }
+
+            return MoveType::Normal;
+        }
+
+        move_type
     }
 
-    fn generate_moves_for_rook(&self, piece: &Box<dyn Piece>, board: &Board) -> Vec<Move> {
-        // Logic to generate moves for a rook
-        todo!()
+    fn generate_moves_for_rook(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let pos = piece.get_position().clone();
+
+        // Generate moves along each direction: up, down, left, right
+        let directions = piece.get_directions();
+
+        for &(dx, dy) in directions {
+            let mut new_pos = ((pos.0 as i32 + dx) as usize, (pos.1 as i32 + dy) as usize);
+
+            while is_valid_pos(new_pos) {
+                if let Some(dest_piece) = board.get_piece(new_pos) {
+                    if dest_piece.get_color() == piece.get_color() {
+                        // Can't capture our own piece and can't move any further in this direction
+                        break;
+                    } else {
+                        // Capture move
+                        moves.push(capture_move(piece, new_pos));
+                        // Can't move any further in this direction after capturing a piece
+                        break;
+                    }
+                } else {
+                    // Normal move
+                    moves.push(normal_move(piece, new_pos));
+                }
+
+                new_pos = ((new_pos.0 as i32 + dx) as usize, (new_pos.1 as i32 + dy) as usize);
+            }
+        }
+
+        moves
     }
 
     fn get_move_type_for_knight(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
@@ -176,7 +237,6 @@ impl MoveGenerator {
         }
 
         move_type // Return the move type
-
     }
 
     fn generate_moves_for_knight(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
@@ -186,7 +246,6 @@ impl MoveGenerator {
 
         let cur_pos = piece.get_position();
         for &direction in directions {
-
             let new_pos = calculate_new_pos(cur_pos, direction);
 
             if is_valid_pos(new_pos) {
@@ -206,33 +265,143 @@ impl MoveGenerator {
     }
 
     fn get_move_type_for_bishop(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
-        // Logic to get the move type for a bishop
-        todo!()
+        let mut move_type = MoveType::Invalid;
+        let (fx, fy) = *from;
+        let (tx, ty) = *to;
+
+        // The Bishop moves diagonally, so if the move is not a diagonal, it's invalid
+        if (fx as i32 - tx as i32).abs() != (fy as i32 - ty as i32).abs() {
+            return move_type;
+        }
+
+        // Now we need to check if the path between the source and destination is clear.
+        let dx = if tx > fx { 1 } else { -1 };
+        let dy = if ty > fy { 1 } else { -1 };
+        let mut x = fx as i32 + dx;
+        let mut y = fy as i32 + dy;
+
+        while (x as usize, y as usize) != *to {
+            if board.get_piece((x as usize, y as usize)).is_some() {
+                // There's a piece in the path
+                return move_type;
+            }
+            x += dx;
+            y += dy;
+        }
+
+        // If the destination square is occupied by an enemy piece, this is a capture
+        if let Some(dest_piece) = board.get_piece(*to) {
+            if dest_piece.get_color() != piece.get_color() {
+                return MoveType::Capture;
+            }
+        }
+
+        MoveType::Normal
     }
 
-    fn generate_moves_for_bishop(&self, piece: &Box<dyn Piece>, board: &Board) -> Vec<Move> {
-        // Logic to generate moves for a bishop
-        todo!()
+    fn generate_moves_for_bishop(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let pos = piece.get_position().clone();
+
+        let directions = piece.get_directions();
+
+        for direction in directions.iter() {
+            let mut next_position = ((pos.0 as i32 + direction.0) as usize, (pos.1 as i32 + direction.1) as usize);
+
+            // While the position is valid and not occupied, add it as a potential move
+            while is_valid_pos(next_position) && board.get_piece(next_position).is_none() {
+                moves.push(normal_move(piece, next_position));
+                next_position = ((next_position.0 as i32 + direction.0) as usize, (next_position.1 as i32 + direction.1) as usize);
+            }
+
+            // If the position is occupied by an enemy piece, add it as a potential capture move
+            if is_valid_pos(next_position) {
+                if let Some(dest_piece) = board.get_piece(next_position) {
+                    if dest_piece.get_color() != piece.get_color() {
+                        moves.push(capture_move(piece, next_position));
+                    }
+                }
+            }
+        }
+
+        moves
+    }
+
+
+
+    fn generate_moves_for_queen(&self, piece: &Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+        todo!("Implement generate_moves_for_queen")
     }
 
     fn get_move_type_for_queen(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
-        // Logic to get the move type for a queen
-        todo!()
+        todo!("Implement get_move_type_for_queen")
     }
 
-    fn generate_moves_for_queen(&self, piece: &Box<dyn Piece>, board: &Board) -> Vec<Move> {
-        // Logic to generate moves for a queen
-        todo!()
-    }
 
     fn get_move_type_for_king(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
-        // Logic to get the move type for a king
-        todo!()
+        let mut move_type = MoveType::Invalid;
+        let (fx, fy) = *from;
+        let (tx, ty) = *to;
+
+        // Normal move: moving one square in any direction
+        let dx = (fx as i32 - tx as i32).abs();
+        let dy = (fy as i32 - ty as i32).abs();
+        if dx <= 1 && dy <= 1 {
+            return MoveType::Normal;
+        }
+
+        // Castling: moving two squares towards a rook on its initial square,
+        // and then the rook moves to the square the king skipped over.
+        if dy == 2 && dx == 0 && piece.get_moves().is_empty() {
+            // Assuming here that the Rook's initial position is the corner of the board.
+            // You'll need to check if the squares between the King and the Rook are empty and no square the king crosses is threatened.
+            if fy < ty && board.get_piece((fx, 7)).map_or(false, |p| p.get_type() == PieceType::Rook && p.get_moves().is_empty()) {
+                return MoveType::Castle(CastleType::Kingside);
+            } else if fy > ty && board.get_piece((fx, 0)).map_or(false, |p| p.get_type() == PieceType::Rook && p.get_moves().is_empty()) {
+                return MoveType::Castle(CastleType::Queenside);
+            }
+        }
+
+        move_type
     }
 
-    fn generate_moves_for_king(&self, piece: &Box<dyn Piece>, board: &Board) -> Vec<Move> {
-        // Logic to generate moves for a king
-        todo!()
+    fn generate_moves_for_king(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let pos = piece.get_position().clone();
+
+        // King can move in all 8 directions, but only one square
+        let all_directions = piece.get_directions();
+
+        for &dir in all_directions.iter() {
+            let new_pos = ((pos.0 as i32 + dir.0) as usize, (pos.1 as i32 + dir.1) as usize);
+            if is_valid_pos(new_pos) {
+                if let Some(dest_piece) = board.get_piece(new_pos) {
+                    if dest_piece.get_color() != piece.get_color() {
+                        moves.push(capture_move(piece, new_pos));
+                    }
+                } else {
+                    moves.push(normal_move(piece, new_pos));
+                }
+            }
+        }
+
+        // Castling
+        if piece.get_moves().is_empty() {
+            // Assuming here that the Rook's initial position is the corner of the board.
+            // You'll need to check if the squares between the King and the Rook are empty and no square the king crosses is threatened.
+            let kingside_pos = (pos.0, 7);
+            let queenside_pos = (pos.0, 0);
+
+            if board.get_piece(kingside_pos).map_or(false, |p| p.get_type() == PieceType::Rook && p.get_moves().is_empty()) {
+                moves.push(castling_move(piece, (pos.0, pos.1 + 2)));
+            }
+
+            if board.get_piece(queenside_pos).map_or(false, |p| p.get_type() == PieceType::Rook && p.get_moves().is_empty()) {
+                moves.push(castling_move(piece, (pos.0, pos.1 - 2)));
+            }
+        }
+
+        moves
     }
 }
 
@@ -263,4 +432,12 @@ fn capture_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
     let mut mv = Move::new(MoveType::Capture, piece.get_position().clone(), new_pos);
     mv.set_valid(true);
     mv
+}
+
+fn castling_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
+    if new_pos.1 > piece.get_position().1 { // if new_pos is on this piece
+        Move::new(MoveType::Castle(CastleType::Kingside), piece.get_position().clone(), new_pos)
+    } else {
+        Move::new(MoveType::Castle(CastleType::Queenside), piece.get_position().clone(), new_pos)
+    }
 }
