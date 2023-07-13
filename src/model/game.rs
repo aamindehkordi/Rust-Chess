@@ -1,8 +1,7 @@
 // src/model/game.rs
 use crate::model::board::Board;
-use crate::model::moves::r#move::Move;
+use crate::model::moves::r#move::{Move, MoveType};
 use crate::model::moves::move_generator::MoveGenerator;
-use crate::model::moves::move_validator::MoveValidator;
 use std::error::Error;
 use crate::model::pieces::piece::Piece;
 
@@ -23,8 +22,7 @@ impl Game {
     pub fn make_move(&mut self, from: (usize, usize), to: (usize, usize)) -> Result<(), Box<dyn Error>> {
         let move_generator = MoveGenerator::new();
         let curr_player = self.board.get_current_player();
-        let mut piece = self.board.get_piece(from.clone());
-        if Some(piece) {
+        if let Some(mut piece)  = self.board.get_piece(from.clone()){
             if piece.get_color() != curr_player.clone() {
                 return Err("Not your turn".into());
             }
@@ -46,23 +44,23 @@ impl Game {
 
     pub fn is_game_over(&self) -> bool {
         // Logic to check if game is over
-        let curr_player = board.get_current_player();
+        let curr_player = self.board.get_current_player();
         if self.board.is_king_in_check(curr_player) {
             // Check if checkmate
-            if board.is_checkmate(curr_player) {
+            if self.board.is_checkmate(curr_player) {
                 return true;
             }
         }
         false
     }
 
-    pub fn is_legal(&self, mv: &Move, piece: &Box<dyn Piece>) -> bool {
+    pub fn is_legal(&mut self, mv: &Move, piece: &Box<dyn Piece>) -> bool {
         if !mv.valid() {
             return false;
         }
 
         let destination = mv.get_to(); // Get the destination of the move
-        let dest_piece = board.get_piece(destination.clone()); //  Get the piece at the destination
+        let dest_piece = self.board.get_piece(destination.clone()); //  Get the piece at the destination
         // Check if the destination is empty or if the piece at the destination is of a different color
         if let Some(dest_piece) = dest_piece {
             if dest_piece.get_color() == piece.get_color() { // If the piece at the destination is of the same color
@@ -70,7 +68,7 @@ impl Game {
             }
         }
         // check if the king is in check after the move
-        return board.temp_move_piece(&piece.get_position(), &destination);
+        return self.board.temp_move_piece(&piece.get_position(), &destination);
         /*match piece.get_type() {
             PieceType::Pawn => self.is_legal_for_pawn(mv, piece, board),
             PieceType::Rook => self.is_legal_for_rook(mv, piece, board),
@@ -82,4 +80,3 @@ impl Game {
     }
 
 }
-
