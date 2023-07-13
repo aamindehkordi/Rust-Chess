@@ -65,9 +65,9 @@ impl Piece for Bishop {
         &self.moves
     }
 
-    fn get_type(&self) -> PieceType {
-        PieceType::Bishop
-    }
+    fn get_type(&self) -> PieceType { PieceType::Bishop }
+
+   fn get_directions(&self) -> &[(i32, i32)] { &self.directions }
 
     fn set_position(&mut self, position: (usize, usize)) {
         self.position = position;

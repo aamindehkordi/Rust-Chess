@@ -27,22 +27,14 @@ impl Game {
         move_generator.generate_moves(&mut piece, &mut self.board);
         move_validator.is_game_over(&self.board);
 
-        let mv = piece.create_move(self.get_board(), to);
+        let mv = move_generator.get_move(&from, &to, &piece, &self.board);
 
-        // Check if move is legal
-        if !move_validator.is_legal(&mv, &piece, &mut self.board) {
+        if !move_validator.is_legal(&mv, &piece, &mut self.board) || !mv.valid(){
             return Err("Illegal move".into());
         }
 
-        // Execute move
         self.board.move_piece(&from, &to);
 
-        Ok(())
-    }
-
-    pub fn execute_move(&mut self, mv: Move) -> Result<(), Box<dyn Error>> {
-        let from = mv.get_from();
-        self.board.get_piece(from.clone()).expect("No piece at from").execute(&mut self.board, mv);
         Ok(())
     }
 }

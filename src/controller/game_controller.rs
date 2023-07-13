@@ -22,7 +22,7 @@ impl GameController {
             let from = (from_row, from_col);
             let to = (to_row, to_col);
             println!("Move from user: from: {:?}, to: {:?}", from, to);
-            self.game.make_move(from, to).unwrap(); // Execute the move
+            self.game.make_move(from, to).expect("Invalid move") // Execute the move
         }
     }
 }

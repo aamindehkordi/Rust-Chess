@@ -43,7 +43,7 @@ impl MoveValidator {
     }
 
     fn is_legal_for_knight(&self, mv: &Move, piece: &Box<dyn Piece>, board: &mut Board) -> bool {
-        if mv.get_move_type().is_valid() {
+        if !mv.valid() {
             return false;
         }
         let destination = mv.get_to(); // Get the destination of the move
