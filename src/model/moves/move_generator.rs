@@ -3,15 +3,11 @@ use crate::model::moves::move_validator::MoveValidator;
 use crate::model::moves::r#move::{Move, MoveType};
 use crate::model::pieces::piece::{Piece, PieceType};
 
-pub struct MoveGenerator {
-    move_validator: MoveValidator,
-}
+pub struct MoveGenerator { }
 
 impl MoveGenerator {
     pub fn new() -> Self {
-        Self {
-            move_validator: MoveValidator::new(),
-        }
+        Self { }
     }
 
     pub fn generate_moves(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
