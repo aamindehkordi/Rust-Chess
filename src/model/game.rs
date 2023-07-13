@@ -15,9 +15,7 @@ impl Game {
         Self { board }
     }
 
-    pub fn get_board(&self) -> &Board {
-        &self.board
-    }
+    pub fn get_board(&self) -> &Board { &self.board }
 
     pub fn make_move(&mut self, from: (usize, usize), to: (usize, usize)) -> Result<(), Box<dyn Error>> {
         let move_generator = MoveGenerator::new();

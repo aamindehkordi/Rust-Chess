@@ -48,8 +48,8 @@ impl MoveGenerator {
 
         // Normal move: moving one square forward
         let normal_move = match color {
-            Color::White => fx == tx + 1 && fy == ty,
-            Color::Black => fx + 1 == tx && fy == ty,
+            Color::Black => fx == tx + 1 && fy == ty,
+            Color::White => fx + 1 == tx && fy == ty,
         };
         if normal_move {
             return MoveType::Normal;
@@ -57,8 +57,8 @@ impl MoveGenerator {
 
         // Double push: moving two squares forward on the pawn's first move
         let double_push = match color {
-            Color::White => fx == tx + 2 && fy == ty && piece.get_moves().is_empty(),
-            Color::Black => fx + 2 == tx && fy == ty && piece.get_moves().is_empty(),
+            Color::Black => fx == tx + 2 && fy == ty && fx == 6,
+            Color::White => fx + 2 == tx && fy == ty && fx == 1,
         };
         if double_push {
             return MoveType::DoublePush;
@@ -66,8 +66,8 @@ impl MoveGenerator {
 
         // Capture: taking an opponent's piece diagonally
         let capture = match color {
-            Color::White => fx == tx + 1 && (fy == ty + 1 || fy + 1 == ty),
-            Color::Black => fx + 1 == tx && (fy == ty + 1 || fy + 1 == ty),
+            Color::Black => fx == tx + 1 && (fy as i32 - ty as i32).abs() == 1,
+            Color::White => fx + 1 == tx && (fy as i32 - ty as i32).abs() == 1,
         };
         if capture {
             if let Some(dest_piece) = board.get_piece(*to) {
@@ -79,8 +79,8 @@ impl MoveGenerator {
 
         // Promotion: reaching the end of the board
         let promotion = match color {
-            Color::White => tx == 0,
-            Color::Black => tx == 7,
+            Color::Black => fx == 1,
+            Color::White => fx == 6,
         };
         if promotion {
             // Assume that the pawn will be promoted to a queen.
@@ -100,33 +100,38 @@ impl MoveGenerator {
 
     fn generate_moves_for_pawn(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
         let mut moves = Vec::new();
-        let (x, y) = piece.get_position().clone();
+        let pos = piece.get_position().clone();
         let color = piece.get_color();
-
-        // Moving one square forward
-        let move_one_forward = match color {
-            Color::White => (x - 1, y),
-            Color::Black => (x + 1, y),
+        let direction = match color {
+            Color::White => 1,
+            Color::Black => -1,
         };
+
+       // Moving one square forward
+        let move_one_forward = ((pos.0 as i32 + direction)as usize, pos.1);
+
+        // Moving two squares forward on the pawn's first move
+        let move_two_forward = ((pos.0 as i32 + 2 * direction) as usize, pos.1);
+
+        // Capturing diagonally
+        let capture_moves = [((pos.0 as i32 + direction) as usize, (pos.1 as i32 + direction) as usize), ((pos.0 as i32 + direction) as usize, (pos.1 as i32 - direction) as usize)];
+            // wrong [(pos.0 + 1, (pos.1 as i32 + direction) as usize), (pos.0 - 1, (pos.1 as i32 + direction) as usize)];
+
         if is_valid_pos(move_one_forward) && board.get_piece(move_one_forward).is_none() {
             moves.push(normal_move(piece, move_one_forward));
         }
 
         // Moving two squares forward on the pawn's first move
-        let move_two_forward = match color {
-            Color::White => (x - 2, y),
-            Color::Black => (x + 2, y),
-        };
         if piece.get_moves().is_empty() && is_valid_pos(move_two_forward) && board.get_piece(move_two_forward).is_none() {
             moves.push(double_push_move(piece, move_two_forward));
         }
 
         // Capturing diagonally
-        let capture_moves = match color {
-            Color::White => [(x - 1, y - 1), (x - 1, y + 1)],
-            Color::Black => [(x + 1, y - 1), (x + 1, y + 1)],
-        };
         for &cmv in &capture_moves {
+            // check if the position is valid
+            if !is_valid_pos(cmv) {
+                continue;
+            }
             if let Some(dest_piece) = board.get_piece(cmv) {
                 if dest_piece.get_color() != piece.get_color() {
                     moves.push(capture_move(piece, cmv));
