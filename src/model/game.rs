@@ -1,7 +1,9 @@
+// src/model/game.rs
 use crate::model::board::Board;
+use crate::model::moves::r#move::Move;
+use crate::model::moves::move_generator::MoveGenerator;
+use crate::model::moves::move_validator::MoveValidator;
 use std::error::Error;
-
-use crate::model::r#move::{Move};
 
 pub struct Game {
     board: Board,
@@ -18,15 +20,22 @@ impl Game {
     }
 
     pub fn make_move(&mut self, from: (usize, usize), to: (usize, usize)) -> Result<(), Box<dyn Error>> {
-        let mut piece = self.board.get_piece(from).expect("No piece at from");
-        println!("Piece at from: {:?}", piece);
-        piece.update_moves(self.get_board().clone());
-        println!("Moves for piece at from: {:?}", piece.get_moves());
+        let move_validator = MoveValidator::new();
+        let move_generator = MoveGenerator::new();
+        let mut piece = self.board.get_piece(from.clone()).expect("No piece at from");
+
+        move_generator.generate_moves(&mut piece, &mut self.board);
+        move_validator.is_game_over(&self.board);
+
         let mv = piece.create_move(self.get_board(), to);
 
-        self.execute_move(mv)?;
-        self.board.change_current_player();
-        println!("Executed move: from: {:?}, to: {:?}", from, to);
+        // Check if move is legal
+        if !move_validator.is_legal(&mv, &piece, &mut self.board) {
+            return Err("Illegal move".into());
+        }
+
+        // Execute move
+        self.board.move_piece(&from, &to);
 
         Ok(())
     }

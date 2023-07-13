@@ -74,6 +74,13 @@ impl MoveType {
             _ => false,
         }
     }
+
+    pub fn is_valid(&self) -> bool {
+        match self {
+            Self::Invalid => false,
+            _ => true,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
