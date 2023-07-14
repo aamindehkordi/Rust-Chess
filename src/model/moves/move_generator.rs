@@ -327,16 +327,55 @@ impl MoveGenerator {
         moves
     }
 
+    pub fn get_move_type_for_queen(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
+        let (fx, fy) = *from;
+        let (tx, ty) = *to;
 
+        // The queen moves any number of vacant squares along a rank, file, or diagonal.
+        let diff_x = (fx as i32 - tx as i32).abs();
+        let diff_y = (fy as i32 - ty as i32).abs();
 
-    fn generate_moves_for_queen(&self, piece: &Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
-        todo!("Implement generate_moves_for_queen")
+        if diff_x == diff_y || fx == tx || fy == ty {
+            if let Some(dest_piece) = board.get_piece(*to) {
+                if dest_piece.get_color() != piece.get_color() {
+                    return MoveType::Capture;
+                } else {
+                    return MoveType::Invalid;
+                }
+            } else {
+                return MoveType::Normal;
+            }
+        } else {
+            return MoveType::Invalid;
+        }
     }
 
-    fn get_move_type_for_queen(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
-        todo!("Implement get_move_type_for_queen")
-    }
+    pub fn generate_moves_for_queen(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let (x, y) = piece.get_position().clone();
 
+        // The queen can move in 8 directions: horizontally, vertically and diagonally.
+        let directions = piece.get_directions();
+
+        for direction in directions {
+            let mut current_pos =  ((x as i32 + direction.0) as usize, (y as i32 + direction.1) as usize);
+            while is_valid_pos(current_pos) {
+                let move_type = self.get_move_type_for_queen(&piece.get_position(), &current_pos, &piece, &board);
+                if move_type == MoveType::Invalid {
+                    break;
+                }
+                let mut mv = Move::new(move_type.clone(), piece.get_position().clone(), current_pos.clone());
+                mv.set_valid(true);
+                moves.push(mv);
+                if move_type == MoveType::Capture {
+                    break;
+                }
+                current_pos = ((current_pos.0 as i32 + direction.0) as usize, (current_pos.1 as i32 + direction.1) as usize);
+            }
+        }
+
+        moves
+    }
 
     fn get_move_type_for_king(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
         let mut move_type = MoveType::Invalid;
