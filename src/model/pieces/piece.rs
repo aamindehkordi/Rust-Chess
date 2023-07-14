@@ -41,7 +41,6 @@ pub trait Piece: Display + Debug  {
             self.set_position(*to_position);
             this.set_position(*to_position);
             board.put_down_piece(&self.get_position(), Some(this));
-            board.change_current_player();
         }
     }
     fn clone_box(&self) -> Box<dyn Piece>;

@@ -34,6 +34,7 @@ impl Game {
             }
 
             piece.execute(&mut self.board, mv.clone());
+            self.board.change_current_player();
             Ok(())
         } else {
             Err("No piece at from".into())
@@ -67,14 +68,6 @@ impl Game {
         }
         // check if the king is in check after the move
         return self.board.temp_move_piece(&piece.get_position(), &destination);
-        /*match piece.get_type() {
-            PieceType::Pawn => self.is_legal_for_pawn(mv, piece, board),
-            PieceType::Rook => self.is_legal_for_rook(mv, piece, board),
-            PieceType::Knight => self.is_legal_for_knight(mv, piece, board),
-            PieceType::Bishop => self.is_legal_for_bishop(mv, piece, board),
-            PieceType::Queen => self.is_legal_for_queen(mv, piece, board),
-            PieceType::King => self.is_legal_for_king(mv, piece, board),
-        }*/
     }
 
 }

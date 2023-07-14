@@ -87,7 +87,7 @@ impl Piece for King {
         self.position = *to_position;
         this.set_position(*to_position);
         board.put_down_piece(&self.position, Some(this));
-        board.change_current_player();
+        self.has_moved = true;
     }
 
     fn clone_box(&self) -> Box<dyn Piece> {

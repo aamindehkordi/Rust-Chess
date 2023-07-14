@@ -74,7 +74,6 @@ impl Piece for Pawn {
             this.set_position(*to_position);
             board.put_down_piece(&self.position, Some(this));
             self.first_move = false;
-            board.change_current_player();
         }
     }
 

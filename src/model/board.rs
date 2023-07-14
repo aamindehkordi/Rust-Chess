@@ -215,7 +215,6 @@ impl Board {
 
             piece.set_position(*to);
             self.put_down_piece(to, Some(piece));
-            self.change_current_player();
         }
     }
 

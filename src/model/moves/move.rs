@@ -24,6 +24,7 @@ pub enum MoveType {
 }
 
 impl MoveType {
+
     pub fn is_capture(&self) -> bool {
         match self {
             Self::Capture => true,
