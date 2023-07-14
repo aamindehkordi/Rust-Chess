@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use crate::model::pieces::piece::{Piece};
+use crate::model::pieces::piece::Piece;
 
 pub struct Tile {
     pub(crate) position: (usize, usize),

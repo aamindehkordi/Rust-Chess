@@ -76,7 +76,7 @@ impl Piece for Pawn {
             self.first_move = false;
         }
     }
-
+    // ...
     fn clone_box(&self) -> Box<dyn Piece> {
         Box::new(self.clone())
     }

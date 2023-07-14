@@ -89,7 +89,7 @@ impl Piece for King {
         board.put_down_piece(&self.position, Some(this));
         self.has_moved = true;
     }
-
+    //...
     fn clone_box(&self) -> Box<dyn Piece> {
         Box::new(self.clone())
     }
