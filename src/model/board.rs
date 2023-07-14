@@ -37,7 +37,7 @@ impl Clone for Board {
 }
 
 impl Board {
-    pub fn new() -> Self {
+    pub fn new_standard() -> Self {
         let mut tiles = Vec::new();
         let taken_pieces = Vec::new();
         for i in 0..8 {
@@ -68,6 +68,63 @@ impl Board {
             }
         }
         Self { tiles, current_turn: Color::White, taken_pieces }
+    }
+
+    pub fn new() -> Self {
+        let mut tiles = Vec::new();
+        let taken_pieces = Vec::new();
+        for i in 0..8 {
+            for j in 0..8 {
+                tiles.push(Tile::new((i, j), None));
+            }
+        }
+        Self { tiles, current_turn: Color::White, taken_pieces }
+    }
+
+    pub fn from_fen(fen: &str) -> Board {
+        let mut board = Board::new();
+        let mut rank = 7;
+        let mut file = 0;
+        for c in fen.chars() {
+            if c == ' ' {
+                break;
+            }
+            if c == '/' {
+                rank -= 1;
+                file = 0;
+            } else if c.is_digit(10) {
+                file += c.to_digit(10).unwrap() as usize;
+            } else {
+                let color = if c.is_uppercase() {
+                    Color::White
+                } else {
+                    Color::Black
+                };
+                let piece = match c.to_ascii_lowercase() {
+                    'p' => Some(Box::new(Pawn::new(color, (rank, file))) as Box<dyn Piece>),
+                    'n' => Some(Box::new(Knight::new(color, (rank, file))) as Box<dyn Piece>),
+                    'b' => Some(Box::new(Bishop::new(color, (rank, file))) as Box<dyn Piece>),
+                    'r' => Some(Box::new(Rook::new(color, (rank, file))) as Box<dyn Piece>),
+                    'q' => Some(Box::new(Queen::new(color, (rank, file))) as Box<dyn Piece>),
+                    'k' => Some(Box::new(King::new(color, (rank, file))) as Box<dyn Piece>),
+                    _ => None,
+                };
+                if let Some(piece) = piece {
+                    board.get_tile_mut((rank, file)).set_piece(Some(piece));
+                }
+                file += 1;
+            }
+        }
+        let parts: Vec<&str> = fen.split(' ').collect();
+        if parts.len() > 1 {
+            let color = if parts[1] == "w" {
+                Color::White
+            } else {
+                Color::Black
+            };
+            board.current_turn = color;
+        }
+        board
     }
 
     // Getters

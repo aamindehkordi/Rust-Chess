@@ -9,10 +9,12 @@ pub struct Game {
     board: Board,
 }
 
+const STARTING_POSITION: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w";
+
 impl Game {
     pub fn new() -> Self {
-        let board = Board::new();
-        Self { board }
+        let board = Board::from_fen(STARTING_POSITION);
+        Self { board, current_turn: Color::White, white_king: (0, 4), black_king: (7, 4) }
     }
 
     pub fn get_board(&self) -> &Board { &self.board }
