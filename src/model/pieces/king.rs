@@ -118,38 +118,3 @@ impl Piece for King {
         self.moves.push(mv.clone());
     }
 }
-
-impl King {
-    fn check_and_add_move(&mut self, board: Board, new_position: (usize, usize)) {
-        let from_tile = board.get_tile(self.position).clone();
-        let mut to_tile = board.get_tile(new_position).clone();
-        to_tile.attacked(from_tile.position);
-        let mut mv_type = MoveType::Invalid;
-        if to_tile.is_empty() { // Check if the tile the piece is moving to is empty.
-            let mv_type = MoveType::Normal;
-        } else {
-            let mv_type = MoveType::Capture;
-        };
-
-
-        // Create a copy of the board and make the move on the copied board.
-        let mut board_copy = board;
-        board_copy.move_piece(&self.position, &new_position);
-
-        // Only add the move if it wouldn't put the king in check.
-        if !board_copy.is_king_in_check(&self.color) {
-            let mut mv = Move::new(mv_type.clone(), self.position, new_position);
-            mv.set_valid(true);
-            self.moves.push(mv);
-            self.has_moves = true;
-            if mv_type == MoveType::Capture {
-                self.can_take = true;
-            }
-        }
-    }
-
-    // A function to add castling moves could also be added here.
-    // This would involve checking if the king and rook have not moved,
-    // and if there are no pieces between them, and if the squares the king would
-    // move over are not under attack.
-}
