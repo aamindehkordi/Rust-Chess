@@ -4,9 +4,13 @@ use crate::model::moves::r#move::{Move, MoveType};
 use crate::model::moves::move_generator::MoveGenerator;
 use std::error::Error;
 use crate::model::pieces::piece::Piece;
+use crate::model::pieces::piece::Color;
 
 pub struct Game {
     board: Board,
+    current_turn: Color,
+    white_king: (usize, usize),
+    black_king: (usize, usize),
 }
 
 const STARTING_POSITION: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w";
@@ -36,23 +40,11 @@ impl Game {
             }
 
             piece.execute(&mut self.board, mv.clone());
-            self.board.change_current_player();
+            self.change_current_player();
             Ok(())
         } else {
             Err("No piece at from".into())
         }
-    }
-
-    pub fn is_game_over(&self) -> bool {
-        // Logic to check if game is over
-        let curr_player = self.board.get_current_player();
-        if self.board.is_king_in_check(curr_player) {
-            // Check if checkmate
-            if self.board.is_checkmate(curr_player) {
-                return true;
-            }
-        }
-        false
     }
 
     pub fn is_legal(&mut self, mv: &Move, piece: &Box<dyn Piece>) -> bool {
@@ -70,6 +62,25 @@ impl Game {
         }
         // check if the king is in check after the move
         return self.board.temp_move_piece(&piece.get_position(), &destination);
+    }
+
+    pub fn is_game_over(&self) -> bool {
+        // Logic to check if game is over
+        let curr_player = self.board.get_current_player();
+        if self.board.is_king_in_check(curr_player) {
+            // Check if checkmate
+            if self.board.is_king_trapped(curr_player) {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn change_current_player(&mut self) {
+        self.current_turn = match self.current_turn {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
     }
 
 }

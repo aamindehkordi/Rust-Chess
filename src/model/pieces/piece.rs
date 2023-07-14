@@ -8,14 +8,14 @@ pub enum Color {
     Black,
 }
 
-impl Color {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::White, Self::White) => true,
-            (Self::Black, Self::Black) => true,
-            _ => false,
-        }
-    }
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum PieceType {
+    Pawn,
+    Rook,
+    Knight,
+    Bishop,
+    Queen,
+    King,
 }
 
 const BOARD_SIZE: i32 = 8;
@@ -72,6 +72,10 @@ pub trait Piece: Display + Debug  {
         return false
     }
 
+    fn get_name(&self) -> String {
+        format!("{:?} {:?}", self.get_color(), self.get_type())
+    }
+
     fn get_color(&self) -> Color;
     fn get_position(&self) -> &(usize, usize);
     fn get_moves(&self) -> &Vec<Move>;
@@ -80,16 +84,6 @@ pub trait Piece: Display + Debug  {
     fn set_position(&mut self, position: (usize, usize));
     fn push_move(&mut self, mv: &mut Move);
 
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum PieceType {
-    Pawn,
-    Rook,
-    Knight,
-    Bishop,
-    Queen,
-    King,
 }
 
 impl PieceType {
@@ -103,6 +97,14 @@ impl PieceType {
             Self::King => 0,
         }
     }
+}
 
-
+impl Color {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::White, Self::White) => true,
+            (Self::Black, Self::Black) => true,
+            _ => false,
+        }
+    }
 }

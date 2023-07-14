@@ -1,5 +1,3 @@
-use std::ptr::eq;
-use std::slice::Iter;
 use crate::model::pieces::pawn::Pawn;
 use crate::model::pieces::rook::Rook;
 use crate::model::pieces::knight::Knight;
@@ -145,20 +143,6 @@ impl Board {
         tile.get_piece().as_ref().map(|piece| piece.clone_box())
     }
 
-
-    pub fn find_piece(&self, piece: &Box<dyn Piece>) -> Option<(usize, usize)> {
-        for i in 0..8 {
-            for j in 0..8 {
-                if let Some(p) = &self.tiles[i * 8 + j].piece {
-                    if eq(p, piece) {
-                        return Some((i, j));
-                    }
-                }
-            }
-        }
-        None
-    }
-
     pub fn find_king(&self, color: Color) -> (usize, usize) {
         for i in 0..8 {
             for j in 0..8 {
@@ -170,21 +154,6 @@ impl Board {
             }
         }
         panic!("King not found");
-    }
-
-
-    /// Change the current player.
-    /// Returns the new current player.
-    pub fn change_current_player(&mut self){
-        self.current_turn = match self.current_turn {
-            Color::White => Color::Black,
-            Color::Black => Color::White,
-        };
-    }
-
-    /// Returns true if the given player is in check.
-    pub fn is_checkmate(&self, color: &Color) -> bool {
-        return if self.is_king_in_check(&color) && self.is_king_trapped(&color){ true } else { false };
     }
 
     /// Returns true if the given player is in check.
@@ -224,26 +193,12 @@ impl Board {
         false
     }
 
-    /// Given an index, determines the proper notation for the tile.
-    /// For example, (0,0) would return "A1".
-    pub fn get_notation(&self, idx: (usize, usize)) -> String {
-        let mut notation = String::new();
-        notation.push((idx.1 + 65) as u8 as char);
-        notation.push((idx.0 + 49) as u8 as char);
-        notation
-    }
-
-    pub fn iter(&self) -> Iter<'_, Tile> {
-        self.tiles.iter()
-    }
-
     /// Pick up a piece from a tile.
     /// Returns the piece that was picked up.
     /// Returns None if there was no piece on the tile.
     pub fn pick_up_piece(&mut self, idx: &(usize, usize)) -> Option<Box<dyn Piece>> {
         self.tiles[idx.0 * 8 + idx.1].piece.take()
     }
-
 
     /// Puts down the picked up piece on a tile.
     pub fn put_down_piece(&mut self, idx: &(usize, usize), piece: Option<Box<dyn Piece>>) {

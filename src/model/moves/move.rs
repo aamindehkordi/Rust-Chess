@@ -23,6 +23,32 @@ pub enum MoveType {
     Invalid,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// An enum that represents the type of castle.
+///
+/// # Variants
+/// * `Kingside` - A kingside castle.
+/// * `Queenside` - A queenside castle.
+pub enum CastleType {
+    Kingside,
+    Queenside,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+/// A struct that represents a move.
+///
+/// # Fields
+/// * `move_type` - The type of move.
+/// * `from` - The position the piece is moving from.
+/// * `to` - The position the piece is moving to.
+/// * `piece` - The type of piece.
+pub struct Move {
+    move_type: MoveType,
+    from: (usize, usize),
+    to: (usize, usize),
+    valid: bool,
+}
+
 impl MoveType {
 
     pub fn is_capture(&self) -> bool {
@@ -82,32 +108,6 @@ impl MoveType {
             _ => true,
         }
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// An enum that represents the type of castle.
-///
-/// # Variants
-/// * `Kingside` - A kingside castle.
-/// * `Queenside` - A queenside castle.
-pub enum CastleType {
-    Kingside,
-    Queenside,
-}
-
-#[derive(Clone, PartialEq, Debug)]
-/// A struct that represents a move.
-///
-/// # Fields
-/// * `move_type` - The type of move.
-/// * `from` - The position the piece is moving from.
-/// * `to` - The position the piece is moving to.
-/// * `piece` - The type of piece.
-pub struct Move {
-    move_type: MoveType,
-    from: (usize, usize),
-    to: (usize, usize),
-    valid: bool,
 }
 
 impl Move {
