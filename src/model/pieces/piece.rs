@@ -15,7 +15,7 @@ impl Color {
             Color::Black => Color::White,
         }
     }
-    
+
     pub fn cmp(&self, other: &Self) -> Ordering {
         match self {
             Color::White => match other {
@@ -85,27 +85,19 @@ pub trait Piece: Display + Debug  {
         }
     }
 
-    fn king_ok(&mut self, board: Board, mut mv: &mut Move) -> bool where Self: Sized {
-        if !board.is_king_in_check(&self.get_color()) {
-            mv.set_valid(true);
-            self.push_move(mv);
-            return true
-        }
-        return false
-    }
-
     fn get_name(&self) -> String {
         format!("{:?} {:?}", self.get_color(), self.get_type())
     }
-
     fn get_color(&self) -> Color;
     fn get_position(&self) -> &(usize, usize);
     fn get_moves(&self) -> &Vec<Move>;
     fn get_type(&self) -> PieceType;
     fn get_directions(&self) -> &[(i32, i32)];
     fn set_position(&mut self, position: (usize, usize));
-    fn push_move(&mut self, mv: &mut Move);
-
+    fn push_move(&mut self, mv: &Move);
+    fn get_promotion_types(&self) -> Vec<PieceType> {
+        vec![PieceType::Pawn, PieceType::Rook, PieceType::Knight, PieceType::Bishop, PieceType::Queen]
+    }
 }
 
 impl PieceType {

@@ -34,7 +34,6 @@ impl Game {
             if piece.get_color() != self.current_turn.clone() {
                 return Err("Not your turn".into());
             }
-            self.move_generator.generate_moves(&mut piece, &mut self.board);
             self.is_game_over();
 
             let mv = self.move_generator.get_move(&from, &to, &piece, &self.board);
@@ -47,6 +46,7 @@ impl Game {
             }
 
             piece.execute(&mut self.board, mv.clone());
+            self.move_generator.generate_moves(&mut piece, &mut self.board);
             self.change_current_player();
             self.move_history.push(mv.to_history(piece.clone_box()));
             Ok((None))
@@ -59,6 +59,7 @@ impl Game {
         let mut piece = self.board.get_piece(from).unwrap();
         let mv = self.move_generator.create_promotion_move(&mut piece, to, piece_type);
         piece.execute(&mut self.board, mv.clone());
+        self.move_generator.generate_moves(&mut piece, &mut self.board);
         self.change_current_player();
         self.move_history.push(mv.to_history(piece.clone_box()));
     }
@@ -70,8 +71,6 @@ impl Game {
         let current_position = piece.get_position();
         let destination = mv.get_to(); // Get the destination of the move
         let dest_piece = self.board.get_piece(destination.clone()); //  Get the piece at the destination
-
-
 
         // Check if the move is a double push
         if mv.get_move_type() == &MoveType::DoublePush {
@@ -143,7 +142,6 @@ impl Game {
             let king = self.board.get_piece(piece.get_position().clone()).unwrap();
             let rook = self.board.get_piece((piece.get_position().0, 7)).unwrap();
 
-
             // Check if the king or rook have moved in the move history
             if self.move_history.len() > 0 {
                 for mv in self.move_history.iter() {
@@ -208,17 +206,17 @@ impl Game {
             }
 
             // Check if the pawn is moving forward
-            if destination.0 != current_position.0 {
+            if destination.1 != current_position.1 {
                 return false;
             }
 
             // Check if the pawn is moving to the last rank
             if piece.get_color() == Color::White {
-                if destination.1 != 7 {
+                if destination.0 != 7 {
                     return false;
                 }
             } else {
-                if destination.1 != 0 {
+                if destination.0 != 0 {
                     return false;
                 }
             }

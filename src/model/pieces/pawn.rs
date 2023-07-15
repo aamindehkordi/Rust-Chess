@@ -79,8 +79,7 @@ impl Piece for Pawn {
                     board.take_piece(&taken_position); // Take the pawn that is being taken
                 },
                 MoveType::Promotion(_) => { // If the move is a promotion
-                    board.move_piece(&self.position, to_position); // Move the pawn
-                    board.take_piece(mv.get_to()); // Take the piece that is being taken
+                    let _ = board.pick_up_piece(mv.get_from()); // Pick up the pawn
                     let mut new_piece: Box<dyn Piece> = match mv.get_promotion() {
                         PieceType::Queen => Box::new(crate::model::pieces::queen::Queen::new(self.color.clone(), to_position.clone())),
                         PieceType::Rook => Box::new(crate::model::pieces::rook::Rook::new(self.color.clone(), to_position.clone())),
@@ -88,11 +87,11 @@ impl Piece for Pawn {
                         PieceType::Knight => Box::new(crate::model::pieces::knight::Knight::new(self.color.clone(), to_position.clone())),
                         _ => Box::new(crate::model::pieces::pawn::Pawn::new(self.color.clone(), to_position.clone())),
                     };
-                    new_piece.set_position(to_position.clone()); // Set the position of the new piece
                     board.put_down_piece(&to_position, Some(new_piece)); // Put down the new piece
+                    return;
                 },
                 MoveType::PromoteAndCapture(_) => { // If the move is a promotion and capture
-                    board.move_piece(&self.position, to_position); // Move the pawn
+                    let _ = board.pick_up_piece(mv.get_from()); // Pick up the pawn
                     board.take_piece(mv.get_to()); // Take the piece that is being taken
                     let mut new_piece: Box<dyn Piece> = match mv.get_promotion() {
                         PieceType::Queen => Box::new(crate::model::pieces::queen::Queen::new(self.color.clone(), to_position.clone())),
@@ -101,8 +100,8 @@ impl Piece for Pawn {
                         PieceType::Knight => Box::new(crate::model::pieces::knight::Knight::new(self.color.clone(), to_position.clone())),
                         _ => Box::new(crate::model::pieces::pawn::Pawn::new(self.color.clone(), to_position.clone())),
                     };
-                    new_piece.set_position(to_position.clone()); // Set the position of the new piece
                     board.put_down_piece(&to_position, Some(new_piece)); // Put down the new piece
+                    return;
                 },
                 _ => {},
             }
@@ -139,7 +138,7 @@ impl Piece for Pawn {
         self.position = position;
     }
 
-    fn push_move(&mut self, mv: &mut Move){
+    fn push_move(&mut self, mv: &Move){
         self.moves.push(mv.clone());
     }
 }

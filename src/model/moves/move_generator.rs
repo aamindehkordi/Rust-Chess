@@ -46,6 +46,16 @@ impl MoveGenerator {
         let (fx, fy) = *from;
         let (tx, ty) = *to;
 
+        // Promotion: reaching the end of the board
+        let promotion = match color {
+            Color::Black => tx == 0, // if black, to row must be 0
+            Color::White => tx == 7, // if white, to row must be 7
+        };
+        if promotion {
+            // Ask the user what piece they want to promote to
+            return MoveType::Promo;
+        }
+
         // Normal move: moving one square forward
         let normal_move = match color {
             Color::Black => fx == tx + 1 && fy == ty, // if black, from row must be one less than to row
@@ -79,15 +89,6 @@ impl MoveGenerator {
             }
         }
 
-        // Promotion: reaching the end of the board
-        let promotion = match color {
-            Color::Black => tx == 0, // if black, to row must be 0
-            Color::White => tx == 7, // if white, to row must be 7
-        };
-        if promotion {
-            // Ask the user what piece they want to promote to
-            return MoveType::Promo;
-        }
 
         // En passant: capturing an opponent's pawn in passing
         let en_passant = match color {
@@ -125,6 +126,7 @@ impl MoveGenerator {
         // wrong [(pos.0 + 1, (pos.1 as i32 + direction) as usize), (pos.0 - 1, (pos.1 as i32 + direction) as usize)];
 
         if in_bounds(move_one_forward) && board.get_piece(move_one_forward).is_none() {
+
             moves.push(normal_move(piece, move_one_forward));
         }
 
@@ -147,7 +149,7 @@ impl MoveGenerator {
         }
 
         // En passant: capturing an opponent's pawn in passing
-        let en_passant_moves = [((pos.0 as i32 + direction) as usize, (pos.1 as i32 + direction) as usize), ((pos.0 as i32 + direction) as usize, (pos.1 as i32 - direction) as usize)];
+        let en_passant_moves = capture_moves.clone();
         for &epmv in &en_passant_moves {
             // check if the position is valid
             if !in_bounds(epmv) {
@@ -159,6 +161,39 @@ impl MoveGenerator {
                 }
             }
         }
+
+        // Promotion: reaching the end of the board
+        let promotion_moves = [move_one_forward, capture_moves[0], capture_moves[1]];
+        for &pmv in &promotion_moves {
+            // check if the position is valid
+            if !in_bounds(pmv) {
+                continue;
+            }
+            // check if the position is occupied
+            if let Some(dest_piece) = board.get_piece(pmv) {
+                // check if the piece is an opponent's piece
+                if dest_piece.get_color() != piece.get_color() {
+                    // generate promotion moves
+                    let promotion_attack_moves = promotion_attack_move(piece, pmv);
+                    // add promotion moves to the list of moves
+                    for pamv in &promotion_attack_moves {
+                        moves.push(pamv.clone());
+                    }
+                }
+            }
+            else {
+                // generate promotion moves
+                let promotion_moves = promotion_move(piece, pmv);
+                for pmv in &promotion_moves {
+                    moves.push(pmv.clone());
+                }
+            }
+        }
+        for mv in &moves {
+            piece.push_move(mv);
+        }
+
+
         moves
     }
 
@@ -230,6 +265,9 @@ impl MoveGenerator {
                 new_pos = ((new_pos.0 as i32 + dx) as usize, (new_pos.1 as i32 + dy) as usize);
             }
         }
+        for mv in &moves {
+            piece.push_move(mv);
+        }
 
         moves
     }
@@ -278,6 +316,9 @@ impl MoveGenerator {
                     moves.push(normal_move(piece, new_pos));
                 }
             }
+        }
+        for mv in &moves {
+            piece.push_move(mv);
         }
 
         moves
@@ -342,6 +383,9 @@ impl MoveGenerator {
                 }
             }
         }
+        for mv in &moves {
+            piece.push_move(mv);
+        }
 
         moves
     }
@@ -391,6 +435,9 @@ impl MoveGenerator {
                 }
                 current_pos = ((current_pos.0 as i32 + direction.0) as usize, (current_pos.1 as i32 + direction.1) as usize);
             }
+        }
+        for mv in &moves {
+            piece.push_move(mv);
         }
 
         moves
@@ -458,10 +505,13 @@ impl MoveGenerator {
                 moves.push(castling_move(piece, (pos.0, pos.1 - 2)));
             }
         }
+        for mv in &moves {
+            piece.push_move(mv);
+        }
 
         moves
     }
-    
+
     pub fn create_promotion_move(&self, piece: &Box<dyn Piece>, new_pos: (usize, usize), promotion_type: PieceType) -> Move {
         let mut mv = Move::new(MoveType::Promotion(promotion_type), piece.get_position().clone(), new_pos, piece.get_color());
         mv.set_valid(true);
@@ -490,6 +540,22 @@ fn en_passant_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
     let mut mv = Move::new(MoveType::EnPassant, piece.get_position().clone(), new_pos, piece.get_color());
     mv.set_valid(true);
     mv
+}
+
+fn promotion_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Vec<Move> {
+    let mut moves = Vec::new();
+    for &promotion_type in piece.get_promotion_types().iter() {
+        moves.push(Move::new(MoveType::Promotion(promotion_type), piece.get_position().clone(), new_pos, piece.get_color()));
+    }
+    moves
+}
+
+fn promotion_attack_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Vec<Move> {
+    let mut moves = Vec::new();
+    for &promotion_type in piece.get_promotion_types().iter() {
+        moves.push(Move::new(MoveType::PromoteAndCapture(promotion_type), piece.get_position().clone(), new_pos, piece.get_color()));
+    }
+    moves
 }
 
 fn normal_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
