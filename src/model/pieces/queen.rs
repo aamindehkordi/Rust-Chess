@@ -76,7 +76,7 @@ impl Piece for Queen {
     fn set_position(&mut self, position: (usize, usize)) {
         self.position = position;
     }
-    fn push_move(&mut self, mv: &mut Move){
+    fn push_move(&mut self, mv: &Move){
         self.moves.push(mv.clone());
     }
 }

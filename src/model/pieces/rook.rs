@@ -75,7 +75,7 @@ impl Piece for Rook {
         self.position = position;
     }
 
-    fn push_move(&mut self, mv: &mut Move){
+    fn push_move(&mut self, mv: &Move){
         self.moves.push(mv.clone());
     }
 }

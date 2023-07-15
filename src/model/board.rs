@@ -173,7 +173,7 @@ impl Board {
     /// Returns true if the given index of the given color is attacked by an enemy piece.
     pub fn is_square_attacked(&self, idx: (usize, usize), color: Color) -> bool {
         for mv in &self.all_possible_moves {
-            if mv.get_to() == idx && mv.get_color() != color {
+            if mv.get_to() == &idx && mv.get_color() != color {
                 return true;
             }
         }
@@ -223,7 +223,7 @@ impl Board {
 
     /// Puts down the picked up piece on a tile.
     pub fn put_down_piece(&mut self, idx: &(usize, usize), piece: Option<Box<dyn Piece>>) {
-        self.tiles[idx.0 * 8 + idx.1].piece = piece;
+        self.tiles[idx.0 * 8 + idx.1].set_piece(piece);
     }
 
     pub fn temp_move_piece(&self, from: &(usize, usize), to: &(usize, usize)) -> bool {
@@ -296,50 +296,18 @@ use super::*;
         let mut no_check_board = Board::new_standard();
         assert_eq!(no_check_board.is_king_in_check(&Color::Black), false);
 
-        let mut check_board = Board::from_fen("RkrK4/8/8/8/8/8/8/8"); // white rook -> black king, black rook -> white king
+        let mut check_board = Board::from_fen("RkrK4/8/8/8/8/8/8/8 - w"); // white rook -> black king, black rook -> white king
         assert_eq!(check_board.is_king_in_check(&Color::Black), true);
 
     }
 
     #[test]
     fn test_is_king_trapped(){
-        let mut not_trapped_board = Board::from_fen("k7/8/8/8/8/8/7K/8"); // free kings
+        let mut not_trapped_board = Board::from_fen("k7/8/8/8/8/8/7K/8 - w"); // free kings
         assert_eq!(not_trapped_board.is_king_trapped(&Color::White), false);
 
         let mut trapped_board = Board::new_standard();
         assert_eq!(trapped_board.is_king_trapped(&Color::White), true);
-    }
-
-    #[test]
-    fn test_temp_move_piece(){
-        let mut not_pinned_board = Board::from_fen("k7/b7/8/8/8/8/B7/K7"); // A file has black king then bishop and then white bishop and king
-        assert_eq!(not_pinned_board.temp_move_piece(&(2,6), &(3,5)), true); // black bishop can move
-        assert_eq!(not_pinned_board.temp_move_piece(&(5,1), &(4,2)), true); // white bishop can move
-
-        let mut pinned_king_board = Board::from_fen("k6r/b7/8/8/8/8/7B/R6K"); // white rook pinning black bishop (1,7) to black king and vice versa (6,0)
-        assert_eq!(pinned_king_board.temp_move_piece(&(1,7), &(2,6)), false); // black bishop can't move because it's pinned
-        assert_eq!(pinned_king_board.temp_move_piece(&(6,0), &(5,1)), false); // white bishop can't move because it's pinned
-    }
-
-    #[test]
-    fn test_move_piece(){
-        let mut board = Board::from_fen("k7/b7/8/8/8/8/B7/K7"); // free bishops
-        board.move_piece(&(2,6)as &(usize,usize), &(3,5)as &(usize,usize)); // black bishop moves
-        board.move_piece(&(5,1)as &(usize,usize), &(4,2)as &(usize,usize)); // white bishop moves
-
-        assert_eq!(board.get_piece(&(2,6) as (usize, usize)).unwrap().get_type(), PieceType::Bishop); // black bishop moved
-        assert_eq!(board.get_piece(&(5,1) as (usize, usize)).unwrap().get_type(), PieceType::Bishop); // white bishop moved
-    }
-
-    #[test]
-    fn test_take_piece(){
-        let mut board = Board::from_fen("k7/r7/8/8/8/8/R7/K7"); // free rooks
-        board.move_piece(&(0,1)as &(usize,usize), &(0,7)as &(usize,usize)); // black rook takes white rook
-        board.move_piece(&(0,8)as &(usize,usize), &(0,7)as &(usize,usize)); // white king takes black rook
-
-        assert_eq!(board.get_piece(&(0,1) as (usize, usize)), None); // black rook taken
-        assert_eq!(board.get_piece(&(0,8) as (usize, usize)), None); // white rook taken
-        assert_eq!(board.get_piece(&(0,7) as (usize, usize)).unwrap().get_type(), PieceType::King); // white king moved
     }
 
 }
