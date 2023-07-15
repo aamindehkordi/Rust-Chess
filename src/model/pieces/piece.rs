@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use crate::model::board::Board;
 use crate::model::moves::r#move::{Move, MoveType};
@@ -6,6 +7,27 @@ use crate::model::moves::r#move::{Move, MoveType};
 pub enum Color {
     White,
     Black,
+}
+impl Color {
+    pub fn opposite(&self) -> Self {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
+    
+    pub fn cmp(&self, other: &Self) -> Ordering {
+        match self {
+            Color::White => match other {
+                Color::White => Ordering::Equal,
+                Color::Black => Ordering::Less,
+            },
+            Color::Black => match other {
+                Color::White => Ordering::Greater,
+                Color::Black => Ordering::Equal,
+            },
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
