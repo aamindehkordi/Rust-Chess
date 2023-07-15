@@ -41,6 +41,9 @@ impl Game {
             if !self.is_legal(&mv, &piece) {
                 return Err("Illegal move".into());
             }
+            if mv.get_move_type() == &MoveType::Promo {
+                return Ok(Some(MoveType::Promo));
+            }
 
             piece.execute(&mut self.board, mv.clone());
             self.change_current_player();
@@ -50,7 +53,15 @@ impl Game {
         }
     }
 
-    pub fn is_legal(&mut self, mv: &Move, piece: &Box<dyn Piece>) -> bool {
+    pub fn promote(&mut self, from:(usize, usize), to: (usize, usize), piece_type: PieceType) {
+        let mut piece = self.board.get_piece(from).unwrap();
+        let mv = self.move_generator.create_promotion_move(&mut piece, to, piece_type);
+        piece.execute(&mut self.board, mv.clone());
+        self.change_current_player();
+        self.move_history.push(mv.to_history(piece.clone_box()));
+    }
+
+    pub fn is_legal(&self, mv: &Move, piece: &Box<dyn Piece>) -> bool {
         if !mv.valid() {
             return false;
         }

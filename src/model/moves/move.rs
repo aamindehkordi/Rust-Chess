@@ -1,4 +1,4 @@
-use crate::model::pieces::piece::{PieceType};
+use crate::model::pieces::piece::{Color, Piece, PieceType};
 use crate::model::tile::Tile;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -18,6 +18,7 @@ pub enum MoveType {
     Capture,
     EnPassant,
     Castle(CastleType),
+    Promo,
     Promotion(PieceType),
     PromoteAndCapture(PieceType),
     Invalid,
@@ -47,6 +48,7 @@ pub struct Move {
     from: (usize, usize),
     to: (usize, usize),
     valid: bool,
+    color: Color,
 }
 
 pub struct MoveHistory {
@@ -114,6 +116,14 @@ impl MoveType {
             _ => true,
         }
     }
+
+    pub fn get_promotion_piece(&self) -> Option<PieceType> {
+        match self {
+            Self::Promotion(piece_type) => Some(*piece_type),
+            Self::PromoteAndCapture(piece_type) => Some(*piece_type),
+            _ => None,
+        }
+    }
 }
 
 impl Move {
@@ -121,15 +131,39 @@ impl Move {
         move_type: MoveType,
         from: (usize, usize),
         to: (usize, usize),
+        color: Color,
     ) -> Self {
         Self {
             move_type,
             from,
             to,
             valid: false,
+            color,
         }
     }
 
+    pub fn to_history(&self, piece: Box<dyn Piece>) -> MoveHistory {
+        MoveHistory {
+            piece: piece.clone_box(),
+            mv: Self {
+                move_type: self.move_type.clone(),
+                from: self.from.clone(),
+                to: self.to.clone(),
+                valid: self.valid,
+                color: self.color.clone(),
+            },
+            notation: Move::get_notation(piece.clone_box()),
+        }
+    }
+
+    pub fn get_notation(piece: Box<dyn Piece>) -> String {
+        let mut notation = String::new();
+        // TODO: Add notation
+        notation
+    }
+    pub fn get_color(&self) -> Color {
+        self.color.clone()
+    }
     pub fn get_move_type(&self) -> &MoveType {
         &self.move_type
     }
@@ -148,5 +182,47 @@ impl Move {
 
     pub fn valid(&self) -> bool {
         self.valid
+    }
+
+    pub fn get_promotion(&self) -> PieceType {
+        match self.move_type {
+            MoveType::Promotion(piece_type) => piece_type,
+            MoveType::PromoteAndCapture(piece_type) => piece_type,
+            _ => PieceType::Pawn
+        }
+    }
+}
+
+impl MoveHistory {
+    pub fn new(
+        piece: Box<dyn Piece>,
+        mv: Move,
+        notation: String,
+    ) -> Self {
+        Self {
+            piece,
+            mv,
+            notation,
+        }
+    }
+
+    pub fn get_piece(&self) -> &Box<dyn Piece> {
+        &self.piece
+    }
+
+    pub fn get_move_type(&self) -> &MoveType {
+        &self.mv.move_type
+    }
+
+    pub fn get_from(&self) -> &(usize, usize) {
+        &self.mv.from
+    }
+
+    pub fn get_to(&self) -> &(usize, usize) {
+        &self.mv.to
+    }
+
+    pub fn get_notation(&self) -> &String {
+        &self.notation
     }
 }

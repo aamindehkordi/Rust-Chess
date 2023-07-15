@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Write;
 use crate::model::game::Game;
-use crate::model::pieces::piece::{Color};
+use crate::model::pieces::piece::{Color, PieceType};
 
 pub struct ConsoleView;
 
@@ -66,6 +66,25 @@ impl ConsoleView {
             _ => return Err("Invalid rank"), // if the rank is not 1-8, return an error
         };
         Ok((rank, file)) // return the coordinates
+    }
+
+    pub fn get_promotion_char(&self) -> char {
+        print!("Enter the piece you want to promote to: ");
+        io::stdout().flush().unwrap();
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap(); // read the input
+        input.trim().chars().next().unwrap() // return the first character
+    }
+
+    pub fn get_promotion_piece(&self) -> Option<PieceType> {
+        let piece_char = self.get_promotion_char();
+        match piece_char {
+            'q' => Some(PieceType::Queen),
+            'r' => Some(PieceType::Rook),
+            'b' => Some(PieceType::Bishop),
+            'n' => Some(PieceType::Knight),
+            _ => None,
+        }
     }
 
     pub fn display_check(&self, color: &Color) {

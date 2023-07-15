@@ -1,5 +1,7 @@
+use std::error::Error;
 // src/controller/game_controller.rs
 use crate::model::game::Game;
+use crate::model::moves::r#move::MoveType;
 use crate::view::console_view::ConsoleView;
 
 pub struct GameController {
@@ -22,9 +24,18 @@ impl GameController {
             let from = (from_row, from_col);
             let to = (to_row, to_col);
             println!("Move from user: from: {:?}, to: {:?}", from, to);
-            if let Err(e) = self.game.make_move(from, to) { // Make the move
-                println!("{}", e);
-                continue;
+            match self.game.make_move(from, to) {
+                Ok(Some(MoveType::Promo)) => {
+                    if let Some(piece_type) = self.view.get_promotion_piece() {
+                        self.game.promote(from, to, piece_type);
+                    } else { continue; }
+                }
+                Ok(None) => (),
+                Err(e) => {
+                    println!("{}", e);
+                    continue;
+                },
+                _ => {}
             }
         }
     }

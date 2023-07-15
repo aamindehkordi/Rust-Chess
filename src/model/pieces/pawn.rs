@@ -56,17 +56,53 @@ impl Piece for Pawn {
     }
 
     fn execute(&mut self, board: &mut Board, mv: Move) {
-        let to_position = mv.get_to();
-        let mut this = board.pick_up_piece(&self.position).unwrap();
+        let to_position = mv.get_to(); // Get the destination of the move
+        let mut this = board.pick_up_piece(&self.position).unwrap(); // Pick up the piece at the current position
 
+        // Check if this is the piece we want to move
         if this.get_color() == self.color && this.get_type() == self.piece_type && this.get_position() == &self.position {
             match mv.get_move_type() {
-                MoveType::Normal | MoveType::DoublePush => {
+                MoveType::Normal | MoveType::Promo | MoveType::DoublePush=> { // If the move is a normal move
                     board.move_piece(&self.position, to_position);
                 },
-                MoveType::Capture => {
+                MoveType::Capture => { // If the move is a capture move
                     board.move_piece(&self.position, to_position);
                     board.take_piece(mv.get_to());
+                },
+                MoveType::EnPassant => { // If the move is an en passant
+                    // get the position of the pawn that is being taken which is above or below the pawn that is moving
+                    let taken_position = match self.color {
+                        Color::White => (to_position.0 - 1, to_position.1),
+                        Color::Black => (to_position.0 + 1, to_position.1),
+                    };
+                    board.move_piece(&self.position, to_position); // Move the pawn
+                    board.take_piece(&taken_position); // Take the pawn that is being taken
+                },
+                MoveType::Promotion(_) => { // If the move is a promotion
+                    board.move_piece(&self.position, to_position); // Move the pawn
+                    board.take_piece(mv.get_to()); // Take the piece that is being taken
+                    let mut new_piece: Box<dyn Piece> = match mv.get_promotion() {
+                        PieceType::Queen => Box::new(crate::model::pieces::queen::Queen::new(self.color.clone(), to_position.clone())),
+                        PieceType::Rook => Box::new(crate::model::pieces::rook::Rook::new(self.color.clone(), to_position.clone())),
+                        PieceType::Bishop => Box::new(crate::model::pieces::bishop::Bishop::new(self.color.clone(), to_position.clone())),
+                        PieceType::Knight => Box::new(crate::model::pieces::knight::Knight::new(self.color.clone(), to_position.clone())),
+                        _ => Box::new(crate::model::pieces::pawn::Pawn::new(self.color.clone(), to_position.clone())),
+                    };
+                    new_piece.set_position(to_position.clone()); // Set the position of the new piece
+                    board.put_down_piece(&to_position, Some(new_piece)); // Put down the new piece
+                },
+                MoveType::PromoteAndCapture(_) => { // If the move is a promotion and capture
+                    board.move_piece(&self.position, to_position); // Move the pawn
+                    board.take_piece(mv.get_to()); // Take the piece that is being taken
+                    let mut new_piece: Box<dyn Piece> = match mv.get_promotion() {
+                        PieceType::Queen => Box::new(crate::model::pieces::queen::Queen::new(self.color.clone(), to_position.clone())),
+                        PieceType::Rook => Box::new(crate::model::pieces::rook::Rook::new(self.color.clone(), to_position.clone())),
+                        PieceType::Bishop => Box::new(crate::model::pieces::bishop::Bishop::new(self.color.clone(), to_position.clone())),
+                        PieceType::Knight => Box::new(crate::model::pieces::knight::Knight::new(self.color.clone(), to_position.clone())),
+                        _ => Box::new(crate::model::pieces::pawn::Pawn::new(self.color.clone(), to_position.clone())),
+                    };
+                    new_piece.set_position(to_position.clone()); // Set the position of the new piece
+                    board.put_down_piece(&to_position, Some(new_piece)); // Put down the new piece
                 },
                 _ => {},
             }
@@ -99,10 +135,10 @@ impl Piece for Pawn {
 
     fn get_directions(&self) -> &[(i32, i32)] { &self.directions }
 
-
     fn set_position(&mut self, position: (usize, usize)) {
         self.position = position;
     }
+
     fn push_move(&mut self, mv: &mut Move){
         self.moves.push(mv.clone());
     }
