@@ -6,11 +6,15 @@ use std::error::Error;
 use crate::model::pieces::piece::Piece;
 use crate::model::pieces::piece::Color;
 
+
+
 pub struct Game {
     board: Board,
     current_turn: Color,
     white_king: (usize, usize),
     black_king: (usize, usize),
+    move_history: Vec<MoveHistory>,
+    move_generator: MoveGenerator,
 }
 
 const STARTING_POSITION: &str = "rnbqk2r/pppppppp/8/8/8/8/PPPPPPPP/R3KBNR w";

@@ -49,6 +49,12 @@ pub struct Move {
     valid: bool,
 }
 
+pub struct MoveHistory {
+    piece: Box<dyn Piece>,
+    mv: Move,
+    notation: String,
+}
+
 impl MoveType {
 
     pub fn is_capture(&self) -> bool {
