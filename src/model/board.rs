@@ -1,3 +1,4 @@
+use crate::model::moves::r#move::Move;
 use crate::model::pieces::pawn::Pawn;
 use crate::model::pieces::rook::Rook;
 use crate::model::pieces::knight::Knight;
@@ -14,6 +15,7 @@ pub struct Board {
     pub tiles: Vec<Tile>,
     pub current_turn: Color,
     pub taken_pieces: Vec<Box<dyn Piece>>,
+    pub all_possible_moves: Vec<Move>,
 }
 
 impl Clone for Board {
@@ -30,6 +32,7 @@ impl Clone for Board {
             tiles,
             current_turn: self.current_turn.clone(),
             taken_pieces,
+            all_possible_moves: self.all_possible_moves.clone(),
         }
     }
 }
@@ -65,7 +68,7 @@ impl Board {
                 tiles.push(Tile::new((i, j), piece));
             }
         }
-        Self { tiles, current_turn: Color::White, taken_pieces }
+        Self { tiles, current_turn: Color::White, taken_pieces, all_possible_moves: Vec::new() }
     }
 
     pub fn new() -> Self {
@@ -76,7 +79,7 @@ impl Board {
                 tiles.push(Tile::new((i, j), None));
             }
         }
-        Self { tiles, current_turn: Color::White, taken_pieces }
+        Self { tiles, current_turn: Color::White, taken_pieces, all_possible_moves: Vec::new() }
     }
 
     pub fn from_fen(fen: &str) -> Board {
@@ -122,6 +125,8 @@ impl Board {
             };
             board.current_turn = color;
         }
+
+        board.all_possible_moves = board.update_all_possible_moves();
         board
     }
 
@@ -145,6 +150,35 @@ impl Board {
     pub fn get_taken_pieces(&self) -> &Vec<Box<dyn Piece>> {
         &self.taken_pieces
     }
+    pub fn get_all_possible_moves(&self) -> &Vec<Move> {
+        &self.all_possible_moves
+    }
+
+    /// Returns a vector of all possible moves for the current player.
+    pub fn update_all_possible_moves(&self) -> Vec<Move> {
+        let mut moves = Vec::new();
+        for tile in &self.tiles {
+            if let Some(piece) = tile.get_piece() {
+                let piece_moves = piece.get_moves().clone();
+                for piece_move in piece_moves {
+                    moves.push(piece_move);
+                }
+            }
+        }
+        // sort by color
+        moves.sort_by(|a, b| a.get_color().cmp(&b.get_color()));
+        moves
+    }
+
+    /// Returns true if the given index of the given color is attacked by an enemy piece.
+    pub fn is_square_attacked(&self, idx: (usize, usize), color: Color) -> bool {
+        for mv in &self.all_possible_moves {
+            if mv.get_to() == idx && mv.get_color() != color {
+                return true;
+            }
+        }
+        false
+    }
 
     pub fn find_king(&self, color: Color) -> (usize, usize) {
         for i in 0..8 {
@@ -159,30 +193,14 @@ impl Board {
         panic!("King not found");
     }
 
+
     /// Returns true if the given player is in check.
     pub fn is_king_in_check(&self, color: &Color) -> bool {
         let king_idx = self.find_king(color.clone());
-        if let idx = king_idx {
-            let king = self.get_piece(idx).expect("King not found");
-            let king_moves = king.get_moves();
-            for i in 0..8 {
-                for j in 0..8 {
-                    if let Some(piece) = self.get_piece((i, j)) {
-                        if piece.get_color() != *color {
-                            let piece_moves = piece.get_moves();
-                            for piece_move in piece_moves {
-                                if king_moves.contains(piece_move) {
-                                    println!("{color:?} is in check!");
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        false
+        self.is_square_attacked(king_idx, color.clone())
     }
+
+
 
     /// Returns true if the given player's king is trapped.
     /// A king is trapped if it has no moves.
@@ -208,13 +226,14 @@ impl Board {
         self.tiles[idx.0 * 8 + idx.1].piece = piece;
     }
 
-    pub fn temp_move_piece(&mut self, from: &(usize, usize), to: &(usize, usize)) -> bool {
+    pub fn temp_move_piece(&self, from: &(usize, usize), to: &(usize, usize)) -> bool {
         // copy the board
         let mut temp_board = self.clone();
         // pick up the piece
         let piece = temp_board.pick_up_piece(from);
         // put down the piece
         temp_board.put_down_piece(to, piece);
+        temp_board.all_possible_moves = temp_board.update_all_possible_moves();
         // check if the king is in check
         !temp_board.is_king_in_check(&self.current_turn)
     }
@@ -230,6 +249,7 @@ impl Board {
 
             piece.set_position(*to);
             self.put_down_piece(to, Some(piece));
+            self.all_possible_moves = self.update_all_possible_moves();
         }
     }
 
