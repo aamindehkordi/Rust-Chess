@@ -53,7 +53,7 @@ impl Piece for King {
         let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.position).unwrap();
         match mv.get_move_type() {
-            MoveType::Normal  => {
+            MoveType::Normal => {
                 board.move_piece(&self.position, to_position);
             },
             MoveType::Capture => {
@@ -62,25 +62,25 @@ impl Piece for King {
             },
             MoveType::Castle(CastleType::Kingside) => {
                 let rook_position = match self.color {
-                    Color::White => (7, 7),
-                    Color::Black => (0, 7),
+                    Color::Black => (7, 7),
+                    Color::White => (0, 7),
                 };
                 let mut rook = board.pick_up_piece(&rook_position).unwrap();
                 board.move_piece(&self.position, to_position);
                 board.move_piece(&rook_position, &(to_position.0, to_position.1 - 1));
                 rook.set_position((to_position.0, to_position.1 - 1));
-                board.put_down_piece(&rook_position, Some(rook));
+                board.put_down_piece(&(to_position.0, to_position.1 - 1), Some(rook));
             },
             MoveType::Castle(CastleType::Queenside) => {
                 let rook_position = match self.color {
-                    Color::White => (7, 0),
-                    Color::Black => (0, 0),
+                    Color::Black => (7, 0),
+                    Color::White => (0, 0),
                 };
                 let mut rook = board.pick_up_piece(&rook_position).unwrap();
                 board.move_piece(&self.position, to_position);
                 board.move_piece(&rook_position, &(to_position.0, to_position.1 + 1));
                 rook.set_position((to_position.0, to_position.1 + 1));
-                board.put_down_piece(&rook_position, Some(rook));
+                board.put_down_piece(&(to_position.0, to_position.1 + 1), Some(rook));
             }
             _ => {},
         }

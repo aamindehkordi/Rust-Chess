@@ -142,6 +142,9 @@ impl Board {
         let tile = &self.tiles[idx.0 * 8 + idx.1];
         tile.get_piece().as_ref().map(|piece| piece.clone_box())
     }
+    pub fn get_taken_pieces(&self) -> &Vec<Box<dyn Piece>> {
+        &self.taken_pieces
+    }
 
     pub fn find_king(&self, color: Color) -> (usize, usize) {
         for i in 0..8 {

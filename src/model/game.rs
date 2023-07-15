@@ -13,7 +13,7 @@ pub struct Game {
     black_king: (usize, usize),
 }
 
-const STARTING_POSITION: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w";
+const STARTING_POSITION: &str = "rnbqk2r/pppppppp/8/8/8/8/PPPPPPPP/R3KBNR w";
 
 impl Game {
     pub fn new() -> Self {
@@ -25,9 +25,8 @@ impl Game {
 
     pub fn make_move(&mut self, from: (usize, usize), to: (usize, usize)) -> Result<(), Box<dyn Error>> {
         let move_generator = MoveGenerator::new();
-        let curr_player = self.board.get_current_player();
         if let Some(mut piece)  = self.board.get_piece(from.clone()){
-            if piece.get_color() != curr_player.clone() {
+            if piece.get_color() != self.current_turn.clone() {
                 return Err("Not your turn".into());
             }
             move_generator.generate_moves(&mut piece, &mut self.board);
@@ -80,7 +79,8 @@ impl Game {
         self.current_turn = match self.current_turn {
             Color::White => Color::Black,
             Color::Black => Color::White,
-        }
+        };
+        self.board.current_turn = self.current_turn.clone();
     }
 
 }
