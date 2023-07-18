@@ -49,6 +49,7 @@ impl Piece for King {
         }
     }
 
+    // piece specific execute function
     fn execute(&mut self, board: &mut Board, mv: Move) {
         let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.position).unwrap();

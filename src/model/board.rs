@@ -1,4 +1,5 @@
-use crate::model::moves::r#move::Move;
+use crate::model::moves::move_generator::MoveGenerator;
+use crate::model::moves::r#move::{Move, MoveType};
 use crate::model::pieces::pawn::Pawn;
 use crate::model::pieces::rook::Rook;
 use crate::model::pieces::knight::Knight;
@@ -16,6 +17,7 @@ pub struct Board {
     pub current_turn: Color,
     pub taken_pieces: Vec<Box<dyn Piece>>,
     pub all_possible_moves: Vec<Move>,
+    pub move_generator: MoveGenerator,
 }
 
 impl Clone for Board {
@@ -33,6 +35,7 @@ impl Clone for Board {
             current_turn: self.current_turn.clone(),
             taken_pieces,
             all_possible_moves: self.all_possible_moves.clone(),
+            move_generator: self.move_generator.clone(),
         }
     }
 }
@@ -68,7 +71,7 @@ impl Board {
                 tiles.push(Tile::new((i, j), piece));
             }
         }
-        Self { tiles, current_turn: Color::White, taken_pieces, all_possible_moves: Vec::new() }
+        Self { tiles, current_turn: Color::White, taken_pieces, all_possible_moves: Vec::new(), move_generator: MoveGenerator::new() }
     }
 
     pub fn new() -> Self {
@@ -79,7 +82,7 @@ impl Board {
                 tiles.push(Tile::new((i, j), None));
             }
         }
-        Self { tiles, current_turn: Color::White, taken_pieces, all_possible_moves: Vec::new() }
+        Self { tiles, current_turn: Color::White, taken_pieces, all_possible_moves: Vec::new(), move_generator: MoveGenerator::new() }
     }
 
     pub fn from_fen(fen: &str) -> Board {
@@ -147,24 +150,29 @@ impl Board {
         let tile = &self.tiles[idx.0 * 8 + idx.1];
         tile.get_piece().as_ref().map(|piece| piece.clone_box())
     }
+
+    pub fn get_all_pieces(&self) -> Vec<Box<dyn Piece>> {
+        let mut pieces = Vec::new();
+        for tile in &self.tiles {
+            if let Some(piece) = tile.get_piece().as_ref() {
+                pieces.push(piece.clone_box());
+            }
+        }
+        pieces
+    }
+
+
     pub fn get_taken_pieces(&self) -> &Vec<Box<dyn Piece>> {
         &self.taken_pieces
     }
-    pub fn get_all_possible_moves(&self) -> &Vec<Move> {
+    pub fn get_all_possible_moves(&mut self) -> &Vec<Move> {
+        self.all_possible_moves = self.update_all_possible_moves();
         &self.all_possible_moves
     }
 
     /// Returns a vector of all possible moves for the current player.
-    pub fn update_all_possible_moves(&self) -> Vec<Move> {
-        let mut moves = Vec::new();
-        for tile in &self.tiles {
-            if let Some(piece) = tile.get_piece() {
-                let piece_moves = piece.get_moves().clone();
-                for piece_move in piece_moves {
-                    moves.push(piece_move);
-                }
-            }
-        }
+    fn update_all_possible_moves(&self) -> Vec<Move> {
+        let mut moves = self.move_generator.generate_all_moves(&self);
         // sort by color
         moves.sort_by(|a, b| a.get_color().cmp(&b.get_color()));
         moves
@@ -172,9 +180,19 @@ impl Board {
 
     /// Returns true if the given index of the given color is attacked by an enemy piece.
     pub fn is_square_attacked(&self, idx: (usize, usize), color: Color) -> bool {
-        for mv in &self.all_possible_moves {
+        let mvs = self.update_all_possible_moves();
+        for mv in &mvs {
             if mv.get_to() == &idx && mv.get_color() != color {
-                return true;
+                // if the move is normal and from a pawn, it's not an attack
+                if mv.get_move_type().clone() == MoveType::Normal || mv.get_move_type().is_promotion() {
+                    if let Some(piece) = self.get_piece(mv.get_from().clone()) {
+                        if piece.get_type() == PieceType::Pawn {
+                            continue;
+                        }
+                    }
+                } else {
+                    return true;
+                }
             }
         }
         false
@@ -232,10 +250,11 @@ impl Board {
         // pick up the piece
         let piece = temp_board.pick_up_piece(from);
         // put down the piece
+
         temp_board.put_down_piece(to, piece);
         temp_board.all_possible_moves = temp_board.update_all_possible_moves();
         // check if the king is in check
-        !temp_board.is_king_in_check(&self.current_turn)
+        temp_board.is_king_in_check(&self.current_turn)
     }
 
     /// Moves a piece from one tile to another.
@@ -293,20 +312,28 @@ use super::*;
 
     #[test]
     fn test_is_king_in_check() {
+        use crate::view::console_view::ConsoleView;
+        let cv = ConsoleView::new();
         let mut no_check_board = Board::new_standard();
+        cv.display_board(&no_check_board);
         assert_eq!(no_check_board.is_king_in_check(&Color::Black), false);
 
         let mut check_board = Board::from_fen("RkrK4/8/8/8/8/8/8/8 - w"); // white rook -> black king, black rook -> white king
+        cv.display_board(&check_board);
         assert_eq!(check_board.is_king_in_check(&Color::Black), true);
 
     }
 
     #[test]
     fn test_is_king_trapped(){
+        use crate::view::console_view::ConsoleView;
+        let cv = ConsoleView::new();
         let mut not_trapped_board = Board::from_fen("k7/8/8/8/8/8/7K/8 - w"); // free kings
+        cv.display_board(&not_trapped_board);
         assert_eq!(not_trapped_board.is_king_trapped(&Color::White), false);
 
         let mut trapped_board = Board::new_standard();
+        cv.display_board(&trapped_board);
         assert_eq!(trapped_board.is_king_trapped(&Color::White), true);
     }
 

@@ -1,6 +1,6 @@
 use std::io;
 use std::io::Write;
-use crate::model::game::Game;
+use crate::model::board::Board;
 use crate::model::pieces::piece::{Color, PieceType};
 
 pub struct ConsoleView;
@@ -11,8 +11,7 @@ impl ConsoleView {
     }
 
     /// Displays the board to the console Facing the current player.
-    pub fn display_board(&self, game: &Game) {
-        let board = game.get_board();
+    pub fn display_board(&self, board: &Board) {
         for i in (0..8).rev() {
             for j in 0..8 {
                 let tile = board.get_tile((i, j));

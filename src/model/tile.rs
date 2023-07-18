@@ -7,6 +7,41 @@ pub struct Tile {
     pub(crate) attacked_by: Vec<(usize, usize)>,
 }
 
+impl Tile {
+    pub fn new(position: (usize, usize), piece: Option<Box<dyn Piece>>) -> Self {
+        Self { position, piece, attacked_by: Vec::new() }
+    }
+
+    // Getters
+    pub fn get_piece(&self) -> &Option<Box<dyn Piece>> {
+        &self.piece
+    }
+
+    pub fn get_mut_piece(&mut self) -> &mut Option<Box<dyn Piece>> {
+        &mut self.piece
+    }
+
+    pub fn get_position(&self) -> &(usize, usize) {
+        &self.position
+    }
+
+    pub fn is_empty(&self) -> bool {
+        match &self.piece {
+            Some(_) => false,
+            None => true,
+        }
+    }
+
+    pub fn set_piece(&mut self, piece: Option<Box<dyn Piece>>) {
+        self.piece = piece;
+    }
+
+    pub fn attacked(&mut self, pos: (usize, usize)) {
+        self.attacked_by.push(pos);
+    }
+
+}
+
 impl PartialEq for Tile {
     fn eq(&self, other: &Self) -> bool {
         self.position == other.position && match (&self.piece, &other.piece) {
@@ -41,33 +76,3 @@ impl Debug for Tile {
     }
 }
 
-impl Tile {
-    pub fn new(position: (usize, usize), piece: Option<Box<dyn Piece>>) -> Self {
-        Self { position, piece, attacked_by: Vec::new() }
-    }
-
-    // Getters
-    pub fn get_piece(&self) -> &Option<Box<dyn Piece>> {
-        &self.piece
-    }
-
-    pub fn get_position(&self) -> &(usize, usize) {
-        &self.position
-    }
-
-    pub fn is_empty(&self) -> bool {
-        match &self.piece {
-            Some(_) => false,
-            None => true,
-        }
-    }
-
-    pub fn set_piece(&mut self, piece: Option<Box<dyn Piece>>) {
-        self.piece = piece;
-    }
-
-    pub fn attacked(&mut self, pos: (usize, usize)) {
-        self.attacked_by.push(pos);
-    }
-
-}

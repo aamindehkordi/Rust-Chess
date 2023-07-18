@@ -2,6 +2,7 @@ use crate::model::board::Board;
 use crate::model::moves::r#move::{Move, MoveType, CastleType};
 use crate::model::pieces::piece::{Color, Piece, PieceType};
 
+#[derive(Clone)]
 pub struct MoveGenerator { }
 
 impl MoveGenerator {
@@ -9,7 +10,19 @@ impl MoveGenerator {
         Self {}
     }
 
-    pub fn generate_moves(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+
+    pub fn generate_all_moves(&self, board: &Board) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let mut pieces = board.get_all_pieces();
+        for piece in &mut pieces {
+            let mut piece_moves = self.generate_moves_for_piece(piece, board);
+            moves.append(&mut piece_moves);
+        }
+        moves
+    }
+
+
+    pub fn generate_moves_for_piece(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         match piece.get_type() {
             PieceType::Pawn => self.generate_moves_for_pawn(piece, board),
             PieceType::Rook => self.generate_moves_for_rook(piece, board),
@@ -106,7 +119,7 @@ impl MoveGenerator {
     }
 
 
-    fn generate_moves_for_pawn(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+    fn generate_moves_for_pawn(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = piece.get_position().clone();
         let color = piece.get_color();
@@ -133,33 +146,6 @@ impl MoveGenerator {
         // Moving two squares forward on the pawn's first move
         if piece.get_moves().is_empty() && in_bounds(move_two_forward) && board.get_piece(move_two_forward).is_none() {
             moves.push(double_push_move(piece, move_two_forward));
-        }
-
-        // Capturing diagonally
-        for &cmv in &capture_moves {
-            // check if the position is valid
-            if !in_bounds(cmv) {
-                continue;
-            }
-            if let Some(dest_piece) = board.get_piece(cmv) {
-                if dest_piece.get_color() != piece.get_color() {
-                    moves.push(capture_move(piece, cmv));
-                }
-            }
-        }
-
-        // En passant: capturing an opponent's pawn in passing
-        let en_passant_moves = capture_moves.clone();
-        for &epmv in &en_passant_moves {
-            // check if the position is valid
-            if !in_bounds(epmv) {
-                continue;
-            }
-            if let Some(dest_piece) = board.get_piece(epmv) {
-                if dest_piece.get_color() != piece.get_color() {
-                    moves.push(en_passant_move(piece, epmv));
-                }
-            }
         }
 
         // Promotion: reaching the end of the board
@@ -189,6 +175,44 @@ impl MoveGenerator {
                 }
             }
         }
+
+        // Capturing diagonally
+        for &cmv in &capture_moves {
+            // check if the position is valid
+            if !in_bounds(cmv) {
+                continue;
+            }
+            // check if there is a piece at the position
+            if let Some(dest_piece) = board.get_piece(cmv) {
+                if dest_piece.get_color() != piece.get_color() {
+                    // if the position is at the end of the board, it is a promote and capture move
+                if cmv.0 == 0 || cmv.0 == 7 {
+                    let mut promo_attack_moves = promotion_attack_move(piece, cmv);
+                    for pam in &mut promo_attack_moves {
+                        moves.push(pam.clone());
+                    }
+                } else {
+                    moves.push(capture_move(piece, cmv));
+                }
+                }
+            }
+
+        }
+
+        // En passant: capturing an opponent's pawn in passing
+        let en_passant_moves = capture_moves.clone();
+        for &epmv in &en_passant_moves {
+            // check if the position is valid
+            if !in_bounds(epmv) {
+                continue;
+            }
+            if let Some(dest_piece) = board.get_piece(epmv) {
+                if dest_piece.get_color() != piece.get_color() {
+                    moves.push(en_passant_move(piece, epmv));
+                }
+            }
+        }
+
         for mv in &moves {
             piece.push_move(mv);
         }
@@ -236,7 +260,7 @@ impl MoveGenerator {
         move_type
     }
 
-    fn generate_moves_for_rook(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+    fn generate_moves_for_rook(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = piece.get_position().clone();
 
@@ -296,7 +320,7 @@ impl MoveGenerator {
         move_type // Return the move type
     }
 
-    fn generate_moves_for_knight(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+    fn generate_moves_for_knight(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
 
         let directions = piece.get_directions();
@@ -359,7 +383,7 @@ impl MoveGenerator {
         MoveType::Normal
     }
 
-    fn generate_moves_for_bishop(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+    fn generate_moves_for_bishop(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = piece.get_position().clone();
 
@@ -413,7 +437,7 @@ impl MoveGenerator {
         }
     }
 
-    pub fn generate_moves_for_queen(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+    pub fn generate_moves_for_queen(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
         let (x, y) = piece.get_position().clone();
 
@@ -448,16 +472,25 @@ impl MoveGenerator {
         let (fx, fy) = *from;
         let (tx, ty) = *to;
 
-        // Normal move: moving one square in any direction
         let dx = (fx as i32 - tx as i32).abs();
         let dy = (fy as i32 - ty as i32).abs();
-        if dx <= 1 && dy <= 1 {
+
+
+        // Capturing: moving one square in any direction and capturing an opponent's piece
+        if let Some(dest_piece) = board.get_piece(*to) {
+            if dx <= 1 && dy <= 1 {
+                if dest_piece.get_color() != piece.get_color() {
+                    return MoveType::Capture;
+                }
+            }
+        } else if dx <= 1 && dy <= 1{
+        // Normal move: moving one square in any direction
             return MoveType::Normal;
         }
 
         // Castling: moving two squares towards a rook on its initial square,
         // and then the rook moves to the square the king skipped over.
-        if dy == 2 && dx == 0 && piece.get_moves().is_empty() {
+        if dy == 2 && dx == 0 {
             // Assuming here that the Rook's initial position is the corner of the board.
             // You'll need to check if the squares between the King and the Rook are empty and no square the king crosses is threatened.
             if fy < ty && board.get_piece((fx, 7)).map_or(false, |p| p.get_type() == PieceType::Rook && p.get_moves().is_empty()) {
@@ -470,7 +503,7 @@ impl MoveGenerator {
         move_type
     }
 
-    fn generate_moves_for_king(&self, piece: &mut Box<dyn Piece>, board: &mut Board) -> Vec<Move> {
+    fn generate_moves_for_king(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = piece.get_position().clone();
 

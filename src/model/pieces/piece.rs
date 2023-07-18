@@ -44,6 +44,7 @@ const BOARD_SIZE: i32 = 8;
 pub trait Piece: Display + Debug  {
     fn new(color: Color, position: (usize, usize)) -> Self where Self: Sized;
 
+    // piece specific execute function
     fn execute(&mut self, board: &mut Board, mv: Move) {
         let to_position = mv.get_to();
         let mut this = board.pick_up_piece(&self.get_position()).unwrap();

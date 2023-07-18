@@ -15,38 +15,47 @@ pub struct Game {
     white_king: (usize, usize),
     black_king: (usize, usize),
     move_history: Vec<MoveHistory>,
-    move_generator: MoveGenerator,
 }
 
-const STARTING_POSITION: &str = "rnbqk2r/pppppPpp/8/8/1p6/8/PPpPPPPP/R3KBNR w";
+const STARTING_POSITION: &str = "rnbqk2r/ppppPppp/8/8/1p6/8/PPpPPPPP/R3KBNR w";
 
 impl Game {
     pub fn new() -> Self {
         let board = Board::from_fen(STARTING_POSITION);
-        let move_generator = MoveGenerator::new();
-        Self { board, current_turn: Color::White, white_king: (0, 4), black_king: (7, 4), move_history: Vec::new(), move_generator }
+        Self { board, current_turn: Color::White, white_king: (0, 4), black_king: (7, 4), move_history: Vec::new() }
     }
 
     pub fn get_board(&self) -> &Board { &self.board }
+
+    pub fn promote(&mut self, from:(usize, usize), to: (usize, usize), piece_type: PieceType) {
+        let mut piece = self.board.get_piece(from).unwrap();
+        let mv = self.board.move_generator.create_promotion_move(&mut piece, to, piece_type);
+        piece.execute(&mut self.board, mv.clone());
+        self.board.move_generator.generate_moves_for_piece(&mut piece, &self.board);
+        self.change_current_player();
+        self.move_history.push(mv.to_history(piece.clone_box()));
+    }
 
     pub fn make_move(&mut self, from: (usize, usize), to: (usize, usize)) -> Result<(Option<MoveType>), Box<dyn Error>> {
         if let Some(mut piece)  = self.board.get_piece(from.clone()){
             if piece.get_color() != self.current_turn.clone() {
                 return Err("Not your turn".into());
             }
-            self.is_game_over();
 
-            let mv = self.move_generator.get_move(&from, &to, &piece, &self.board);
-
-            if !self.is_legal(&mv, &piece) {
-                return Err("Illegal move".into());
+            if self.is_game_over() {
+                return Err("Game Over".into());
             }
+
+            let mv = self.board.move_generator.get_move(&from, &to, &piece, &self.board);
+
             if mv.get_move_type() == &MoveType::Promo {
                 return Ok(Some(MoveType::Promo));
             }
+            if !self.is_legal(&mv, &piece) {
+                return Err("Illegal move".into());
+            }
 
             piece.execute(&mut self.board, mv.clone());
-            self.move_generator.generate_moves(&mut piece, &mut self.board);
             self.change_current_player();
             self.move_history.push(mv.to_history(piece.clone_box()));
             Ok((None))
@@ -55,22 +64,33 @@ impl Game {
         }
     }
 
-    pub fn promote(&mut self, from:(usize, usize), to: (usize, usize), piece_type: PieceType) {
-        let mut piece = self.board.get_piece(from).unwrap();
-        let mv = self.move_generator.create_promotion_move(&mut piece, to, piece_type);
-        piece.execute(&mut self.board, mv.clone());
-        self.move_generator.generate_moves(&mut piece, &mut self.board);
-        self.change_current_player();
-        self.move_history.push(mv.to_history(piece.clone_box()));
-    }
-
     pub fn is_legal(&self, mv: &Move, piece: &Box<dyn Piece>) -> bool {
         if !mv.valid() {
             return false;
         }
+
         let current_position = piece.get_position();
         let destination = mv.get_to(); // Get the destination of the move
         let dest_piece = self.board.get_piece(destination.clone()); //  Get the piece at the destination
+
+        // Check if the move would result in the player's own king being in check
+        let results_in_check = self.board.temp_move_piece(&current_position, &destination);
+        if results_in_check {
+            return false;
+        }
+
+        // Check if the destination is empty or if the piece at the destination is of a different color
+        if let Some(dest_piece) = dest_piece {
+            if dest_piece.get_color() == piece.get_color() { // If the piece at the destination is of the same color
+                return false;
+            }
+
+            // Check if the move is a capture
+            if mv.get_move_type() != (&MoveType::Capture) {
+                return false;
+
+            }
+        }
 
         // Check if the move is a double push
         if mv.get_move_type() == &MoveType::DoublePush {
@@ -150,6 +170,14 @@ impl Game {
                             return false;
                         }
                     }
+                    if mv.get_piece().get_type() == PieceType::Rook {
+                        // check if the rook is on the H file
+                        if mv.get_from().0 == 7 {
+                            if mv.get_piece().get_color() == piece.get_color() {
+                                return false;
+                            }
+                        }
+                    }
 
                 }
             }
@@ -181,6 +209,14 @@ impl Game {
                     if mv.get_piece().get_type() == PieceType::King {
                         if mv.get_piece().get_color() == piece.get_color() {
                             return false;
+                        }
+                    }
+                    if mv.get_piece().get_type() == PieceType::Rook {
+                        // check if the rook is on the A file
+                        if mv.get_from().0 == 0 {
+                            if mv.get_piece().get_color() == piece.get_color() {
+                                return false;
+                            }
                         }
                     }
 
@@ -224,30 +260,19 @@ impl Game {
             return true;
         }
 
-
-        // Check if the destination is empty or if the piece at the destination is of a different color
-        if let Some(dest_piece) = dest_piece {
-            if dest_piece.get_color() == piece.get_color() { // If the piece at the destination is of the same color
-                return false;
-            }
-
-            // Check if the move is a capture
-            if mv.get_move_type() != (&MoveType::Capture) {
-                return false;
-            }
-
-        }
-
         // check if the king is in check after the move
-        return self.board.temp_move_piece(&piece.get_position(), &destination);
+        let result_in_check = self.board.temp_move_piece(&current_position, &destination);
+        return !result_in_check;
     }
 
-    pub fn is_game_over(&self) -> bool {
+    pub fn is_game_over(&mut self) -> bool {
         // Logic to check if game is over
         let curr_player = self.board.get_current_player();
         if self.board.is_king_in_check(curr_player) {
-            // Check if checkmate
-            if self.board.is_king_trapped(curr_player) {
+            // Check if king has any legal moves
+            let king = self.board.find_king(curr_player.clone());
+            let king_moves = self.board.get_piece(king).unwrap().get_moves().clone();
+            if king_moves.len() == 0 {
                 return true;
             }
         }
