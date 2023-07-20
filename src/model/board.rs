@@ -1,5 +1,5 @@
 use crate::model::moves::move_generator::MoveGenerator;
-use crate::model::moves::r#move::{Move, MoveType};
+use crate::model::moves::r#move::{Move, MoveHistory, MoveType};
 use crate::model::pieces::pawn::Pawn;
 use crate::model::pieces::rook::Rook;
 use crate::model::pieces::knight::Knight;
@@ -18,6 +18,7 @@ pub struct Board {
     pub taken_pieces: Vec<Box<dyn Piece>>,
     pub all_possible_moves: Vec<Move>,
     pub move_generator: MoveGenerator,
+    pub move_history: Vec<MoveHistory>,
 }
 
 impl Clone for Board {
@@ -36,6 +37,7 @@ impl Clone for Board {
             taken_pieces,
             all_possible_moves: self.all_possible_moves.clone(),
             move_generator: self.move_generator.clone(),
+            move_history: self.move_history.clone(),
         }
     }
 }
@@ -71,7 +73,7 @@ impl Board {
                 tiles.push(Tile::new((i, j), piece));
             }
         }
-        Self { tiles, current_turn: Color::White, taken_pieces, all_possible_moves: Vec::new(), move_generator: MoveGenerator::new() }
+        Self { tiles, current_turn: Color::White, taken_pieces, all_possible_moves: Vec::new(), move_generator: MoveGenerator::new(), move_history: Vec::new() }
     }
 
     pub fn new() -> Self {
@@ -82,7 +84,7 @@ impl Board {
                 tiles.push(Tile::new((i, j), None));
             }
         }
-        Self { tiles, current_turn: Color::White, taken_pieces, all_possible_moves: Vec::new(), move_generator: MoveGenerator::new() }
+        Self { tiles, current_turn: Color::White, taken_pieces, all_possible_moves: Vec::new(), move_generator: MoveGenerator::new(), move_history: Vec::new() }
     }
 
     pub fn from_fen(fen: &str) -> Board {
@@ -174,23 +176,27 @@ impl Board {
     fn update_all_possible_moves(&self) -> Vec<Move> {
         let mut moves = self.move_generator.generate_all_moves(&self);
         // sort by color
-        moves.sort_by(|a, b| a.get_color().cmp(&b.get_color()));
         moves
     }
 
     /// Returns true if the given index of the given color is attacked by an enemy piece.
     pub fn is_square_attacked(&self, idx: (usize, usize), color: Color) -> bool {
-        let mvs = self.update_all_possible_moves();
+        let mut mvs = self.update_all_possible_moves();
+        // println!("All possible moves: {:?}", mvs.clone());
+        // filter moves from opposite color
+        mvs = mvs.into_iter().filter(|mv| mv.clone().get_color() != color).collect();
+
         for mv in &mvs {
-            if mv.get_to() == &idx && mv.get_color() != color {
-                // if the move is normal and from a pawn, it's not an attack
-                if mv.get_move_type().clone() == MoveType::Normal || mv.get_move_type().is_promotion() {
-                    if let Some(piece) = self.get_piece(mv.get_from().clone()) {
-                        if piece.get_type() == PieceType::Pawn {
-                            continue;
-                        }
+            if mv.get_to() == &idx {
+                // if the move is from a pawn, consider it an attack even if it's not a valid move
+                if let Some(piece) = self.get_piece(mv.get_from().clone()) {
+                    if piece.get_type() == PieceType::Pawn {
+                        println!("Attack move: {:?}", mv);
+                        return true;
                     }
-                } else {
+                }
+                if mv.valid() {
+                    println!("Attack move: {:?}", mv);
                     return true;
                 }
             }
