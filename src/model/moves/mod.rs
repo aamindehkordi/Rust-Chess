@@ -1,2 +1,3 @@
 pub mod r#move;
-pub(crate) mod move_generator;
+pub mod move_generator;
+pub mod move_validator;

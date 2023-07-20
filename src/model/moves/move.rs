@@ -57,6 +57,16 @@ pub struct MoveHistory {
     notation: String,
 }
 
+impl Clone for MoveHistory {
+    fn clone(&self) -> Self {
+        Self {
+            piece: self.piece.clone_box(),
+            mv: self.mv.clone(),
+            notation: self.notation.clone(),
+        }
+    }
+}
+
 impl MoveType {
 
     pub fn is_capture(&self) -> bool {
@@ -69,7 +79,14 @@ impl MoveType {
 
     pub fn is_promotion(&self) -> bool {
         match self {
+            Self::Promo => true,
             Self::Promotion(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_promote_and_capture(&self) -> bool {
+        match self {
             Self::PromoteAndCapture(_) => true,
             _ => false,
         }

@@ -15,8 +15,8 @@ impl MoveGenerator {
         let mut moves = Vec::new();
         let mut pieces = board.get_all_pieces();
         for piece in &mut pieces {
-            let mut piece_moves = self.generate_moves_for_piece(piece, board);
-            moves.append(&mut piece_moves);
+            let piece_moves = self.generate_moves_for_piece(piece, board);
+            moves.extend(piece_moves);
         }
         moves
     }
@@ -589,6 +589,39 @@ fn promotion_attack_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Vec
         moves.push(Move::new(MoveType::PromoteAndCapture(promotion_type), piece.get_position().clone(), new_pos, piece.get_color()));
     }
     moves
+}
+
+fn generate_normal_or_promotion_moves(piece: &Box<dyn Piece>, new_pos: (usize, usize), promotion: bool) -> Vec<Move> {
+    if promotion {
+        let mut moves = Vec::new();
+        for &promotion_type in piece.get_promotion_types().iter() {
+            let mut mv = Move::new(MoveType::Promotion(promotion_type), piece.get_position().clone(), new_pos, piece.get_color());
+            mv.set_valid(true);
+            moves.push(mv);
+        }
+        moves
+    } else {
+        vec![normal_move(piece, new_pos)]
+    }
+}
+
+fn generate_capture_or_promotion_moves(piece: &Box<dyn Piece>, new_pos: (usize, usize), promotion: bool) -> Vec<Move> {
+    if promotion {
+        let mut moves = Vec::new();
+        for &promotion_type in piece.get_promotion_types().iter() {
+            moves.push(Move::new(MoveType::PromoteAndCapture(promotion_type), piece.get_position().clone(), new_pos, piece.get_color()));
+        }
+        moves
+    } else {
+        vec![capture_move(piece, new_pos)]
+    }
+}
+
+fn is_promotion_line(pos: (usize, usize), color: Color) -> bool {
+    match color {
+        Color::White => pos.0 == 7,
+        Color::Black => pos.0 == 0
+    }
 }
 
 fn normal_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {

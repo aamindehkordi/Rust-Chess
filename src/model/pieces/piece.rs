@@ -99,6 +99,32 @@ pub trait Piece: Display + Debug  {
     fn get_promotion_types(&self) -> Vec<PieceType> {
         vec![PieceType::Pawn, PieceType::Rook, PieceType::Knight, PieceType::Bishop, PieceType::Queen]
     }
+    fn is_valid_move(&self, from: &(usize, usize), to: &(usize, usize)) -> bool {
+        
+        match self.get_type() {
+            PieceType::Pawn => if self.get_color() == Color::White {
+                // check if the pawn is moving forward
+                if from.0 > to.0 {
+                    return false
+                }
+            } else {
+                // check if the pawn is moving forward
+                if from.0 < to.0 {
+                    return false
+                }
+            } 
+            ,
+            _ => {},
+        };
+        
+        match self.get_moves().iter().find(|mv| mv.get_to().clone() == *to) {
+            Some(mv) => mv.get_from().clone() == *from,
+            None => false,
+        };
+        
+        
+        return true
+    }
 }
 
 impl PieceType {
