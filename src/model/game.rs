@@ -1,6 +1,6 @@
 // src/model/game.rs
 use crate::model::board::Board;
-use crate::model::moves::r#move::{Move, MoveHistory, MoveType};
+use crate::model::moves::r#move::{MoveType};
 use std::error::Error;
 use crate::model::moves::move_validator::MoveValidator;
 use crate::model::pieces::piece::{Piece, PieceType};
@@ -13,7 +13,7 @@ pub struct Game {
     current_turn: Color,
 }
 
-const STARTING_POSITION: &str = "rnbqk2r/ppppPppp/8/8/1p6/8/PPPPPPP/R3KBNR w";
+const STARTING_POSITION: &str = "r3k2r/2pppp1p/b4n1b/6p1/6P1/B4N1B/2PPPP1P/R3K2R w";
 
 impl Game {
     pub fn new() -> Self {
@@ -32,8 +32,8 @@ impl Game {
         self.board.move_history.push(mv.to_history(piece.clone_box()));
     }
 
-    pub fn make_move(&mut self, from: (usize, usize), to: (usize, usize)) -> Result<(Option<MoveType>), Box<dyn Error>> {
-        if let Some(mut piece)  = self.board.get_piece(from.clone()){
+    pub fn make_move(&mut self, from: (usize, usize), to: (usize, usize)) -> Result<Option<MoveType>, Box<dyn Error>> {
+        if let Some(mut piece)  = self.board.get_piece(from){
             if piece.get_color() != self.current_turn.clone() {
                 return Err("Not your turn".into());
             }
@@ -57,7 +57,7 @@ impl Game {
             if self.is_game_over() {
                 return Err("Game Over".into());
             }
-            Ok((None))
+            Ok(None)
         } else {
             Err("No piece at from".into())
         }
@@ -70,7 +70,7 @@ impl Game {
             // Check if king has any legal moves
             let king = self.board.find_king(curr_player.clone());
             let king_moves = self.board.get_piece(king).unwrap().get_moves().clone();
-            if king_moves.len() == 0 {
+            if king_moves.is_empty() {
                 return true;
             }
         }

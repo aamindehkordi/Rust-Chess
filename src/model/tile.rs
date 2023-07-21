@@ -69,7 +69,7 @@ impl Clone for Tile {
 impl Debug for Tile {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let piece = match &self.piece {
-            Some(piece) => format!("{:?}", piece),
+            Some(piece) => format!("{piece:?}"),
             None => String::from("None"),
         };
         write!(f, "Tile {{ position: {:?}, piece: {} }}", self.position, piece)

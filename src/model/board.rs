@@ -1,5 +1,5 @@
 use crate::model::moves::move_generator::MoveGenerator;
-use crate::model::moves::r#move::{Move, MoveHistory, MoveType};
+use crate::model::moves::r#move::{Move, MoveHistory};
 use crate::model::pieces::pawn::Pawn;
 use crate::model::pieces::rook::Rook;
 use crate::model::pieces::knight::Knight;
@@ -87,8 +87,8 @@ impl Board {
         Self { tiles, current_turn: Color::White, taken_pieces, all_possible_moves: Vec::new(), move_generator: MoveGenerator::new(), move_history: Vec::new() }
     }
 
-    pub fn from_fen(fen: &str) -> Board {
-        let mut board = Board::new();
+    pub fn from_fen(fen: &str) -> Self {
+        let mut board = Self::new();
         let mut rank = 7;
         let mut file = 0;
         for c in fen.chars() {
@@ -98,7 +98,7 @@ impl Board {
             if c == '/' {
                 rank -= 1;
                 file = 0;
-            } else if c.is_digit(10) {
+            } else if c.is_ascii_digit() {
                 file += c.to_digit(10).unwrap() as usize;
             } else {
                 let color = if c.is_uppercase() {
@@ -174,9 +174,9 @@ impl Board {
 
     /// Returns a vector of all possible moves for the current player.
     fn update_all_possible_moves(&self) -> Vec<Move> {
-        let mut moves = self.move_generator.generate_all_moves(&self);
+        
         // sort by color
-        moves
+        self.move_generator.generate_all_moves(self)
     }
 
     /// Returns true if the given index of the given color is attacked by an enemy piece.
@@ -184,24 +184,24 @@ impl Board {
         let mut mvs = self.update_all_possible_moves();
         // println!("All possible moves: {:?}", mvs.clone());
         // filter moves from opposite color
-        mvs = mvs.into_iter().filter(|mv| mv.clone().get_color() != color).collect();
+        mvs.retain(|mv| mv.clone().get_color() != color);
 
         for mv in &mvs {
             if mv.get_to() == &idx {
                 // if the move is from a pawn, consider it an attack even if it's not a valid move
-                if let Some(piece) = self.get_piece(mv.get_from().clone()) {
+                if let Some(piece) = self.get_piece(*mv.get_from()) {
                     if piece.get_type() == PieceType::Pawn {
-                        // println!("Attack move: {:?}", mv);
+                        println!("Attack move: {:?}", mv);
                         return (true, Some(mv.clone()));
                     }
                 }
                 if mv.valid() {
-                    // println!("Threat move: {:?}", mv);
+                    println!("Threat move: {:?}", mv);
                     return (true, Some(mv.clone()));
                 }
             }
         }
-        return (false, None);
+        (false, None)
     }
 
     pub fn find_king(&self, color: Color) -> (usize, usize) {
@@ -240,7 +240,7 @@ impl Board {
         let king_idx = self.find_king(color.clone());
         let king = self.get_piece(king_idx).expect("King not found");
         let king_moves = king.get_moves();
-        if king_moves.len() == 0 {
+        if king_moves.is_empty() {
             return true;
         }
         false

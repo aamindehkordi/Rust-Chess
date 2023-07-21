@@ -19,11 +19,11 @@ impl GameController {
 
     pub fn start_game(&mut self) {
         loop {
-            self.view.display_board(&self.game.get_board()); // Display the board
+            self.view.display_board(self.game.get_board()); // Display the board
             let (from_row, from_col, to_row, to_col) = self.view.get_move().unwrap(); // Get the move from the user
             let from = (from_row, from_col);
             let to = (to_row, to_col);
-            println!("Move from user: from: {:?}, to: {:?}", from, to);
+            println!("Move from user: from: {from:?}, to: {to:?}");
             match self.game.make_move(from, to) {
                 Ok(Some(MoveType::Promo)) => {
                     if let Some(piece_type) = self.view.get_promotion_piece() {
@@ -36,7 +36,7 @@ impl GameController {
                         println!("Game Over");
                         break;
                     }
-                    println!("{}", e);
+                    println!("{e}");
                     continue;
                 },
                 _ => {}

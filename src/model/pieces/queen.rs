@@ -1,9 +1,9 @@
 use std::fmt::{Debug, Display};
-use crate::model::board::Board;
-use crate::model::pieces::piece::{Color, Piece, PieceType};
-use crate::model::moves::r#move::{Move, MoveType};
 
-#[derive(Clone, PartialEq)]
+use crate::model::pieces::piece::{Color, Piece, PieceType};
+use crate::model::moves::r#move::{Move};
+
+#[derive(Clone, PartialEq, Eq)]
 pub struct Queen {
     color: Color,
     position: (usize, usize),

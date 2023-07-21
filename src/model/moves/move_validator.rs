@@ -21,9 +21,9 @@ impl MoveValidator {
             board: board.clone(),
             from_piece: piece,
             mv: mv.clone(),
-            from_pos: mv.get_from().clone(),
-            to_pos: mv.get_to().clone(),
-            to_piece: board.get_piece(mv.get_to().clone()),
+            from_pos: *mv.get_from(),
+            to_pos: *mv.get_to(),
+            to_piece: board.get_piece(*mv.get_to()),
         }
     }
 
@@ -32,15 +32,15 @@ impl MoveValidator {
     }
 
     pub fn get_move_type(&self) -> &MoveType {
-        &self.mv.get_move_type()
+        self.mv.get_move_type()
     }
 
     pub fn get_from(&self) -> &(usize, usize) {
-        &self.mv.get_from()
+        self.mv.get_from()
     }
 
     pub fn get_to(&self) -> &(usize, usize) {
-        &self.mv.get_to()
+        self.mv.get_to()
     }
 
     pub fn validate(&self) -> bool {
@@ -67,17 +67,13 @@ impl MoveValidator {
                 println!("Destination square is occupied by a piece of the same color");
                 return false;
             }
-            if self.mv.get_move_type() == &MoveType::EnPassant {
-                if piece.get_type() != PieceType::Pawn {
-                    println!("??");
-                    return false;
-                }
+            if self.mv.get_move_type() == &MoveType::EnPassant && piece.get_type() != PieceType::Pawn {
+                println!("??");
+                return false;
             }
-            if self.mv.get_move_type().is_promotion() {
-                if piece.get_type() != PieceType::Pawn {
-                    println!("Promotion is only valid for pawns");
-                    return false;
-                }
+            if self.mv.get_move_type().is_promotion() && piece.get_type() != PieceType::Pawn {
+                println!("Promotion is only valid for pawns");
+                return false;
             }
             if self.mv.get_move_type().is_castle() {
                 if piece.get_type() != PieceType::Rook {
@@ -91,11 +87,9 @@ impl MoveValidator {
                 return false;
             }
         } // else if the destination square is empty
-        else {
-            if self.mv.get_move_type() == &MoveType::Capture {
-                println!("Empty for capture");
-                return false;
-            }
+        else if self.mv.get_move_type() == &MoveType::Capture {
+            println!("Empty for capture");
+            return false;
         }
 
         match self.mv.get_move_type() {
@@ -113,17 +107,15 @@ impl MoveValidator {
     }
 
     fn has_moved(&self) -> bool {
-        if self.board.move_history.len() > 0 {
-                for mov in self.board.move_history.iter() {
-                    if mov.get_piece().get_type() == PieceType::Pawn {
-                        if mov.get_piece().get_position().0 == self.from_piece.get_position().0 {
-                            println!("Piece has moved");
-                            return false;
-                        }
+        if !self.board.move_history.is_empty() {
+                for mov in &self.board.move_history {
+                    if mov.get_piece().get_type() == PieceType::Pawn && mov.get_piece().get_position().0 == self.from_piece.get_position().0 {
+                        println!("Piece has moved");
+                        return true;
                     }
                 }
             }
-        true
+        false
     }
 
     fn is_valid_capture(&self) -> bool {
@@ -177,7 +169,7 @@ impl MoveValidator {
         }
 
         // check if the last move was a pawn moving two squares
-        if self.board.move_history.len() < 1 {
+        if self.board.move_history.is_empty() {
             println!("No moves");
             return false;
         }
@@ -204,7 +196,7 @@ impl MoveValidator {
             return false;
         }
 
-        return true;
+        true
     }
 
     fn is_valid_castle(&self) -> bool {
@@ -271,11 +263,9 @@ impl MoveValidator {
                 println!("Not on the last rank");
                 return false;
             }
-        } else {
-            if self.from_pos.1 != 1 {
-                println!("Not on the last rank");
-                return false;
-            }
+        } else if self.from_pos.1 != 1 {
+            println!("Not on the last rank");
+            return false;
         }
 
         // check if the piece is moving forward

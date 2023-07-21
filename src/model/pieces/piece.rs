@@ -11,20 +11,20 @@ pub enum Color {
 impl Color {
     pub fn opposite(&self) -> Self {
         match self {
-            Color::White => Color::Black,
-            Color::Black => Color::White,
+            Self::White => Self::Black,
+            Self::Black => Self::White,
         }
     }
 
     pub fn cmp(&self, other: &Self) -> Ordering {
         match self {
-            Color::White => match other {
-                Color::White => Ordering::Equal,
-                Color::Black => Ordering::Less,
+            Self::White => match other {
+                Self::White => Ordering::Equal,
+                Self::Black => Ordering::Less,
             },
-            Color::Black => match other {
-                Color::White => Ordering::Greater,
-                Color::Black => Ordering::Equal,
+            Self::Black => match other {
+                Self::White => Ordering::Greater,
+                Self::Black => Ordering::Equal,
             },
         }
     }
@@ -47,23 +47,23 @@ pub trait Piece: Display + Debug  {
     // piece specific execute function
     fn execute(&mut self, board: &mut Board, mv: Move) {
         let to_position = mv.get_to();
-        let mut this = board.pick_up_piece(&self.get_position()).unwrap();
+        let mut this = board.pick_up_piece(self.get_position()).unwrap();
 
         // check if the piece is the same as the one on the board
         if this.get_color() == self.get_color() && this.get_type() == self.get_type() && this.get_position() == self.get_position() {
             match mv.get_move_type() {
                 MoveType::Normal => {
-                    board.move_piece(&self.get_position(), to_position);
+                    board.move_piece(self.get_position(), to_position);
                 },
                 MoveType::Capture => {
-                    board.move_piece(&self.get_position(), to_position);
+                    board.move_piece(self.get_position(), to_position);
                     board.take_piece(mv.get_to());
                 },
                 _ => {},
             }
             self.set_position(*to_position);
             this.set_position(*to_position);
-            board.put_down_piece(&self.get_position(), Some(this));
+            board.put_down_piece(self.get_position(), Some(this));
         }
     }
     fn clone_box(&self) -> Box<dyn Piece>;
@@ -117,13 +117,13 @@ pub trait Piece: Display + Debug  {
             _ => {},
         };
         
-        match self.get_moves().iter().find(|mv| mv.get_to().clone() == *to) {
-            Some(mv) => mv.get_from().clone() == *from,
+        match self.get_moves().iter().find(|mv| *mv.get_to() == *to) {
+            Some(mv) => *mv.get_from() == *from,
             None => false,
         };
         
         
-        return true
+        true
     }
 }
 

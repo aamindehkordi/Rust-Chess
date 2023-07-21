@@ -46,7 +46,7 @@ impl MoveGenerator {
             PieceType::King => move_type = self.get_move_type_for_king(from, to, piece, board),
         }
 
-        let mut mv = Move::new(move_type.clone(), from.clone(), to.clone(), piece.get_color());
+        let mut mv = Move::new(move_type.clone(), *from, *to, piece.get_color());
         if move_type != MoveType::Invalid {
             mv.set_valid(true);
         }
@@ -54,7 +54,7 @@ impl MoveGenerator {
     }
 
     fn get_move_type_for_pawn(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
-        let mut move_type = MoveType::Invalid;
+        let move_type = MoveType::Invalid;
         let color = piece.get_color();
         let (fx, fy) = *from;
         let (tx, ty) = *to;
@@ -115,13 +115,13 @@ impl MoveGenerator {
             }
         }
 
-        return move_type;
+        move_type
     }
 
 
     fn generate_moves_for_pawn(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
-        let pos = piece.get_position().clone();
+        let pos = *piece.get_position();
         let color = piece.get_color();
         let direction = match color {
             Color::White => 1,
@@ -200,7 +200,7 @@ impl MoveGenerator {
         }
 
         // En passant: capturing an opponent's pawn in passing
-        let en_passant_moves = capture_moves.clone();
+        let en_passant_moves = capture_moves;
         for &epmv in &en_passant_moves {
             // check if the position is valid
             if !in_bounds(epmv) {
@@ -224,7 +224,7 @@ impl MoveGenerator {
     fn get_move_type_for_rook(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
         let (fx, fy) = *from;
         let (tx, ty) = *to;
-        let mut move_type = MoveType::Invalid;
+        let move_type = MoveType::Invalid;
         let color = piece.get_color();
 
         // Moving along the same rank (row) or file (column)
@@ -262,7 +262,7 @@ impl MoveGenerator {
 
     fn generate_moves_for_rook(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
-        let pos = piece.get_position().clone();
+        let pos = *piece.get_position();
 
         // Generate moves along each direction: up, down, left, right
         let directions = piece.get_directions();
@@ -310,7 +310,7 @@ impl MoveGenerator {
         }
 
         if move_type == MoveType::Invalid { // Check if the move type hasn't changed
-            if let Some(dest_piece) = board.get_piece(to.clone()) { // Get the piece at the new position
+            if let Some(dest_piece) = board.get_piece(*to) { // Get the piece at the new position
                 if dest_piece.get_color() != piece.get_color() { // Check if the piece at the new position is of a different color
                     move_type = MoveType::Capture; // Set the move type to capture
                 }
@@ -349,7 +349,7 @@ impl MoveGenerator {
     }
 
     fn get_move_type_for_bishop(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
-        let mut move_type = MoveType::Invalid;
+        let move_type = MoveType::Invalid;
         let (fx, fy) = *from;
         let (tx, ty) = *to;
 
@@ -385,7 +385,7 @@ impl MoveGenerator {
 
     fn generate_moves_for_bishop(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
-        let pos = piece.get_position().clone();
+        let pos = *piece.get_position();
 
         let directions = piece.get_directions();
 
@@ -425,21 +425,21 @@ impl MoveGenerator {
         if diff_x == diff_y || fx == tx || fy == ty {
             if let Some(dest_piece) = board.get_piece(*to) {
                 if dest_piece.get_color() != piece.get_color() {
-                    return MoveType::Capture;
+                    MoveType::Capture
                 } else {
-                    return MoveType::Invalid;
+                    MoveType::Invalid
                 }
             } else {
-                return MoveType::Normal;
+                MoveType::Normal
             }
         } else {
-            return MoveType::Invalid;
+            MoveType::Invalid
         }
     }
 
     pub fn generate_moves_for_queen(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
-        let (x, y) = piece.get_position().clone();
+        let (x, y) = *piece.get_position();
 
         // The queen can move in 8 directions: horizontally, vertically and diagonally.
         let directions = piece.get_directions();
@@ -447,11 +447,11 @@ impl MoveGenerator {
         for direction in directions {
             let mut current_pos =  ((x as i32 + direction.0) as usize, (y as i32 + direction.1) as usize);
             while in_bounds(current_pos) {
-                let move_type = self.get_move_type_for_queen(&piece.get_position(), &current_pos, &piece, &board);
+                let move_type = self.get_move_type_for_queen(piece.get_position(), &current_pos, piece, board);
                 if move_type == MoveType::Invalid {
                     break;
                 }
-                let mut mv = Move::new(move_type.clone(), piece.get_position().clone(), current_pos.clone(), piece.get_color());
+                let mut mv = Move::new(move_type.clone(), *piece.get_position(), current_pos, piece.get_color());
                 mv.set_valid(true);
                 moves.push(mv);
                 if move_type == MoveType::Capture {
@@ -468,7 +468,7 @@ impl MoveGenerator {
     }
 
     fn get_move_type_for_king(&self, from: &(usize, usize), to: &(usize, usize), piece: &Box<dyn Piece>, board: &Board) -> MoveType {
-        let mut move_type = MoveType::Invalid;
+        let move_type = MoveType::Invalid;
         let (fx, fy) = *from;
         let (tx, ty) = *to;
 
@@ -478,10 +478,8 @@ impl MoveGenerator {
 
         // Capturing: moving one square in any direction and capturing an opponent's piece
         if let Some(dest_piece) = board.get_piece(*to) {
-            if dx <= 1 && dy <= 1 {
-                if dest_piece.get_color() != piece.get_color() {
-                    return MoveType::Capture;
-                }
+            if dx <= 1 && dy <= 1 && dest_piece.get_color() != piece.get_color() {
+                return MoveType::Capture;
             }
         } else if dx <= 1 && dy <= 1{
         // Normal move: moving one square in any direction
@@ -505,7 +503,7 @@ impl MoveGenerator {
 
     fn generate_moves_for_king(&self, piece: &mut Box<dyn Piece>, board: &Board) -> Vec<Move> {
         let mut moves = Vec::new();
-        let pos = piece.get_position().clone();
+        let pos = *piece.get_position();
 
         // King can move in all 8 directions, but only one square
         let all_directions = piece.get_directions();
@@ -546,7 +544,7 @@ impl MoveGenerator {
     }
 
     pub fn create_promotion_move(&self, piece: &Box<dyn Piece>, new_pos: (usize, usize), promotion_type: PieceType) -> Move {
-        let mut mv = Move::new(MoveType::Promotion(promotion_type), piece.get_position().clone(), new_pos, piece.get_color());
+        let mut mv = Move::new(MoveType::Promotion(promotion_type), *piece.get_position(), new_pos, piece.get_color());
         mv.set_valid(true);
         mv
     }
@@ -564,29 +562,29 @@ fn in_bounds(pos: (usize, usize)) -> bool {
 }
 
 fn double_push_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
-    let mut mv = Move::new(MoveType::DoublePush, piece.get_position().clone(), new_pos, piece.get_color());
+    let mut mv = Move::new(MoveType::DoublePush, *piece.get_position(), new_pos, piece.get_color());
     mv.set_valid(true);
     mv
 }
 
 fn en_passant_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
-    let mut mv = Move::new(MoveType::EnPassant, piece.get_position().clone(), new_pos, piece.get_color());
+    let mut mv = Move::new(MoveType::EnPassant, *piece.get_position(), new_pos, piece.get_color());
     mv.set_valid(true);
     mv
 }
 
 fn promotion_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Vec<Move> {
     let mut moves = Vec::new();
-    for &promotion_type in piece.get_promotion_types().iter() {
-        moves.push(Move::new(MoveType::Promotion(promotion_type), piece.get_position().clone(), new_pos, piece.get_color()));
+    for &promotion_type in &piece.get_promotion_types() {
+        moves.push(Move::new(MoveType::Promotion(promotion_type), *piece.get_position(), new_pos, piece.get_color()));
     }
     moves
 }
 
 fn promotion_attack_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Vec<Move> {
     let mut moves = Vec::new();
-    for &promotion_type in piece.get_promotion_types().iter() {
-        moves.push(Move::new(MoveType::PromoteAndCapture(promotion_type), piece.get_position().clone(), new_pos, piece.get_color()));
+    for &promotion_type in &piece.get_promotion_types() {
+        moves.push(Move::new(MoveType::PromoteAndCapture(promotion_type), *piece.get_position(), new_pos, piece.get_color()));
     }
     moves
 }
@@ -594,8 +592,8 @@ fn promotion_attack_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Vec
 fn generate_normal_or_promotion_moves(piece: &Box<dyn Piece>, new_pos: (usize, usize), promotion: bool) -> Vec<Move> {
     if promotion {
         let mut moves = Vec::new();
-        for &promotion_type in piece.get_promotion_types().iter() {
-            let mut mv = Move::new(MoveType::Promotion(promotion_type), piece.get_position().clone(), new_pos, piece.get_color());
+        for &promotion_type in &piece.get_promotion_types() {
+            let mut mv = Move::new(MoveType::Promotion(promotion_type), *piece.get_position(), new_pos, piece.get_color());
             mv.set_valid(true);
             moves.push(mv);
         }
@@ -608,8 +606,8 @@ fn generate_normal_or_promotion_moves(piece: &Box<dyn Piece>, new_pos: (usize, u
 fn generate_capture_or_promotion_moves(piece: &Box<dyn Piece>, new_pos: (usize, usize), promotion: bool) -> Vec<Move> {
     if promotion {
         let mut moves = Vec::new();
-        for &promotion_type in piece.get_promotion_types().iter() {
-            moves.push(Move::new(MoveType::PromoteAndCapture(promotion_type), piece.get_position().clone(), new_pos, piece.get_color()));
+        for &promotion_type in &piece.get_promotion_types() {
+            moves.push(Move::new(MoveType::PromoteAndCapture(promotion_type), *piece.get_position(), new_pos, piece.get_color()));
         }
         moves
     } else {
@@ -625,21 +623,21 @@ fn is_promotion_line(pos: (usize, usize), color: Color) -> bool {
 }
 
 fn normal_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
-    let mut mv = Move::new(MoveType::Normal, piece.get_position().clone(), new_pos, piece.get_color());
+    let mut mv = Move::new(MoveType::Normal, *piece.get_position(), new_pos, piece.get_color());
     mv.set_valid(true);
     mv
 }
 
 fn capture_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
-    let mut mv = Move::new(MoveType::Capture, piece.get_position().clone(), new_pos, piece.get_color());
+    let mut mv = Move::new(MoveType::Capture, *piece.get_position(), new_pos, piece.get_color());
     mv.set_valid(true);
     mv
 }
 
 fn castling_move(piece: &Box<dyn Piece>, new_pos: (usize, usize)) -> Move {
     if new_pos.1 > piece.get_position().1 { // if new_pos is on this piece
-        Move::new(MoveType::Castle(CastleType::Kingside), piece.get_position().clone(), new_pos, piece.get_color())
+        Move::new(MoveType::Castle(CastleType::Kingside), *piece.get_position(), new_pos, piece.get_color())
     } else {
-        Move::new(MoveType::Castle(CastleType::Queenside), piece.get_position().clone(), new_pos, piece.get_color())
+        Move::new(MoveType::Castle(CastleType::Queenside), *piece.get_position(), new_pos, piece.get_color())
     }
 }

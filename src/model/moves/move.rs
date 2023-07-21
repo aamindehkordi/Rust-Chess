@@ -1,5 +1,5 @@
 use crate::model::pieces::piece::{Color, Piece, PieceType};
-use crate::model::tile::Tile;
+
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// An enum that represents the type of move.
@@ -35,7 +35,7 @@ pub enum CastleType {
     Queenside,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 /// A struct that represents a move.
 ///
 /// # Fields
@@ -164,19 +164,19 @@ impl Move {
             piece: piece.clone_box(),
             mv: Self {
                 move_type: self.move_type.clone(),
-                from: self.from.clone(),
-                to: self.to.clone(),
+                from: self.from,
+                to: self.to,
                 valid: self.valid,
                 color: self.color.clone(),
             },
-            notation: Move::get_notation(piece.clone_box()),
+            notation: Self::get_notation(piece.clone_box()),
         }
     }
 
-    pub fn get_notation(piece: Box<dyn Piece>) -> String {
-        let mut notation = String::new();
+    pub fn get_notation(_piece: Box<dyn Piece>) -> String {
+        
         // TODO: Add notation
-        notation
+        String::new()
     }
     pub fn get_color(&self) -> Color {
         self.color.clone()

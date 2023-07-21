@@ -3,7 +3,7 @@ use crate::model::board::Board;
 use crate::model::pieces::piece::{Color, Piece, PieceType};
 use crate::model::moves::r#move::{Move, MoveType};
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Pawn {
     color: Color,
     position: (usize, usize),
@@ -80,27 +80,27 @@ impl Piece for Pawn {
                 },
                 MoveType::Promotion(_) => { // If the move is a promotion
                     let _ = board.pick_up_piece(mv.get_from()); // Pick up the pawn
-                    let mut new_piece: Box<dyn Piece> = match mv.get_promotion() {
-                        PieceType::Queen => Box::new(crate::model::pieces::queen::Queen::new(self.color.clone(), to_position.clone())),
-                        PieceType::Rook => Box::new(crate::model::pieces::rook::Rook::new(self.color.clone(), to_position.clone())),
-                        PieceType::Bishop => Box::new(crate::model::pieces::bishop::Bishop::new(self.color.clone(), to_position.clone())),
-                        PieceType::Knight => Box::new(crate::model::pieces::knight::Knight::new(self.color.clone(), to_position.clone())),
-                        _ => Box::new(crate::model::pieces::pawn::Pawn::new(self.color.clone(), to_position.clone())),
+                    let new_piece: Box<dyn Piece> = match mv.get_promotion() {
+                        PieceType::Queen => Box::new(crate::model::pieces::queen::Queen::new(self.color.clone(), *to_position)),
+                        PieceType::Rook => Box::new(crate::model::pieces::rook::Rook::new(self.color.clone(), *to_position)),
+                        PieceType::Bishop => Box::new(crate::model::pieces::bishop::Bishop::new(self.color.clone(), *to_position)),
+                        PieceType::Knight => Box::new(crate::model::pieces::knight::Knight::new(self.color.clone(), *to_position)),
+                        _ => Box::new(Self::new(self.color.clone(), *to_position)),
                     };
-                    board.put_down_piece(&to_position, Some(new_piece)); // Put down the new piece
+                    board.put_down_piece(to_position, Some(new_piece)); // Put down the new piece
                     return;
                 },
                 MoveType::PromoteAndCapture(_) => { // If the move is a promotion and capture
                     let _ = board.pick_up_piece(mv.get_from()); // Pick up the pawn
                     board.take_piece(mv.get_to()); // Take the piece that is being taken
-                    let mut new_piece: Box<dyn Piece> = match mv.get_promotion() {
-                        PieceType::Queen => Box::new(crate::model::pieces::queen::Queen::new(self.color.clone(), to_position.clone())),
-                        PieceType::Rook => Box::new(crate::model::pieces::rook::Rook::new(self.color.clone(), to_position.clone())),
-                        PieceType::Bishop => Box::new(crate::model::pieces::bishop::Bishop::new(self.color.clone(), to_position.clone())),
-                        PieceType::Knight => Box::new(crate::model::pieces::knight::Knight::new(self.color.clone(), to_position.clone())),
-                        _ => Box::new(crate::model::pieces::pawn::Pawn::new(self.color.clone(), to_position.clone())),
+                    let new_piece: Box<dyn Piece> = match mv.get_promotion() {
+                        PieceType::Queen => Box::new(crate::model::pieces::queen::Queen::new(self.color.clone(), *to_position)),
+                        PieceType::Rook => Box::new(crate::model::pieces::rook::Rook::new(self.color.clone(), *to_position)),
+                        PieceType::Bishop => Box::new(crate::model::pieces::bishop::Bishop::new(self.color.clone(), *to_position)),
+                        PieceType::Knight => Box::new(crate::model::pieces::knight::Knight::new(self.color.clone(), *to_position)),
+                        _ => Box::new(Self::new(self.color.clone(), *to_position)),
                     };
-                    board.put_down_piece(&to_position, Some(new_piece)); // Put down the new piece
+                    board.put_down_piece(to_position, Some(new_piece)); // Put down the new piece
                     return;
                 },
                 _ => {},

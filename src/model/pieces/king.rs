@@ -3,7 +3,7 @@ use crate::model::board::Board;
 use crate::model::pieces::piece::{Color, Piece, PieceType};
 use crate::model::moves::r#move::{CastleType, Move, MoveType};
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct King {
     color: Color,
     position: (usize, usize),
