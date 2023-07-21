@@ -150,7 +150,12 @@ impl MoveValidator {
         }
 
         // check if the piece is moving two squares
-        if self.to_pos.0 - self.from_pos.0 != 2 {
+        if self.to_pos.0 > self.from_pos.0 {
+            if self.to_pos.0 - self.from_pos.0 != 2 {
+                println!("Not moving two squares");
+                return false;
+            }
+        } else if self.from_pos.0 - self.to_pos.0 != 2 {
             println!("Not moving two squares");
             return false;
         }
@@ -218,21 +223,17 @@ impl MoveValidator {
 
 
         // Check if the king or rook have moved in the move history
-        if self.board.move_history.len() > 0 {
-            for mv in self.board.move_history.iter() {
-                if mv.get_piece().get_type() == PieceType::King {
-                    if mv.get_piece().get_color() == self.from_piece.get_color() {
-                        println!("King has moved");
-                        return false;
-                    }
+        if !self.board.move_history.is_empty() {
+            for mv in &self.board.move_history {
+                if mv.get_piece().get_type() == PieceType::King && mv.get_piece().get_color() == self.from_piece.get_color() {
+                    println!("King has moved");
+                    return false;
                 }
                 if mv.get_piece().get_type() == PieceType::Rook {
                     // check if the rook is on the H file
-                    if mv.get_from().0 == file {
-                        if mv.get_piece().get_color() == self.from_piece.get_color() {
-                            println!("Rook has moved");
-                            return false;
-                        }
+                    if mv.get_from().0 == file && mv.get_piece().get_color() == self.from_piece.get_color() {
+                        println!("Rook has moved");
+                        return false;
                     }
                 }
 
@@ -241,12 +242,12 @@ impl MoveValidator {
 
         // Check if the king will move into check or through a square that is attacked
         let traveling_squares = match self.mv.get_move_type() {
-            &MoveType::Castle(CastleType::Kingside) => vec![(file, self.from_pos.1 +1), (file, self.from_pos.1 +2)],
-            &MoveType::Castle(CastleType::Queenside) => vec![(file, self.from_pos.1 -1), (file, self.from_pos.1 -2), (file, self.from_pos.1 -3)],
+            &MoveType::Castle(CastleType::Kingside) => vec![(self.from_pos.0,file -1), (self.from_pos.0,file -2)],
+            &MoveType::Castle(CastleType::Queenside) => vec![(self.from_pos.0,file +1), (self.from_pos.0,file +2), (self.from_pos.0,file +3)],
             _ => return false
         };
-        for square in traveling_squares.iter() {
-            let (is_square_attacked, _) = self.board.is_square_attacked(square.clone(), self.from_piece.get_color());
+        for square in &traveling_squares {
+            let (is_square_attacked, _) = self.board.is_square_attacked(*square, self.from_piece.get_color());
             if is_square_attacked {
                 println!("King will move into check");
                 return false;
