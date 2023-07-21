@@ -15,7 +15,7 @@ pub struct Game {
     current_turn: Color,
 }
 
-const STARTING_POSITION: &str = "rnbqk2r/ppppPppp/8/8/1p6/8/PPpPPPPP/R3KBNR w";
+const STARTING_POSITION: &str = "rnbqk2r/ppppPppp/8/8/1p6/8/PPPPPPP/R3KBNR w";
 
 impl Game {
     pub fn new() -> Self {
@@ -56,9 +56,9 @@ impl Game {
             self.board.move_history.push(mv.to_history(piece.clone_box()));
             self.board.get_all_possible_moves();
 
-            // if self.is_game_over() {
-            //     return Err("Game Over".into());
-            // }
+            if self.is_game_over() {
+                return Err("Game Over".into());
+            }
             Ok((None))
         } else {
             Err("No piece at from".into())

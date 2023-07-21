@@ -246,7 +246,8 @@ impl MoveValidator {
             _ => return false
         };
         for square in traveling_squares.iter() {
-            if self.board.is_square_attacked(square.clone(), self.from_piece.get_color()) {
+            let (is_square_attacked, _) = self.board.is_square_attacked(square.clone(), self.from_piece.get_color());
+            if is_square_attacked {
                 println!("King will move into check");
                 return false;
             }

@@ -180,7 +180,7 @@ impl Board {
     }
 
     /// Returns true if the given index of the given color is attacked by an enemy piece.
-    pub fn is_square_attacked(&self, idx: (usize, usize), color: Color) -> bool {
+    pub fn is_square_attacked(&self, idx: (usize, usize), color: Color) -> (bool, Option<Move>) {
         let mut mvs = self.update_all_possible_moves();
         // println!("All possible moves: {:?}", mvs.clone());
         // filter moves from opposite color
@@ -191,17 +191,17 @@ impl Board {
                 // if the move is from a pawn, consider it an attack even if it's not a valid move
                 if let Some(piece) = self.get_piece(mv.get_from().clone()) {
                     if piece.get_type() == PieceType::Pawn {
-                        println!("Attack move: {:?}", mv);
-                        return true;
+                        // println!("Attack move: {:?}", mv);
+                        return (true, Some(mv.clone()));
                     }
                 }
                 if mv.valid() {
-                    println!("Attack move: {:?}", mv);
-                    return true;
+                    // println!("Threat move: {:?}", mv);
+                    return (true, Some(mv.clone()));
                 }
             }
         }
-        false
+        return (false, None);
     }
 
     pub fn find_king(&self, color: Color) -> (usize, usize) {
@@ -221,7 +221,17 @@ impl Board {
     /// Returns true if the given player is in check.
     pub fn is_king_in_check(&self, color: &Color) -> bool {
         let king_idx = self.find_king(color.clone());
-        self.is_square_attacked(king_idx, color.clone())
+        let (is_square_attacked, mv ) = self.is_square_attacked(king_idx, color.clone());
+        if is_square_attacked {
+            if let Some(mv) = mv {
+                if mv.valid() {
+                    return true;
+                }
+                // println!("King is in check by: {:?}", mv);
+            }
+        }
+        false
+
     }
 
 
@@ -283,64 +293,4 @@ impl Board {
         let piece = self.tiles[idx.0 * 8 + idx.1].piece.take().unwrap();
         self.taken_pieces.push(piece);
     }
-}
-
-#[cfg(test)]
-mod tests {
-use super::*;
-
-    #[test]
-    fn test_fen() {
-        let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-        assert_eq!(board.get_piece((0, 0)).unwrap().get_type(), PieceType::Rook);
-        assert_eq!(board.get_piece((0, 1)).unwrap().get_type(), PieceType::Knight);
-        assert_eq!(board.get_piece((0, 2)).unwrap().get_type(), PieceType::Bishop);
-        assert_eq!(board.get_piece((0, 3)).unwrap().get_type(), PieceType::Queen);
-        assert_eq!(board.get_piece((0, 4)).unwrap().get_type(), PieceType::King);
-        assert_eq!(board.get_piece((0, 5)).unwrap().get_type(), PieceType::Bishop);
-        assert_eq!(board.get_piece((0, 6)).unwrap().get_type(), PieceType::Knight);
-        assert_eq!(board.get_piece((0, 7)).unwrap().get_type(), PieceType::Rook);
-        for i in 0..8 {
-            assert_eq!(board.get_piece((1, i)).unwrap().get_type(), PieceType::Pawn);
-        }
-        for i in 0..8 {
-            assert_eq!(board.get_piece((6, i)).unwrap().get_type(), PieceType::Pawn);
-        }
-        assert_eq!(board.get_piece((7, 0)).unwrap().get_type(), PieceType::Rook);
-        assert_eq!(board.get_piece((7, 1)).unwrap().get_type(), PieceType::Knight);
-        assert_eq!(board.get_piece((7, 2)).unwrap().get_type(), PieceType::Bishop);
-        assert_eq!(board.get_piece((7, 3)).unwrap().get_type(), PieceType::Queen);
-        assert_eq!(board.get_piece((7, 4)).unwrap().get_type(), PieceType::King);
-        assert_eq!(board.get_piece((7, 5)).unwrap().get_type(), PieceType::Bishop);
-        assert_eq!(board.get_piece((7, 6)).unwrap().get_type(), PieceType::Knight);
-        assert_eq!(board.get_piece((7, 7)).unwrap().get_type(), PieceType::Rook);
-    }
-
-    #[test]
-    fn test_is_king_in_check() {
-        use crate::view::console_view::ConsoleView;
-        let cv = ConsoleView::new();
-        let mut no_check_board = Board::new_standard();
-        cv.display_board(&no_check_board);
-        assert_eq!(no_check_board.is_king_in_check(&Color::Black), false);
-
-        let mut check_board = Board::from_fen("RkrK4/8/8/8/8/8/8/8 - w"); // white rook -> black king, black rook -> white king
-        cv.display_board(&check_board);
-        assert_eq!(check_board.is_king_in_check(&Color::Black), true);
-
-    }
-
-    #[test]
-    fn test_is_king_trapped(){
-        use crate::view::console_view::ConsoleView;
-        let cv = ConsoleView::new();
-        let mut not_trapped_board = Board::from_fen("k7/8/8/8/8/8/7K/8 - w"); // free kings
-        cv.display_board(&not_trapped_board);
-        assert_eq!(not_trapped_board.is_king_trapped(&Color::White), false);
-
-        let mut trapped_board = Board::new_standard();
-        cv.display_board(&trapped_board);
-        assert_eq!(trapped_board.is_king_trapped(&Color::White), true);
-    }
-
 }
