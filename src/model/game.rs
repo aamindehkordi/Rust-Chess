@@ -1,10 +1,8 @@
 // src/model/game.rs
 use crate::model::board::Board;
 use crate::model::moves::r#move::{Move, MoveHistory, MoveType};
-use crate::model::moves::move_generator::MoveGenerator;
 use std::error::Error;
 use crate::model::moves::move_validator::MoveValidator;
-use crate::model::moves::r#move::CastleType::{Kingside, Queenside};
 use crate::model::pieces::piece::{Piece, PieceType};
 use crate::model::pieces::piece::Color;
 

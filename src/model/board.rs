@@ -234,8 +234,6 @@ impl Board {
 
     }
 
-
-
     /// Returns true if the given player's king is trapped.
     /// A king is trapped if it has no moves.
     pub fn is_king_trapped(&self, color: &Color) -> bool {
