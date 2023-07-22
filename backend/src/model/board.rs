@@ -291,4 +291,39 @@ impl Board {
         let piece = self.tiles[idx.0 * 8 + idx.1].piece.take().unwrap();
         self.taken_pieces.push(piece);
     }
+
+    pub fn to_fen(&self) -> String {
+        let mut fen = String::new();
+        for i in 0..8 {
+            let mut empty = 0;
+            for j in 0..8 {
+                if let Some(piece) = self.get_piece((i, j)) {
+                    if empty > 0 {
+                        fen.push_str(&empty.to_string());
+                        empty = 0;
+                    }
+                    let c = if piece.get_color() == Color::White {
+                        piece.get_type().to_ascii_uppercase()
+                    } else {
+                        piece.get_type().to_ascii_lowercase()
+                    };
+                    fen.push(c);
+                } else {
+                    empty += 1;
+                }
+            }
+            if empty > 0 {
+                fen.push_str(&empty.to_string());
+            }
+            if i < 7 {
+                fen.push('/');
+            }
+        }
+        fen.push(' ');
+        fen.push(match self.current_turn {
+            Color::White => 'w',
+            Color::Black => 'b',
+        });
+        fen
+    } 
 }

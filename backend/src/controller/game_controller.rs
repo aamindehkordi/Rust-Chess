@@ -1,4 +1,3 @@
-use std::error::Error;
 // src/controller/game_controller.rs
 use crate::model::game::Game;
 use crate::model::moves::r#move::MoveType;
@@ -20,7 +19,7 @@ impl GameController {
     pub fn start_game(&mut self) {
         loop {
             self.view.display_board(self.game.get_board()); // Display the board
-            let (from_row, from_col, to_row, to_col) = self.view.get_move().unwrap(); // Get the move from the user
+            let (from_row, from_col, to_row, to_col) = self.view.get_move().expect("Invalid Move"); // Get the move from the user
             let from = (from_row, from_col);
             let to = (to_row, to_col);
             println!("Move from user: from: {from:?}, to: {to:?}");
@@ -43,4 +42,5 @@ impl GameController {
             }
         }
     }
+
 }

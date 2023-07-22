@@ -138,6 +138,28 @@ impl PieceType {
             Self::King => 0,
         }
     }
+
+    pub fn to_ascii_lowercase(&self) -> char {
+        match self {
+            Self::Pawn => 'p',
+            Self::Rook => 'r',
+            Self::Knight => 'n',
+            Self::Bishop => 'b',
+            Self::Queen => 'q',
+            Self::King => 'k',
+        }
+    }
+
+    pub fn to_ascii_uppercase(&self) -> char {
+        match self {
+            Self::Pawn => 'P',
+            Self::Rook => 'R',
+            Self::Knight => 'N',
+            Self::Bishop => 'B',
+            Self::Queen => 'Q',
+            Self::King => 'K',
+        }
+    }
 }
 
 impl Color {
