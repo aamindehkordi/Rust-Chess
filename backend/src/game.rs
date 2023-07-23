@@ -2,7 +2,7 @@ use std::time::Duration;
 // Import necessary modules and dependencies
 use crate::board::{Board, Color};
 use crate::player::Player;
-use crate::moves::Move;
+use crate::moves::{Move, MoveHistory};
 use crate::player::PlayerKind::Human;
 
 pub enum GameStatus {
@@ -30,7 +30,8 @@ pub struct GameState {
     pub board: Board,
     players: [Player; 2],
     pub current_player: usize,  // index into players array
-    pub(crate) move_history: Vec<Move>,
+    pub move_history: Vec<MoveHistory>,
+    pub all_moves: Vec<Move>,
     game_status: GameStatus,
     timers: Timer,
 }
@@ -51,6 +52,7 @@ impl GameState {
             players,
             current_player,
             move_history,
+            all_moves: Vec::new(),
             game_status: GameStatus::InProgress,
             timers: Timer::new(),
         }

@@ -41,7 +41,14 @@ impl Move {
             move_type,
         }
     }
+}
 
+// Struct to represent a move history
+#[derive(Clone)]
+pub struct MoveHistory {
+    pub mv: Move,
+    pub captured_piece: Option<Piece>,
+    pub notation: String,
 }
 
 
