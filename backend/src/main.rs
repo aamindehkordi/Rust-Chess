@@ -21,7 +21,7 @@ fn main() {
         display_game_state(&game_state);
         // Get the current player from the game state
         let current_player = game_state.get_current_player();
-
+        game_state.generate_moves();
         // If the current player is human, get a move from the user input
         // If the current player is an AI, get a move from the AI's "brain"
         let mv = match current_player.kind {

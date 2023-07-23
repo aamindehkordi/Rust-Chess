@@ -27,20 +27,23 @@ pub enum MoveType {
 // Struct to represent a move
 #[derive(Copy, Clone)]
 pub struct Move {
-    from: (u8, u8),
-    to: (u8, u8),
-    move_type: MoveType,
+    pub from: (u8, u8),
+    pub to: (u8, u8),
+    pub move_type: MoveType,
+    pub color: Color,
 }
 
 impl Move {
     // Function to create a new move
-    pub fn new(from: (u8, u8), to: (u8, u8), move_type: MoveType) -> Self {
+    pub fn new(from: (u8, u8), to: (u8, u8), move_type: MoveType, color: Color) -> Self {
         Self {
             from,
             to,
             move_type,
+            color
         }
     }
+
 }
 
 // Struct to represent a move history
@@ -69,9 +72,25 @@ impl MoveGenerator<'_,> {
         }
     }
 
+    // Function to generate all moves for a given color
+    pub fn generate_moves(&mut self, color: Color) -> Vec<Move> {
+        for (x, y, piece) in self.board.iter_pieces(color) {
+            // Depending on the type of the piece, generate possible moves
+            match piece.kind {
+                PieceKind::Pawn => self.moves.extend(self.generate_pawn_moves(x, y, color)),
+                PieceKind::Rook => self.moves.extend(self.generate_rook_moves(x, y, color)),
+                PieceKind::Knight => self.moves.extend(self.generate_knight_moves(x, y, color)),
+                PieceKind::Bishop => self.moves.extend(self.generate_bishop_moves(x, y, color)),
+                PieceKind::Queen => self.moves.extend(self.generate_queen_moves(x, y, color)),
+                PieceKind::King => self.moves.extend(self.generate_king_moves(x, y, color)),
+                // ... similar for other piece types ...
+            }
+        }
+        self.moves.clone()
+    }
 
     // Function to generate all legal moves for a given game state
-    pub fn generate_moves(&mut self) -> Vec<Move> {
+    pub fn generate_current_moves(&mut self) -> Vec<Move> {
         // For each piece belonging to the player
         let color = self.player.color;
         for (x, y, piece) in self.board.iter_pieces(color) {
@@ -101,7 +120,7 @@ impl MoveGenerator<'_,> {
         // Moving one square forward
         let move_one_forward = (pos.0, (pos.1 as i8 + direction) as u8);
         if in_bounds(move_one_forward) && self.board.get(move_one_forward.0, move_one_forward.1).is_none() {
-            moves.push(Move::new(pos, move_one_forward, MoveType::Normal));
+            moves.push(Move::new(pos, move_one_forward, MoveType::Normal,color));
         }
 
         // Moving two squares forward on the pawn's first move
@@ -109,7 +128,7 @@ impl MoveGenerator<'_,> {
         if self.board.get(pos.0, pos.1).unwrap().moves_count == 0 &&
            in_bounds(move_two_forward) &&
            self.board.get(move_two_forward.0, move_two_forward.1).is_none() {
-             moves.push(Move::new(pos, move_two_forward, MoveType::Normal));
+             moves.push(Move::new(pos, move_two_forward, MoveType::Normal,color));
         }
 
         // Capturing diagonally
@@ -120,7 +139,7 @@ impl MoveGenerator<'_,> {
                 match self.board.get(capture_move.0, capture_move.1) {
                     Some(piece) => {
                         if piece.color != color {
-                            moves.push(Move::new(pos, capture_move, MoveType::Capture));
+                            moves.push(Move::new(pos, capture_move, MoveType::Capture,color));
                         }
                     },
                     None => continue,
@@ -157,10 +176,10 @@ impl MoveGenerator<'_,> {
 
         // En passant: capturing an opponent's pawn in passing
         if let Some(last_move) = self.game_state.move_history.last() {
-            if let MoveType::DoublePawnPush = last_move.move_type {
-                let en_passant_moves = [(last_move.to.0 + 1, last_move.to.1), (last_move.to.0 - 1, last_move.to.1)];
+            if let MoveType::DoublePawnPush = last_move.mv.move_type {
+                let en_passant_moves = [(last_move.mv.to.0 + 1, last_move.mv.to.1), (last_move.mv.to.0 - 1, last_move.mv.to.1)];
                 if en_passant_moves.contains(&pos) {
-                    moves.push(Move::new(pos, (last_move.to.0, (last_move.to.1 as i8+ direction)as u8), MoveType::EnPassant));
+                    moves.push(Move::new(pos, (last_move.mv.to.0, (last_move.mv.to.1 as i8+ direction)as u8), MoveType::EnPassant,color));
                 }
             }
         }
@@ -184,11 +203,11 @@ impl MoveGenerator<'_,> {
                 match self.board.get(move_to.0, move_to.1) {
                     Some(piece) => {
                         if piece.color != color {
-                            moves.push(Move::new(pos, move_to, MoveType::Capture));
+                            moves.push(Move::new(pos, move_to, MoveType::Capture, color));
                         }
                     },
                     None => {
-                        moves.push(Move::new(pos, move_to, MoveType::Normal));
+                        moves.push(Move::new(pos, move_to, MoveType::Normal, color));
                     }
                 }
             }
@@ -202,7 +221,8 @@ impl MoveGenerator<'_,> {
                 // 3. The rook with which the king is castling hasn't moved before
                 // get rook position based on the king's color
                 let file:u8 = if color == Color::White { 0 } else { 7 };
-                if !self.game_state.has_piece_moved((file, pos.1)) {
+                let rook = self.board.get(file, pos.1).unwrap();
+                if rook.moves_count == 0 {
                     // 4. There are no pieces between the king and the rook
                     let mut is_empty = true;
                     let mut is_attacked = false;
@@ -222,10 +242,10 @@ impl MoveGenerator<'_,> {
                     if is_empty && !is_attacked {
                         // 5. The king does not pass through a square that is attacked by an enemy piece
                         if file == 0 {
-                            moves.push(Move::new(pos, (pos.0 - 2, pos.1), MoveType::Castle(CastleType::QueenSide)));
+                            moves.push(Move::new(pos, (pos.0 - 2, pos.1), MoveType::Castle(CastleType::QueenSide),color));
                         }
                         else {
-                            moves.push(Move::new(pos, (pos.0 + 2, pos.1), MoveType::Castle(CastleType::KingSide)));
+                            moves.push(Move::new(pos, (pos.0 + 2, pos.1), MoveType::Castle(CastleType::KingSide), color));
                         }
                     }
                 }
@@ -237,20 +257,20 @@ impl MoveGenerator<'_,> {
     // Pushes all promotion piece types moves to the list of moves
     pub fn promotion_move(&self, color: Color, pmv: (u8, u8)) -> Vec<Move> {
         let mut moves = Vec::new();
-        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Queen)));
-        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Rook)));
-        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Bishop)));
-        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Knight)));
+        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Queen),color));
+        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Rook),color));
+        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Bishop),color));
+        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Knight),color));
         moves
     }
 
     // Pushes all promotion piece types attack moves to the list of moves
     pub fn promotion_attack_move(&self, color: Color, pmv: (u8, u8)) -> Vec<Move> {
         let mut moves = Vec::new();
-        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Queen)));
-        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Rook)));
-        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Bishop)));
-        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Knight)));
+        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Queen),color));
+        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Rook),color));
+        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Bishop),color));
+        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Knight),color));
         moves
     }
 
@@ -269,11 +289,11 @@ pub fn apply_move(game_state: &mut GameState, mv: &Move) {
 // Function to get a move from the user
 pub fn get_user_move() -> Move {
     // ... get the move ...
-    Move::new((0, 0), (0, 0), MoveType::Invalid)
+    Move::new((0, 0), (0, 0), MoveType::Invalid, Color::White)
 }
 
 // Function to get a move from an AI
 pub fn get_ai_move(player: &Player) -> Move {
     // ... get the move ...
-    Move::new((0, 0), (0, 0), MoveType::Invalid)
+    Move::new((0, 0), (0, 0), MoveType::Invalid, Color::White)
 }
