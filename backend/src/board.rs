@@ -15,6 +15,14 @@ pub enum Color {
     White,
     Black,
 }
+impl Color {
+    pub fn opposite(&self) -> Self {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Piece {
@@ -220,6 +228,38 @@ impl Board {
     pub fn is_tile_empty(&self, xy: (u8, u8)) -> bool {
         self.get(xy.0, xy.1).is_none()
     }
+
+    pub fn is_tile_occupied(&self, xy: (u8, u8)) -> bool {
+        self.get(xy.0, xy.1).is_some()
+    }
+
+    pub fn find_king(&self, color: Color) -> (u8, u8) {
+        for y in 0..8 {
+            for x in 0..8 {
+                if let Some(piece) = self.get(x, y) {
+                    if piece.color == color && piece.kind == PieceKind::King {
+                        return (x, y);
+                    }
+                }
+            }
+        }
+        panic!("King not found");
+    }
+
+    pub fn find_pieces(&self, color: Color, kind: PieceKind) -> Vec<(u8, u8)> {
+        let mut pieces = Vec::new();
+        for y in 0..8 {
+            for x in 0..8 {
+                if let Some(piece) = self.get(x, y) {
+                    if piece.color == color && piece.kind == kind {
+                        pieces.push((x, y));
+                    }
+                }
+            }
+        }
+        pieces
+    }
+
 }
 
 impl fmt::Display for Board {
