@@ -2,7 +2,7 @@ use std::time::Duration;
 // Import necessary modules and dependencies
 use crate::board::{Board, Color};
 use crate::player::Player;
-use crate::moves::{Move, MoveHistory};
+use crate::moves::{Move, MoveGenerator, MoveHistory};
 use crate::player::PlayerKind::Human;
 
 pub enum GameStatus {
@@ -31,7 +31,7 @@ pub struct GameState {
     players: [Player; 2],
     pub current_player: usize,  // index into players array
     pub move_history: Vec<MoveHistory>,
-    pub all_moves: Vec<Move>,
+    pub legal_moves: Vec<Move>,
     game_status: GameStatus,
     timers: Timer,
 }
@@ -52,10 +52,15 @@ impl GameState {
             players,
             current_player,
             move_history,
-            all_moves: Vec::new(),
+            legal_moves: Vec::new(),
             game_status: GameStatus::InProgress,
             timers: Timer::new(),
         }
+    }
+
+    pub fn generate_moves(&mut self) {
+        let mut move_generator = MoveGenerator::new(&self);
+        self.legal_moves = move_generator.generate_current_moves();
     }
 
     // Function to get the current player
@@ -67,7 +72,52 @@ impl GameState {
     pub fn change_current_player(&mut self) {
         self.current_player = 1 - self.current_player;
     }
+
+    // Function to check if the current player is in check
+    pub fn is_current_player_in_check(&self) -> bool {
+        if self.is_in_check(self.get_current_player().color) {
+            true
+        } else {
+            false
+        }
+    }
+
+    // Function to check if the given color is in check
+    pub fn is_in_check(&self, color: Color) -> bool {
+        let king_pos = self.board.find_king(color);
+        let mut move_generator = MoveGenerator::new(&self);
+        let moves = move_generator.generate_current_moves();
+        for mv in moves {
+            if mv.to == king_pos {
+                return true;
+            }
+        }
+        false
+    }
+
+    // Function to check if the current player is in checkmate
+    pub fn is_in_checkmate(&self, color:Color) -> bool {
+        if self.is_in_check(color) {
+            if self.legal_moves.is_empty() {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn is_attacked(&self, pos: (u8, u8), color: Color) -> bool {
+        let mut move_generator = MoveGenerator::new(&self);
+        let moves = move_generator.generate_moves(color.opposite());
+        for mv in moves {
+            if mv.to == pos && mv.color != color {
+                return true;
+            }
+        }
+        false
+    }
 }
+
+
 
 // Function to display the game state
 pub fn display_game_state(game_state: &GameState) {
