@@ -4,13 +4,12 @@ mod board;
 mod moves;
 mod player;
 mod utils;
-mod validation;
 
+// Import necessary dependencies
 use game::*;
 use player::*;
 use moves::*;
 use utils::*;
-use validation::*;
 
 fn main() {
     // Create a new game state
@@ -26,19 +25,19 @@ fn main() {
         // If the current player is human, get a move from the user input
         // If the current player is an AI, get a move from the AI's "brain"
         let mv = match current_player.kind {
-            PlayerType::Human => get_user_move(),
-            PlayerType::AI => get_ai_move(current_player.brain),
+            PlayerKind::Human => get_user_move(),
+            PlayerKind::Computer(_) => get_ai_move(current_player),
         };
 
         // Validate the move
         match validate_move(&game_state, & mv) {
             Ok(_) => {
                 // If the move is valid, apply it to the game state
-                apply_move(&mut game_state, & mv);
-
+                apply_move(&mut game_state, &mv);
                 // Check if the game is over
                 if is_game_over(&game_state) {
-                    // If the game is over, break the loop
+                    // If the game is over, display the game state and break out of the loop
+                    display_game_state(&game_state);
                     break;
                 }
             },
