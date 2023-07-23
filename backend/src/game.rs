@@ -31,7 +31,6 @@ pub struct GameState {
     players: [Player; 2],
     pub current_player: usize,  // index into players array
     pub move_history: Vec<MoveHistory>,
-    pub legal_moves: Vec<Move>,
     game_status: GameStatus,
     timers: Timer,
 }
@@ -52,15 +51,9 @@ impl GameState {
             players,
             current_player,
             move_history,
-            legal_moves: Vec::new(),
             game_status: GameStatus::InProgress,
             timers: Timer::new(),
         }
-    }
-
-    pub fn generate_moves(&mut self) {
-        let mut move_generator = MoveGenerator::new(&self);
-        self.legal_moves = move_generator.generate_current_moves();
     }
 
     // Function to get the current player
@@ -98,7 +91,9 @@ impl GameState {
     // Function to check if the current player is in checkmate
     pub fn is_in_checkmate(&self, color:Color) -> bool {
         if self.is_in_check(color) {
-            if self.legal_moves.is_empty() {
+            let mut move_generator = MoveGenerator::new(&self);
+            let moves = move_generator.generate_current_moves();
+            if moves.len() == 0 {
                 return true;
             }
         }
@@ -114,6 +109,11 @@ impl GameState {
             }
         }
         false
+    }
+    pub fn apply_move(&mut self, mv: &Move) {
+        self.board.make_move(mv);
+        self.move_history.push(MoveHistory::new(mv.clone()));
+        self.change_current_player();
     }
 }
 

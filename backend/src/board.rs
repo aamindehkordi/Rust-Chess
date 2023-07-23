@@ -1,4 +1,5 @@
 use std::fmt;
+use crate::moves::Move;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PieceKind {
@@ -164,6 +165,12 @@ impl Board {
             }
         }
         board
+    }
+    
+    pub fn make_move(&mut self, mv: &Move) {
+        let piece = self.get(mv.from.0, mv.from.1).unwrap();
+        self.set(mv.from.0, mv.from.1, None);
+        self.set(mv.to.0, mv.to.1, Some(piece));
     }
 
     pub fn to_fen(&self) -> String {
