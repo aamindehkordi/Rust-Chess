@@ -3,13 +3,11 @@ mod game;
 mod board;
 mod moves;
 mod player;
-mod utils;
 
 // Import necessary dependencies
 use game::*;
 use player::*;
 use moves::*;
-use utils::*;
 
 fn main() {
     // Create a new game state
@@ -17,6 +15,7 @@ fn main() {
 
     // Main game loop
     loop {
+        game_state.calculate_all_moves();
         // Display the current game state
         display_game_state(&game_state);
         // Get the current player from the game state
