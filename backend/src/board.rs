@@ -1,5 +1,5 @@
 use std::fmt;
-use crate::moves::Move;
+use crate::moves::{CastleType, Move, MoveType};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PieceKind {
@@ -92,7 +92,7 @@ impl Board {
     }
 
     pub fn new_standard() -> Self {
-        let mut board = Self::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        let mut board = Self::from_fen("r3kbnr/pppb1ppp/8/3Pp1qQ/3nN3/7N/PPPPBPPP/R1B1K2R");
         board
     }
 
@@ -168,9 +168,61 @@ impl Board {
     }
     
     pub fn make_move(&mut self, mv: &Move) {
-        let piece = self.get(mv.from.0, mv.from.1).unwrap();
-        self.set(mv.from.0, mv.from.1, None);
-        self.set(mv.to.0, mv.to.1, Some(piece));
+        match mv.move_type {
+            MoveType::Normal => {
+                let piece = self.get(mv.from.0, mv.from.1).unwrap();
+                self.set(mv.from.0, mv.from.1, None);
+                self.set(mv.to.0, mv.to.1, Some(piece));
+            },
+            MoveType::DoublePawnPush => {
+                let piece = self.get(mv.from.0, mv.from.1).unwrap();
+                self.set(mv.from.0, mv.from.1, None);
+                self.set(mv.to.0, mv.to.1, Some(piece));
+            },
+            MoveType::Capture => {
+                let piece = self.get(mv.from.0, mv.from.1).unwrap();
+                self.set(mv.from.0, mv.from.1, None);
+                self.set(mv.to.0, mv.to.1, Some(piece));
+            },
+            MoveType::Castle(castle_type) => {
+                let king = self.get(mv.from.0, mv.from.1).unwrap();
+                self.set(mv.from.0, mv.from.1, None);
+                self.set(mv.to.0, mv.to.1, Some(king));
+                match castle_type {
+                    CastleType::KingSide => {
+                        let rook = self.get(7, mv.from.1).unwrap();
+                        self.set(7, mv.from.1, None);
+                        self.set(5, mv.from.1, Some(rook));
+                    },
+                    CastleType::QueenSide => {
+                        let rook = self.get(0, mv.from.1).unwrap();
+                        self.set(0, mv.from.1, None);
+                        self.set(3, mv.from.1, Some(rook));
+                    },
+                }
+            },
+            MoveType::EnPassant => {
+                let piece = self.get(mv.from.0, mv.from.1).unwrap();
+                self.set(mv.from.0, mv.from.1, None);
+                self.set(mv.to.0, mv.to.1, Some(piece));
+                self.set(mv.to.0, mv.from.1, None);
+            },
+            MoveType::Promotion(piece_kind) => {
+                let piece = Piece { color: self.get(mv.from.0, mv.from.1).unwrap().color, kind: piece_kind, moves_count: 0 };
+                self.set(mv.from.0, mv.from.1, None);
+                self.set(mv.to.0, mv.to.1, Some(piece));
+            },
+            MoveType::PromotionCapture(piece_kind) => {
+                let piece = Piece { color: self.get(mv.from.0, mv.from.1).unwrap().color, kind: piece_kind, moves_count: 0 };
+                self.set(mv.from.0, mv.from.1, None);
+                self.set(mv.to.0, mv.to.1, Some(piece));
+            },
+            _ => panic!("Invalid move type"),
+        }
+        // update piece moves_count
+        if let Some(piece) = self.get(mv.from.0, mv.from.1) {
+            self.set(mv.from.0, mv.from.1, Some(Piece { moves_count: piece.moves_count + 1, ..piece }));
+        }
     }
 
     pub fn to_fen(&self) -> String {
