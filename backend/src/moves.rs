@@ -124,8 +124,8 @@ impl<'a> MoveGenerator<'a,> {
         let mut moves = Vec::new();
         let pos = (x, y);
         let direction = match color {
-            Color::White => 1,
-            Color::Black => -1 as i8,
+            Color::White => -1i8,
+            Color::Black => 1i8,
         };
 
         // Moving one square forward
