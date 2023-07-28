@@ -1,3 +1,4 @@
+use std::cmp::{max, min};
 // Import necessary modules and dependencies
 use crate::board::{Board, Color, in_bounds, Piece, PieceKind};
 use crate::game::GameState;
@@ -94,7 +95,6 @@ impl<'a> MoveGenerator<'a,> {
                 PieceKind::Bishop => self.moves.extend(self.generate_bishop_moves(x, y, color)),
                 PieceKind::Queen => self.moves.extend(self.generate_queen_moves(x, y, color)),
                 PieceKind::King => self.moves.extend(self.generate_king_moves(x, y, color)),
-                // ... similar for other piece types ...
             }
         }
         self.moves.clone()
@@ -104,18 +104,7 @@ impl<'a> MoveGenerator<'a,> {
     pub fn generate_current_moves(&mut self) -> Vec<Move> {
         // For each piece belonging to the player
         let color = self.player.color;
-        for (x, y, piece) in self.board.iter_pieces(color) {
-            // Depending on the type of the piece, generate possible moves
-            match piece.kind {
-                PieceKind::Pawn => self.moves.extend(self.generate_pawn_moves(x, y, color)),
-                PieceKind::Rook => self.moves.extend(self.generate_rook_moves(x, y, color)),
-                PieceKind::Knight => self.moves.extend(self.generate_knight_moves(x, y, color)),
-                PieceKind::Bishop => self.moves.extend(self.generate_bishop_moves(x, y, color)),
-                PieceKind::Queen => self.moves.extend(self.generate_queen_moves(x, y, color)),
-                PieceKind::King => self.moves.extend(self.generate_king_moves(x, y, color)),
-                // ... similar for other piece types ...
-            }
-        }
+        self.moves = self.generate_moves(color);
         self.moves.clone()
     }
 
@@ -142,26 +131,58 @@ impl<'a> MoveGenerator<'a,> {
              moves.push(Move::new(pos, move_two_forward, MoveType::Normal,color));
         }
 
-        // Capturing diagonally
-        let capture_moves = [(pos.0 + 1, (pos.1 as i8 + direction)as u8),
-                             (pos.0 - 1, (pos.1 as i8 + direction)as u8)];
-        for capture_move in capture_moves {
-            if in_bounds(capture_move) {
-                match self.board.get(capture_move.0, capture_move.1) {
+        // Capturing diagonally, don't subtract with overflow
+        if pos.0 > 0 {
+            let capture_left = ((pos.0 as i8 - 1) as u8, (pos.1 as i8 + direction) as u8);
+            if in_bounds(capture_left) {
+                match self.board.get(capture_left.0, capture_left.1) {
                     Some(piece) => {
                         if piece.color != color {
-                            moves.push(Move::new(pos, capture_move, MoveType::Capture,color));
+                            moves.push(Move::new(pos, capture_left, MoveType::Capture,color));
                         }
                     },
-                    None => continue,
+                    None => {
+                        // En passant: capturing an opponent's pawn in passing
+                        if let Some(last_move) = self.game_state.move_history.last() {
+                            if let MoveType::DoublePawnPush = last_move.mv.move_type {
+                                let en_passant_moves = [(last_move.mv.to.0 + 1, last_move.mv.to.1), (last_move.mv.to.0 - 1, last_move.mv.to.1)];
+                                if en_passant_moves.contains(&capture_left) {
+                                    moves.push(Move::new(pos, (last_move.mv.to.0, (last_move.mv.to.1 as i8+ direction)as u8), MoveType::EnPassant,color));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if pos.0 < 7 {
+            let capture_right = ((pos.0 as i8 + 1) as u8, (pos.1 as i8 + direction) as u8);
+            if in_bounds(capture_right) {
+                match self.board.get(capture_right.0, capture_right.1) {
+                    Some(piece) => {
+                        if piece.color != color {
+                            moves.push(Move::new(pos, capture_right, MoveType::Capture,color));
+                        }
+                    },
+                    None => {
+                        // En passant: capturing an opponent's pawn in passing
+                        if let Some(last_move) = self.game_state.move_history.last() {
+                            if let MoveType::DoublePawnPush = last_move.mv.move_type {
+                                let en_passant_moves = [(last_move.mv.to.0 + 1, last_move.mv.to.1), (last_move.mv.to.0 - 1, last_move.mv.to.1)];
+                                if en_passant_moves.contains(&capture_right) {
+                                    moves.push(Move::new(pos, (last_move.mv.to.0, (last_move.mv.to.1 as i8+ direction)as u8), MoveType::EnPassant,color));
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
 
-
         // Promotion: reaching the end of the board
         if (color == Color::White && pos.1 == 6) || (color == Color::Black && pos.1 == 1) {
-            let promotion_moves = [(pos.0, pos.1 + 1), (pos.0 - 1, pos.1 + 1), (pos.0 + 1, pos.1 + 1)];
+            // generate promotion moves
+            let promotion_moves = [(pos.0, (pos.1 as i8 + direction) as u8)];
             for &pmv in &promotion_moves {
                 // check if the position is valid
                 if !in_bounds(pmv) {
@@ -197,7 +218,7 @@ impl<'a> MoveGenerator<'a,> {
         moves
     }
 
-    // Function to generate all legal moves for a king at a given position
+
     fn generate_king_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = (x, y);
@@ -230,33 +251,19 @@ impl<'a> MoveGenerator<'a,> {
             // 2. The king is not currently in check
             if !self.game_state.is_in_check(color) {
                 // 3. The rook with which the king is castling hasn't moved before
-                // get rook position based on the king's color
-                let file:u8 = if color == Color::White { 0 } else { 7 };
-                let rook = self.board.get(file, pos.1).unwrap();
-                if rook.moves_count == 0 {
-                    // 4. There are no pieces between the king and the rook
-                    let mut is_empty = true;
-                    let mut is_attacked = false;
-                    let mut x = pos.0;
-                    let mut y = pos.1;
-                    while x != file {
-                        x = if x > file { x - 1 } else { x + 1 };
-                        if !self.board.is_tile_empty((x, y)) {
-                            is_empty = false;
-                            break;
-                        }
-                        if self.game_state.is_attacked((x, y), color) {
-                                is_attacked = true;
-                                break;
-                        }
-                    }
-                    if is_empty && !is_attacked {
-                        // 5. The king does not pass through a square that is attacked by an enemy piece
-                        if file == 0 {
-                            moves.push(Move::new(pos, (pos.0 - 2, pos.1), MoveType::Castle(CastleType::QueenSide),color));
-                        }
-                        else {
-                            moves.push(Move::new(pos, (pos.0 + 2, pos.1), MoveType::Castle(CastleType::KingSide), color));
+                let rook_positions = if color == Color::White { [(0, 7), (7, 7)] } else { [(0, 0), (7, 0)] };
+                for &rook_pos in &rook_positions {
+                    let rook = self.board.get(rook_pos.0, rook_pos.1);
+                    if rook.is_some() && rook.unwrap().moves_count == 0 {
+                        // 4. There are no pieces between the king and the rook
+                        let min_x = min(pos.0, rook_pos.0) as usize;
+                        let max_x = max(pos.0, rook_pos.0) as usize;
+                        if (min_x..=max_x).all(|x| self.board.get(x as u8, pos.1).is_none() || (x as u8, pos.1) == pos || (x as u8, pos.1) == rook_pos) {
+                            // 5. The king does not pass through a square that is attacked by an enemy piece
+                            let castle_through = if rook_pos.0 == 0 { [(2, pos.1), (3, pos.1)] } else { [(5, pos.1), (6, pos.1)] };
+                            if castle_through.iter().all(|&pos| !self.game_state.is_attacked(pos, color)) {
+                                moves.push(Move::new(pos, if rook_pos.0 == 0 { (2, pos.1) } else { (6, pos.1) }, MoveType::Castle(if rook_pos.0 == 0 { CastleType::QueenSide } else { CastleType::KingSide }), color));
+                            }
                         }
                     }
                 }
@@ -264,6 +271,8 @@ impl<'a> MoveGenerator<'a,> {
         }
         moves
     }
+
+
 
     // Function to generate all legal moves for a rook at a given position
     fn generate_rook_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
