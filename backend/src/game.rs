@@ -149,7 +149,9 @@ pub fn validate_move(game_state: &GameState, pos: (u8,u8,u8,u8)) -> Result<(Move
     let moves = move_generator.generate_current_moves();
     for mv in moves {
         if mv.from == (pos.0, pos.1) && mv.to == (pos.2, pos.3) {
-            return Ok(mv);
+            if mv.move_type.is_valid() {
+                return Ok(mv);
+            }
         }
     }
     // error handling
