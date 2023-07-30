@@ -28,7 +28,15 @@ impl MoveType {
     // Function to check if a move type is a promotion
     pub fn is_promotion(&self) -> bool {
         match self {
-            MoveType::Promotion(_) | MoveType::PromotionCapture(_) => true,
+            MoveType::Promotion(_) => true,
+            _ => false,
+        }
+    }
+
+    // Function to check if a move type is a capture
+    pub fn is_promo_capture(&self) -> bool {
+        match self {
+            MoveType::PromotionCapture(_) => true,
             _ => false,
         }
     }
@@ -36,7 +44,7 @@ impl MoveType {
     // Function to check if a move type is valid
     pub fn is_valid(&self) -> bool {
         match self {
-            MoveType::Invalid => false,
+            MoveType::Invalid | MoveType::PromotionCapture(_) | MoveType::Promotion(_) => false,
             _ => true,
         }
     }
@@ -128,36 +136,41 @@ impl<'a> MoveGenerator<'a,> {
     // Function to generate all legal moves for a pawn at a given position
     fn generate_pawn_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
-        let pos = (x, y);
+        let fmv = (x, y);
+
+        if fmv == (1, 6) {
+            println!("pawn at 1,6");
+        }
         let direction = match color {
             Color::White => 1i8,
             Color::Black => -1i8,
         };
-
         let second_file = if color == Color::White { 1u8 } else { 6u8 };
-        // Moving one square forward
-        let move_one_forward = (pos.0, (pos.1 as i8 + direction) as u8);
-        if in_bounds(move_one_forward) && self.board.get(move_one_forward.0, move_one_forward.1).is_none() {
-            moves.push(Move::new(pos, move_one_forward, MoveType::Normal,color));
-        }
+        let seventh_file = if color == Color::White { 6u8 } else { 1u8 };
 
-        // Moving two squares forward on the pawn's first move
-        let move_two_forward = (pos.0, (pos.1 as i8 + 2 * direction) as u8);
-        if self.board.get(pos.0, pos.1).unwrap().moves_count == 0 && // first move
-           in_bounds(move_two_forward) && // in bounds
-           self.board.get(move_two_forward.0, move_two_forward.1).is_none() && // no piece in the way
-           pos.1 == second_file { // on the second file
-             moves.push(Move::new(pos, move_two_forward, MoveType::DoublePawnPush, color));
-        }
+        if fmv.1 != seventh_file {
+            // Moving one square forward
+            let move_one_forward = (fmv.0, (fmv.1 as i8 + direction) as u8);
+            if in_bounds(move_one_forward) && self.board.get(move_one_forward.0, move_one_forward.1).is_none() {
+                moves.push(Move::new(fmv, move_one_forward, MoveType::Normal, color));
+            }
 
-        // Capturing diagonally, don't subtract with overflow
-        if pos.0 > 0 {
-            let capture_left = ((pos.0 as i8 - 1) as u8, (pos.1 as i8 + direction) as u8);
+            // Moving two squares forward on the pawn's first move
+            let move_two_forward = (fmv.0, (fmv.1 as i8 + 2 * direction) as u8);
+            if self.board.get(fmv.0, fmv.1).unwrap().moves_count == 0 && // first move
+               in_bounds(move_two_forward) && // in bounds
+               self.board.get(move_two_forward.0, move_two_forward.1).is_none() && // no piece in the way
+               fmv.1 == second_file { // on the second file
+                 moves.push(Move::new(fmv, move_two_forward, MoveType::DoublePawnPush, color));
+            }
+
+            // Capturing diagonally
+            let capture_left = ((fmv.0 as i8 - 1) as u8, (fmv.1 as i8 + direction) as u8);
             if in_bounds(capture_left) {
                 match self.board.get(capture_left.0, capture_left.1) {
                     Some(piece) => {
-                        if piece.color != color {
-                            moves.push(Move::new(pos, capture_left, MoveType::Capture,color));
+                        if piece.color != color && fmv.1 != seventh_file {
+                            moves.push(Move::new(fmv, capture_left, MoveType::Capture, color));
                         }
                     },
                     None => {
@@ -165,22 +178,22 @@ impl<'a> MoveGenerator<'a,> {
                         if let Some(last_move) = self.game_state.move_history.last() {
                             if let MoveType::DoublePawnPush = last_move.mv.move_type {
                                 if last_move.mv.to.1 == y &&
-                                   (last_move.mv.to.0 as i8 - pos.0 as i8).abs() == 1 {
+                                   (last_move.mv.to.0 as i8 - fmv.0 as i8).abs() == 1 {
                                     let en_passant_move = (last_move.mv.to.0, (last_move.mv.to.1 as i8 + direction) as u8);
-                                    moves.push(Move::new(pos, en_passant_move, MoveType::EnPassant, color));
+                                    moves.push(Move::new(fmv, en_passant_move, MoveType::EnPassant, color));
                                 }
                             }
                         }
-                        moves.push(Move::new(pos, capture_left, MoveType::Invalid,color));
+                        moves.push(Move::new(fmv, capture_left, MoveType::Invalid, color));
                     }
                 }
             }
-            let capture_right = ((pos.0 as i8 + 1) as u8, (pos.1 as i8 + direction) as u8);
+            let capture_right = ((fmv.0 as i8 + 1) as u8, (fmv.1 as i8 + direction) as u8);
             if in_bounds(capture_right) {
                 match self.board.get(capture_right.0, capture_right.1) {
                     Some(piece) => {
-                        if piece.color != color {
-                            moves.push(Move::new(pos, capture_right, MoveType::Capture,color));
+                        if piece.color != color && fmv.1 != seventh_file {
+                            moves.push(Move::new(fmv, capture_right, MoveType::Capture, color));
                         }
                     },
                     None => {
@@ -189,51 +202,49 @@ impl<'a> MoveGenerator<'a,> {
                             if let MoveType::DoublePawnPush = last_move.mv.move_type {
                                 let en_passant_moves = [(last_move.mv.to.0 + 1, last_move.mv.to.1), (last_move.mv.to.0 - 1, last_move.mv.to.1)];
                                 if en_passant_moves.contains(&capture_right) {
-                                    moves.push(Move::new(pos, (last_move.mv.to.0, (last_move.mv.to.1 as i8+ direction)as u8), MoveType::EnPassant,color));
+                                    moves.push(Move::new(fmv, (last_move.mv.to.0, (last_move.mv.to.1 as i8+ direction)as u8), MoveType::EnPassant, color));
                                 }
                             }
                         }
+                        moves.push(Move::new(fmv, capture_right, MoveType::Invalid, color));
                     }
                 }
             }
         }
 
         // Promotion: reaching the end of the board
-        if (color == Color::White && pos.1 == 6) || (color == Color::Black && pos.1 == 1) {
-            // generate promotion moves
-            let promotion_moves = [(pos.0, (pos.1 as i8 + direction) as u8)];
-            for &pmv in &promotion_moves {
-                // check if the position is valid
-                if !in_bounds(pmv) {
-                    continue;
-                }
-                // check if the position is occupied
-                if !is_tile_empty(self.board, pmv) {
-                    // check if the piece is an opponent's piece
-                    if self.board.get(pmv.0, pmv.1).unwrap().color != color {
-                        // generate promotion moves
-                        let promotion_attack_moves = self.promotion_attack_move(color, pmv);
-                        // add promotion moves to the list of moves
-                        moves.extend(promotion_attack_moves);
-                    }
-                }
-                else {
+        // generate promotion moves
+        let promotion_moves = match color {
+            Color::White => {
+                [((fmv.0 as i8 + 1) as u8, 7), ((fmv.0 as i8 - 1) as u8, 7), (fmv.0, 7)]
+            },
+            Color::Black => {
+                [((fmv.0 as i8 + 1) as u8, 0), ((fmv.0 as i8 - 1) as u8, 0), (fmv.0, 0)]
+            }
+        };
+
+        for &pmv in &promotion_moves {
+            // check if the position is valid
+            if !in_bounds(pmv) {
+                continue;
+            }
+            // check if the position is occupied
+            if !is_tile_empty(self.board, pmv) {
+                // check if the piece is an opponent's piece
+                if self.board.get(pmv.0, pmv.1).unwrap().color != color {
                     // generate promotion moves
-                    let promotion_moves = self.promotion_move(color, pmv);
-                    moves.extend(promotion_moves);
+                    let promotion_attack_moves = self.promotion_attack_move(color, fmv, pmv);
+                    // add promotion moves to the list of moves
+                    moves.extend(promotion_attack_moves);
                 }
+            }
+            else {
+                // generate promotion moves
+                let promotion_moves = self.promotion_move(color, fmv, pmv);
+                moves.extend(promotion_moves);
             }
         }
 
-        // En passant: capturing an opponent's pawn in passing
-        if let Some(last_move) = self.game_state.move_history.last() {
-            if let MoveType::DoublePawnPush = last_move.mv.move_type {
-                let en_passant_moves = [(last_move.mv.to.0 + 1, last_move.mv.to.1), (last_move.mv.to.0 - 1, last_move.mv.to.1)];
-                if en_passant_moves.contains(&pos) {
-                    moves.push(Move::new(pos, (last_move.mv.to.0, (last_move.mv.to.1 as i8+ direction)as u8), MoveType::EnPassant,color));
-                }
-            }
-        }
         moves
     }
 
@@ -426,22 +437,22 @@ impl<'a> MoveGenerator<'a,> {
     }
 
     // Pushes all promotion piece types moves to the list of moves
-    pub fn promotion_move(&self, color: Color, pmv: (u8, u8)) -> Vec<Move> {
+    pub fn promotion_move(&self, color: Color,fmv: (u8, u8), pmv: (u8, u8)) -> Vec<Move> {
         let mut moves = Vec::new();
-        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Queen),color));
-        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Rook),color));
-        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Bishop),color));
-        moves.push(Move::new(pmv, pmv, MoveType::Promotion(PieceKind::Knight),color));
+        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Queen),color));
+        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Rook),color));
+        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Bishop),color));
+        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Knight),color));
         moves
     }
 
     // Pushes all promotion piece types attack moves to the list of moves
-    pub fn promotion_attack_move(&self, color: Color, pmv: (u8, u8)) -> Vec<Move> {
+    pub fn promotion_attack_move(&self, color: Color,fmv: (u8, u8), pmv: (u8, u8)) -> Vec<Move> {
         let mut moves = Vec::new();
-        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Queen),color));
-        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Rook),color));
-        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Bishop),color));
-        moves.push(Move::new(pmv, pmv, MoveType::PromotionCapture(PieceKind::Knight),color));
+        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Queen),color));
+        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Rook),color));
+        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Bishop),color));
+        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Knight),color));
         moves
     }
 

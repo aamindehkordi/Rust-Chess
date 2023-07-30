@@ -1,8 +1,9 @@
 use std::time::Duration;
 // Import necessary modules and dependencies
-use crate::board::{Board, Color, king_pos};
+use crate::board::{Board, Color, king_pos, Piece, PieceKind};
 use crate::player::Player;
 use crate::moves::{Move, MoveGenerator, MoveHistory};
+use crate::moves::MoveType::{Promotion, PromotionCapture};
 use crate::player::PlayerKind::Human;
 
 pub enum GameStatus {
@@ -152,12 +153,40 @@ pub fn validate_move(game_state: &GameState, pos: (u8,u8,u8,u8)) -> Result<(Move
             if mv.move_type.is_valid() {
                 return Ok(mv);
             }
+            if mv.move_type.is_promotion() {
+                let promotion = ask_for_promotion();
+                let piece = parse_promotion(&promotion);
+                let mv = Move::new(mv.from, mv.to, Promotion(piece), mv.color);
+                return Ok(mv);
+            }
+            if mv.move_type.is_promo_capture() {
+                let promotion = ask_for_promotion();
+                let piece = parse_promotion(&promotion);
+                let mv = Move::new(mv.from, mv.to, PromotionCapture(piece), mv.color);
+                return Ok(mv);
+            }
         }
     }
     // error handling
     Err("Invalid move".to_string())
 }
 
+pub fn ask_for_promotion() -> String {
+    let mut input = String::new();
+    println!("Enter your promotion: (Q, R, B, N) ");
+    std::io::stdin().read_line(&mut input).unwrap();
+    input
+}
+
+pub fn parse_promotion(input: &str) -> PieceKind {
+    match input {
+        "Q" | "q" => PieceKind::Queen,
+        "R" | "r" => PieceKind::Rook,
+        "B" | "b" => PieceKind::Bishop,
+        "N" | "n" => PieceKind::Knight,
+        _ => PieceKind::Queen,
+    }
+}
 
 // Function to get a move from the user and parse it into a Move struct
 pub fn get_user_move() -> (u8, u8, u8, u8) {
@@ -171,7 +200,6 @@ pub fn get_user_move() -> (u8, u8, u8, u8) {
     let to = (chars[3] as u8 - 'a' as u8, chars[4] as u8 - '1' as u8);
 
     (from.0, from.1, to.0, to.1)
-
 }
 
 // Function to parse a move from a string according to the algebraic notation
