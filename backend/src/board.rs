@@ -92,80 +92,10 @@ impl Board {
     }
 
     pub fn new_standard() -> Self {
-        let mut board = Self::from_fen("r3kbnr/pppb1ppp/8/3Pp1qQ/3nN3/7N/PPPPBPPP/R1B1K2R");
+        let mut board = Self::from_fen("R3K2R/PpP2PpP/8/4p3/3P4/8/pPp2pPp/r3k2r");
         board
     }
 
-    pub fn from_fen(fen: &str) -> Board {
-        let mut board = Board::new();
-        let mut x = 0;
-        let mut y = 0;
-        for c in fen.chars() {
-            match c {
-                '/' => {
-                    x = 0;
-                    y += 1;
-                },
-                '1'..='8' => {
-                    let n = c as u8 - '0' as u8;
-                    for _ in 0..n {
-                        board.set(x, y, None);
-                        x += 1;
-                    }
-                },
-                'p' => {
-                    board.set(x, y, Some(Piece::new(Color::Black, PieceKind::Pawn)));
-                    x += 1;
-                },
-                'r' => {
-                    board.set(x, y, Some(Piece::new(Color::Black, PieceKind::Rook)));
-                    x += 1;
-                },
-                'n' => {
-                    board.set(x, y, Some(Piece::new(Color::Black, PieceKind::Knight)));
-                    x += 1;
-                },
-                'b' => {
-                    board.set(x, y, Some(Piece::new(Color::Black, PieceKind::Bishop)));
-                    x += 1;
-                },
-                'q' => {
-                    board.set(x, y, Some(Piece::new(Color::Black, PieceKind::Queen)));
-                    x += 1;
-                },
-                'k' => {
-                    board.set(x, y, Some(Piece::new(Color::Black, PieceKind::King)));
-                    x += 1;
-                },
-                'P' => {
-                    board.set(x, y, Some(Piece::new(Color::White, PieceKind::Pawn)));
-                    x += 1;
-                },
-                'R' => {
-                    board.set(x, y, Some(Piece::new(Color::White, PieceKind::Rook)));
-                    x += 1;
-                },
-                'N' => {
-                    board.set(x, y, Some(Piece::new(Color::White, PieceKind::Knight)));
-                    x += 1;
-                },
-                'B' => {
-                    board.set(x, y, Some(Piece::new(Color::White, PieceKind::Bishop)));
-                    x += 1;
-                },
-                'Q' => {
-                    board.set(x, y, Some(Piece::new(Color::White, PieceKind::Queen)));
-                    x += 1;
-                },
-                'K' => {
-                    board.set(x, y, Some(Piece::new(Color::White, PieceKind::King)));
-                    x += 1;
-                }
-                _ => panic!("Invalid FEN string"),
-            }
-        }
-        board
-    }
     
     pub fn make_move(&mut self, mv: &Move) {
         match mv.move_type {
@@ -225,36 +155,6 @@ impl Board {
         }
     }
 
-    pub fn to_fen(&self) -> String {
-        let mut fen = String::new();
-        let mut empty_count = 0;
-
-        for y in 0..8 {
-            for x in 0..8 {
-                match self.get(x, y) {
-                    Some(piece) => {
-                        if empty_count > 0 {
-                            fen.push_str(&empty_count.to_string());
-                            empty_count = 0;
-                        }
-                        fen.push(piece.to_char());
-                    },
-                    None => {
-                        empty_count += 1;
-                    },
-                }
-            }
-            if empty_count > 0 {
-                fen.push_str(&empty_count.to_string());
-                empty_count = 0;
-            }
-            if y < 7 {
-                fen.push('/');
-            }
-        }
-        fen
-    }
-
     #[inline]
     fn idx(x: u8, y: u8) -> usize {
         (y * 8 + x) as usize
@@ -283,42 +183,147 @@ impl Board {
             }
         })
     }
+}
 
-    pub fn is_tile_empty(&self, xy: (u8, u8)) -> bool {
-        self.get(xy.0, xy.1).is_none()
+
+pub fn from_fen(fen: &str) -> Board {
+    let mut board = Board::new();
+    let mut x = 0;
+    let mut y = 0;
+    for c in fen.chars() {
+        match c {
+            '/' => {
+                x = 0;
+                y += 1;
+            },
+            '1'..='8' => {
+                let n = c as u8 - '0' as u8;
+                for _ in 0..n {
+                    board.set(x, y, None);
+                    x += 1;
+                }
+            },
+            'p' => {
+                board.set(x, y, Some(Piece::new(Color::Black, PieceKind::Pawn)));
+                x += 1;
+            },
+            'r' => {
+                board.set(x, y, Some(Piece::new(Color::Black, PieceKind::Rook)));
+                x += 1;
+            },
+            'n' => {
+                board.set(x, y, Some(Piece::new(Color::Black, PieceKind::Knight)));
+                x += 1;
+            },
+            'b' => {
+                board.set(x, y, Some(Piece::new(Color::Black, PieceKind::Bishop)));
+                x += 1;
+            },
+            'q' => {
+                board.set(x, y, Some(Piece::new(Color::Black, PieceKind::Queen)));
+                x += 1;
+            },
+            'k' => {
+                board.set(x, y, Some(Piece::new(Color::Black, PieceKind::King)));
+                x += 1;
+            },
+            'P' => {
+                board.set(x, y, Some(Piece::new(Color::White, PieceKind::Pawn)));
+                x += 1;
+            },
+            'R' => {
+                board.set(x, y, Some(Piece::new(Color::White, PieceKind::Rook)));
+                x += 1;
+            },
+            'N' => {
+                board.set(x, y, Some(Piece::new(Color::White, PieceKind::Knight)));
+                x += 1;
+            },
+            'B' => {
+                board.set(x, y, Some(Piece::new(Color::White, PieceKind::Bishop)));
+                x += 1;
+            },
+            'Q' => {
+                board.set(x, y, Some(Piece::new(Color::White, PieceKind::Queen)));
+                x += 1;
+            },
+            'K' => {
+                board.set(x, y, Some(Piece::new(Color::White, PieceKind::King)));
+                x += 1;
+            }
+            _ => panic!("Invalid FEN string"),
+        }
     }
+    board
+}
 
-    pub fn is_tile_occupied(&self, xy: (u8, u8)) -> bool {
-        self.get(xy.0, xy.1).is_some()
-    }
+pub fn to_fen(board: &Board) -> String {
+    let mut fen = String::new();
+    let mut empty_count = 0;
 
-    pub fn find_king(&self, color: Color) -> (u8, u8) {
-        for y in 0..8 {
-            for x in 0..8 {
-                if let Some(piece) = self.get(x, y) {
-                    if piece.color == color && piece.kind == PieceKind::King {
-                        return (x, y);
+    for y in 0..8 {
+        for x in 0..8 {
+            match board.get(x, y) {
+                Some(piece) => {
+                    if empty_count > 0 {
+                        fen.push_str(&empty_count.to_string());
+                        empty_count = 0;
                     }
+                    fen.push(piece.to_char());
+                },
+                None => {
+                    empty_count += 1;
+                },
+            }
+        }
+        if empty_count > 0 {
+            fen.push_str(&empty_count.to_string());
+            empty_count = 0;
+        }
+        if y < 7 {
+            fen.push('/');
+        }
+    }
+    fen
+}
+
+pub fn is_tile_empty(board: &Board, xy: (u8, u8)) -> bool {
+    board.get(xy.0, xy.1).is_none()
+}
+
+pub fn is_tile_occupied(board: &Board, xy: (u8, u8)) -> bool {
+    board.get(xy.0, xy.1).is_some()
+}
+
+pub fn find_pieces(board: &Board, color: Color, kind: PieceKind) -> Vec<(u8, u8)> {
+    let mut pieces = Vec::new();
+    for y in 0..8 {
+        for x in 0..8 {
+            if let Some(piece) = board.get(x, y) {
+                if piece.color == color && piece.kind == kind {
+                    pieces.push((x, y));
                 }
             }
         }
-        panic!("King not found");
     }
+    pieces
+}
 
-    pub fn find_pieces(&self, color: Color, kind: PieceKind) -> Vec<(u8, u8)> {
-        let mut pieces = Vec::new();
-        for y in 0..8 {
-            for x in 0..8 {
-                if let Some(piece) = self.get(x, y) {
-                    if piece.color == color && piece.kind == kind {
-                        pieces.push((x, y));
-                    }
+pub fn find_piece(board: &Board, color: Color, kind: PieceKind) -> Option<(u8, u8)> {
+    for y in 0..8 {
+        for x in 0..8 {
+            if let Some(piece) = board.get(x, y) {
+                if piece.color == color && piece.kind == kind {
+                    return Some((x, y));
                 }
             }
         }
-        pieces
     }
+    None
+}
 
+pub fn king_pos(board: &Board, color: Color) -> (u8, u8) {
+    find_piece(board, color, PieceKind::King).unwrap_or_else(|| panic!("King not found"))
 }
 
 impl fmt::Display for Board {

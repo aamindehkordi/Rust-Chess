@@ -22,7 +22,6 @@ pub enum MoveType {
     Promotion(PieceKind),
     PromotionCapture(PieceKind),
     Invalid,
-    // ... any other special move types ...
 }
 
 // Struct to represent a move
@@ -89,12 +88,12 @@ impl<'a> MoveGenerator<'a,> {
         for (x, y, piece) in self.board.iter_pieces(color) {
             // Depending on the type of the piece, generate possible moves
             match piece.kind {
+                PieceKind::King => self.moves.extend(self.generate_king_moves(x, y, color)),
                 PieceKind::Pawn => self.moves.extend(self.generate_pawn_moves(x, y, color)),
                 PieceKind::Rook => self.moves.extend(self.generate_rook_moves(x, y, color)),
                 PieceKind::Knight => self.moves.extend(self.generate_knight_moves(x, y, color)),
                 PieceKind::Bishop => self.moves.extend(self.generate_bishop_moves(x, y, color)),
                 PieceKind::Queen => self.moves.extend(self.generate_queen_moves(x, y, color)),
-                PieceKind::King => self.moves.extend(self.generate_king_moves(x, y, color)),
             }
         }
         self.moves.clone()
@@ -112,9 +111,12 @@ impl<'a> MoveGenerator<'a,> {
     fn generate_pawn_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = (x, y);
+        if pos == (4,3) {
+            println!("test");
+        }
         let direction = match color {
-            Color::White => -1i8,
-            Color::Black => 1i8,
+            Color::White => 1i8,
+            Color::Black => -1i8,
         };
 
         // Moving one square forward
@@ -128,7 +130,7 @@ impl<'a> MoveGenerator<'a,> {
         if self.board.get(pos.0, pos.1).unwrap().moves_count == 0 &&
            in_bounds(move_two_forward) &&
            self.board.get(move_two_forward.0, move_two_forward.1).is_none() {
-             moves.push(Move::new(pos, move_two_forward, MoveType::Normal,color));
+             moves.push(Move::new(pos, move_two_forward, MoveType::DoublePawnPush, color));
         }
 
         // Capturing diagonally, don't subtract with overflow
@@ -145,9 +147,10 @@ impl<'a> MoveGenerator<'a,> {
                         // En passant: capturing an opponent's pawn in passing
                         if let Some(last_move) = self.game_state.move_history.last() {
                             if let MoveType::DoublePawnPush = last_move.mv.move_type {
-                                let en_passant_moves = [(last_move.mv.to.0 + 1, last_move.mv.to.1), (last_move.mv.to.0 - 1, last_move.mv.to.1)];
-                                if en_passant_moves.contains(&capture_left) {
-                                    moves.push(Move::new(pos, (last_move.mv.to.0, (last_move.mv.to.1 as i8+ direction)as u8), MoveType::EnPassant,color));
+                                if last_move.mv.to.1 == y &&
+                                   (last_move.mv.to.0 as i8 - pos.0 as i8).abs() == 1 {
+                                    let en_passant_move = (last_move.mv.to.0, (last_move.mv.to.1 as i8 + direction) as u8);
+                                    moves.push(Move::new(pos, en_passant_move, MoveType::EnPassant, color));
                                 }
                             }
                         }
@@ -232,6 +235,10 @@ impl<'a> MoveGenerator<'a,> {
             let move_to = (new_x, new_y);
 
             if in_bounds(move_to) {
+                // check if the position is attacked by an opponent's piece
+                if self.game_state.is_attacked(move_to, color) {
+                    continue;
+                }
                 match self.board.get(move_to.0, move_to.1) {
                     Some(piece) => {
                         if piece.color != color {
@@ -424,49 +431,6 @@ impl<'a> MoveGenerator<'a,> {
 
 }
 
-pub fn validate_move(game_state: &GameState, pos: (u8,u8,u8,u8)) -> Result<(Move), String> {
-    let mut move_generator = MoveGenerator::new(&game_state);
-    let moves = move_generator.generate_current_moves();
-    for mv in moves {
-        if mv.from == (pos.0, pos.1) && mv.to == (pos.2, pos.3) {
-            return Ok(mv);
-        }
-    }
-    Err("Invalid move".to_string())
-}
-
-
-// Function to get a move from the user
-pub fn get_user_move() -> (u8, u8, u8, u8) {
-    let mut input = String::new();
-    println!("Enter your move: (e2-e4) ");
-    std::io::stdin().read_line(&mut input).unwrap();
-
-    // Temporarily Parse the move manually for now
-    let chars = input.chars().collect::<Vec<char>>();
-    let from = (chars[0] as u8 - 'a' as u8, chars[1] as u8 - '1' as u8);
-    let to = (chars[3] as u8 - 'a' as u8, chars[4] as u8 - '1' as u8);
-    (from.0, from.1, to.0, to.1)
-
-
-}
-
-// Function to parse a move from a string according to the algebraic notation
-// For example, the move "e4" would be parsed as a the current turn's pawn on e2 moving to e4
-// The move "Nf3" would be parsed as the current turn's knight on b1 moving to f3
-// The move "Bxe5" would be parsed as the current turn's bishop on c3 capturing the opponent's pawn on e5
-pub fn parse_move(input: &str) -> (u8, u8, u8, u8) {
-    // Error handling
-    let invalid = (0, 0, 0, 0);
-    // ... parse the move ...
-    invalid
-}
-
-// Function to get a move from an AI
-pub fn get_ai_move(player: &Player) -> (u8, u8, u8, u8) {
-    // ... get a move from the AI ...
-    (0, 0, 0, 0)
-}
 
 pub fn create_notation_for_move(mv: &Move) -> String {
     let mut notation = String::new();
