@@ -1,4 +1,5 @@
 use std::fmt;
+use crate::game::GameState;
 use crate::moves::{CastleType, Move, MoveType};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -150,9 +151,7 @@ impl Board {
             _ => panic!("Invalid move type"),
         }
         // update piece moves_count
-        if let Some(piece) = self.get(mv.from.0, mv.from.1) {
-            self.set(mv.from.0, mv.from.1, Some(Piece { moves_count: piece.moves_count + 1, ..piece }));
-        }
+        increment_piece_move_count(self, mv.from);
     }
 
     #[inline]
@@ -339,6 +338,12 @@ impl fmt::Display for Board {
             writeln!(f)?;
         }
         Ok(())
+    }
+}
+
+pub fn increment_piece_move_count(board: &mut Board, from: (u8, u8)) {
+    if let Some(piece) = board.get(from.0, from.1) {
+        board.set(from.0, from.1, Some(Piece { moves_count: piece.moves_count + 1, ..piece }));
     }
 }
 

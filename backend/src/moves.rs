@@ -24,6 +24,24 @@ pub enum MoveType {
     Invalid,
 }
 
+impl MoveType {
+    // Function to check if a move type is a promotion
+    pub fn is_promotion(&self) -> bool {
+        match self {
+            MoveType::Promotion(_) | MoveType::PromotionCapture(_) => true,
+            _ => false,
+        }
+    }
+
+    // Function to check if a move type is valid
+    pub fn is_valid(&self) -> bool {
+        match self {
+            MoveType::Invalid => false,
+            _ => true,
+        }
+    }
+}
+
 // Struct to represent a move
 #[derive(Copy, Clone)]
 pub struct Move {
@@ -111,14 +129,12 @@ impl<'a> MoveGenerator<'a,> {
     fn generate_pawn_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = (x, y);
-        if pos == (4,3) {
-            println!("test");
-        }
         let direction = match color {
             Color::White => 1i8,
             Color::Black => -1i8,
         };
 
+        let second_file = if color == Color::White { 1u8 } else { 6u8 };
         // Moving one square forward
         let move_one_forward = (pos.0, (pos.1 as i8 + direction) as u8);
         if in_bounds(move_one_forward) && self.board.get(move_one_forward.0, move_one_forward.1).is_none() {
@@ -127,9 +143,10 @@ impl<'a> MoveGenerator<'a,> {
 
         // Moving two squares forward on the pawn's first move
         let move_two_forward = (pos.0, (pos.1 as i8 + 2 * direction) as u8);
-        if self.board.get(pos.0, pos.1).unwrap().moves_count == 0 &&
-           in_bounds(move_two_forward) &&
-           self.board.get(move_two_forward.0, move_two_forward.1).is_none() {
+        if self.board.get(pos.0, pos.1).unwrap().moves_count == 0 && // first move
+           in_bounds(move_two_forward) && // in bounds
+           self.board.get(move_two_forward.0, move_two_forward.1).is_none() && // no piece in the way
+           pos.1 == second_file { // on the second file
              moves.push(Move::new(pos, move_two_forward, MoveType::DoublePawnPush, color));
         }
 
@@ -154,11 +171,10 @@ impl<'a> MoveGenerator<'a,> {
                                 }
                             }
                         }
+                        moves.push(Move::new(pos, capture_left, MoveType::Invalid,color));
                     }
                 }
             }
-        }
-        if pos.0 < 7 {
             let capture_right = ((pos.0 as i8 + 1) as u8, (pos.1 as i8 + direction) as u8);
             if in_bounds(capture_right) {
                 match self.board.get(capture_right.0, capture_right.1) {
