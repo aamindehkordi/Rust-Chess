@@ -1,6 +1,6 @@
 use std::time::Duration;
 // Import necessary modules and dependencies
-use crate::board::{Board, Color};
+use crate::board::{Board, Color, king_pos};
 use crate::player::Player;
 use crate::moves::{Move, MoveGenerator, MoveHistory};
 use crate::player::PlayerKind::Human;
@@ -105,7 +105,7 @@ pub fn is_attacked(game_state: &GameState, pos: (u8, u8), color: Color) -> bool 
 }
 
 pub fn is_in_check(game_state: &GameState, color: Color) -> bool {
-    let king_pos = game_state.board.find_king(color);
+    let king_pos = king_pos(&game_state.board, color);
     let moves: Vec<Move> = game_state.all_moves.iter().filter(|mv| mv.color != color).map(|mv| mv.clone()).collect();
     for mv in moves {
         if mv.to == king_pos {
@@ -137,7 +137,7 @@ pub fn is_in_checkmate(game_state: &GameState, color:Color) -> bool {
 }
 
 pub fn is_current_player_in_check(game_state: &GameState) -> bool {
-    if is_in_check(game_state, game_state.get_current_player().color) {
+    if is_in_check(game_state, get_current_player(game_state).color) {
         return true;
     }
     false

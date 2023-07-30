@@ -15,12 +15,12 @@ fn main() {
 
     // Main game loop
     loop {
-        game_state.calculate_all_moves();
+        calculate_all_moves(&mut game_state);
 
         // Display the current game state
         display_game_state(&game_state);
         // Get the current player from the game state
-        let current_player = game_state.get_current_player();
+        let current_player = get_current_player(&game_state);
 
         // If the current player is human, get a move from the user input
         // If the current player is an AI, get a move from the AI's "brain"
@@ -33,9 +33,9 @@ fn main() {
         match validate_move(&game_state, mv_pos) {
             Ok(mv) => {
                 // If the move is valid, apply it to the game state
-                game_state.apply_move(&mv);
-                game_state.calculate_all_moves();
-                game_state.change_current_player();
+                apply_move(&mut game_state, &mv);
+                calculate_all_moves(&mut game_state);
+                change_current_player(&mut game_state);
                 // Check if the game is over
                 if is_game_over(&game_state) {
                     // If the game is over, display the game state and break out of the loop
@@ -43,7 +43,7 @@ fn main() {
                     break;
                 }
                 // Check for check
-                if game_state.is_current_player_in_check() {
+                if is_current_player_in_check(&game_state) {
                     game_state.game_status = GameStatus::Check;
                     println!("Check!");
                 }

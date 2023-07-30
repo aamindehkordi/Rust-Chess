@@ -1,7 +1,7 @@
 use std::cmp::{max, min};
 // Import necessary modules and dependencies
-use crate::board::{Board, Color, in_bounds, Piece, PieceKind};
-use crate::game::GameState;
+use crate::board::{Board, Color, in_bounds, is_tile_empty, Piece, PieceKind};
+use crate::game::{GameState, get_current_player, is_attacked, is_in_check};
 use crate::player::Player;
 
 // Enum to represent different types of castle moves
@@ -78,7 +78,7 @@ impl<'a> MoveGenerator<'a,> {
         Self {
             game_state,
             board: &game_state.board,
-            player: game_state.get_current_player(),
+            player: get_current_player(game_state),
             moves: Vec::new(),
         }
     }
@@ -192,7 +192,7 @@ impl<'a> MoveGenerator<'a,> {
                     continue;
                 }
                 // check if the position is occupied
-                if !self.board.is_tile_empty(pmv) {
+                if !is_tile_empty(self.board, pmv) {
                     // check if the piece is an opponent's piece
                     if self.board.get(pmv.0, pmv.1).unwrap().color != color {
                         // generate promotion moves
@@ -236,7 +236,7 @@ impl<'a> MoveGenerator<'a,> {
 
             if in_bounds(move_to) {
                 // check if the position is attacked by an opponent's piece
-                if self.game_state.is_attacked(move_to, color) {
+                if is_attacked(self.game_state,move_to, color) {
                     continue;
                 }
                 match self.board.get(move_to.0, move_to.1) {
@@ -256,7 +256,7 @@ impl<'a> MoveGenerator<'a,> {
         // 1. The king hasn't moved before
         if self.board.get(pos.0, pos.1).unwrap().moves_count == 0 {
             // 2. The king is not currently in check
-            if !self.game_state.is_in_check(color) {
+            if !is_in_check(self.game_state,color) {
                 // 3. The rook with which the king is castling hasn't moved before
                 let rook_positions = if color == Color::White { [(0, 7), (7, 7)] } else { [(0, 0), (7, 0)] };
                 for &rook_pos in &rook_positions {
@@ -268,7 +268,7 @@ impl<'a> MoveGenerator<'a,> {
                         if (min_x..=max_x).all(|x| self.board.get(x as u8, pos.1).is_none() || (x as u8, pos.1) == pos || (x as u8, pos.1) == rook_pos) {
                             // 5. The king does not pass through a square that is attacked by an enemy piece
                             let castle_through = if rook_pos.0 == 0 { [(2, pos.1), (3, pos.1)] } else { [(5, pos.1), (6, pos.1)] };
-                            if castle_through.iter().all(|&pos| !self.game_state.is_attacked(pos, color)) {
+                            if castle_through.iter().all(|&pos| !is_attacked(self.game_state, pos, color)) {
                                 moves.push(Move::new(pos, if rook_pos.0 == 0 { (2, pos.1) } else { (6, pos.1) }, MoveType::Castle(if rook_pos.0 == 0 { CastleType::QueenSide } else { CastleType::KingSide }), color));
                             }
                         }
