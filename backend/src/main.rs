@@ -44,7 +44,7 @@ fn main() {
                 }
                 // Check for check
                 if is_current_player_in_check(&game_state) {
-                    game_state.game_status = GameStatus::Check;
+                    game_state.game_status = GameStatus::Check; //TODO work on check stuff like not letting other pieces move if not blocking check
                     println!("Check!");
                 }
             },
