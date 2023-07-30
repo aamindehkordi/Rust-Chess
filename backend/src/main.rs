@@ -16,6 +16,7 @@ fn main() {
     // Main game loop
     loop {
         game_state.calculate_all_moves();
+
         // Display the current game state
         display_game_state(&game_state);
         // Get the current player from the game state
@@ -33,11 +34,18 @@ fn main() {
             Ok(mv) => {
                 // If the move is valid, apply it to the game state
                 game_state.apply_move(&mv);
+                game_state.calculate_all_moves();
+                game_state.change_current_player();
                 // Check if the game is over
                 if is_game_over(&game_state) {
                     // If the game is over, display the game state and break out of the loop
                     display_game_state(&game_state);
                     break;
+                }
+                // Check for check
+                if game_state.is_current_player_in_check() {
+                    game_state.game_status = GameStatus::Check;
+                    println!("Check!");
                 }
             },
             Err(e) => {
