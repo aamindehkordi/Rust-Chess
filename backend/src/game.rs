@@ -146,10 +146,32 @@ pub fn is_current_player_in_check(game_state: &GameState) -> bool {
 
 
 pub fn validate_move(game_state: &GameState, pos: (u8,u8,u8,u8)) -> Result<(Move), String> {
+    let game_status = &game_state.game_status;
     let mut move_generator = MoveGenerator::new(&game_state);
     let moves = move_generator.generate_current_moves();
     for mv in moves {
-        if mv.from == (pos.0, pos.1) && mv.to == (pos.2, pos.3) {
+        if game_status == &GameStatus::Check {
+            if mv.from == (pos.0, pos.1) && mv.to == (pos.2, pos.3) {
+                if will_block_check(game_state, mv.to, mv.color) {
+                    if mv.move_type.is_valid() {
+                        return Ok(mv);
+                    }
+                    if mv.move_type.is_promotion() {
+                        let promotion = ask_for_promotion();
+                        let piece = parse_promotion(&promotion);
+                        let mv = Move::new(mv.from, mv.to, Promotion(piece), mv.color);
+                        return Ok(mv);
+                    }
+                    if mv.move_type.is_promo_capture() {
+                        let promotion = ask_for_promotion();
+                        let piece = parse_promotion(&promotion);
+                        let mv = Move::new(mv.from, mv.to, PromotionCapture(piece), mv.color);
+                        return Ok(mv);
+                    }
+                }
+            }
+        }
+        else if mv.from == (pos.0, pos.1) && mv.to == (pos.2, pos.3) {
             if mv.move_type.is_valid() {
                 return Ok(mv);
             }
