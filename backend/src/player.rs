@@ -1,10 +1,12 @@
 use crate::board::{Color, Board};
 
+#[derive(Clone)]
 pub enum PlayerKind {
     Human,
     Computer(Brain),
 }
 
+#[derive(Clone)]
 pub struct Brain {
     pub board: Board,
     pub color: Color,
@@ -19,6 +21,7 @@ impl Brain {
     }
 }
 
+#[derive(Clone)]
 pub struct Player {
     pub name: String,
     pub kind: PlayerKind,

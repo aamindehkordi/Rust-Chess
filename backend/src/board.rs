@@ -32,7 +32,6 @@ pub struct Piece {
     pub kind: PieceKind,
     pub moves_count: u8,
 }
-
 impl Piece {
 
     pub fn new(color: Color, kind: PieceKind) -> Self {
@@ -85,7 +84,6 @@ impl Piece {
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Board(Vec<Option<Piece>>);
-
 impl Board {
 
     pub fn new() -> Self {
@@ -97,7 +95,6 @@ impl Board {
         board
     }
 
-    
     pub fn make_move(&mut self, mv: &Move) {
         match mv.move_type {
             MoveType::Normal => {
@@ -183,7 +180,6 @@ impl Board {
         })
     }
 }
-
 
 pub fn from_fen(fen: &str) -> Board {
     let mut board = Board::new();

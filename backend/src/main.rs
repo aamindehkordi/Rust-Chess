@@ -33,9 +33,7 @@ fn main() {
         match validate_move(&game_state, mv_pos) {
             Ok(mv) => {
                 // If the move is valid, apply it to the game state
-                apply_move(&mut game_state, &mv);
-                calculate_all_moves(&mut game_state);
-                change_current_player(&mut game_state);
+                game_state = apply_move(&game_state, &mv);
                 // Check if the game is over
                 if is_game_over(&game_state) {
                     // If the game is over, display the game state and break out of the loop
@@ -44,13 +42,23 @@ fn main() {
                 }
                 // Check for check
                 if is_current_player_in_check(&game_state) {
-                    game_state.game_status = GameStatus::Check; //TODO work on check stuff like not letting other pieces move if not blocking check
+                    game_state.game_status = GameStatus::Check(get_current_player(&game_state).color);
                     println!("Check!");
                 }
+                if is_in_checkmate(&game_state, get_current_player(&game_state).color) {
+                    game_state.game_status = GameStatus::Checkmate(get_current_player(&game_state).color);
+                    println!("Checkmate!");
+                    break;
+                }
             },
-            Err(e) => {
-                // If the move is not valid, print an error message and continue the loop
-                println!("Invalid move: {}", e);
+            Err(err) => {
+                match err {
+                    MoveError::MoveIsNotValid => println!("Move is not valid"),
+                    MoveError::MoveDoesNotBlockCheck => println!("Move does not block check"),
+                    MoveError::MoveIsNotPromotion => println!("Move is not a promotion"),
+                    MoveError::MoveIsNotCapturePromotion => println!("Move is not a capture promotion"),
+                    MoveError::Other(msg) => println!("Invalid move: {}", msg),
+                }
             }
         }
     }
