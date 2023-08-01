@@ -1,5 +1,5 @@
 use std::fmt;
-use crate::game::GameState;
+
 use crate::moves::{CastleType, Move, MoveType};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -17,14 +17,6 @@ pub enum Color {
     White,
     Black,
 }
-impl Color {
-    pub fn opposite(&self) -> Self {
-        match self {
-            Color::White => Color::Black,
-            Color::Black => Color::White,
-        }
-    }
-}
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Piece {
@@ -33,7 +25,6 @@ pub struct Piece {
     pub moves_count: u8,
 }
 impl Piece {
-
     pub fn new(color: Color, kind: PieceKind) -> Self {
         Self {
             color,
@@ -42,43 +33,28 @@ impl Piece {
         }
     }
 
-    pub fn to_char(&self) -> char {
-        match self.color {
-            Color::White => match self.kind {
-                PieceKind::Pawn => 'P',
-                PieceKind::Rook => 'R',
-                PieceKind::Knight => 'N',
-                PieceKind::Bishop => 'B',
-                PieceKind::Queen => 'Q',
-                PieceKind::King => 'K',
-            },
-            Color::Black => match self.kind {
-                PieceKind::Pawn => 'p',
-                PieceKind::Rook => 'r',
-                PieceKind::Knight => 'n',
-                PieceKind::Bishop => 'b',
-                PieceKind::Queen => 'q',
-                PieceKind::King => 'k',
-            },
-        }
-    }
+}
 
-    pub fn from_char(c: char) -> Option<Self> {
-        match c {
-            'P' => Some(Self { color: Color::White, kind: PieceKind::Pawn, moves_count: 0 }),
-            'R' => Some(Self { color: Color::White, kind: PieceKind::Rook, moves_count: 0 }),
-            'N' => Some(Self { color: Color::White, kind: PieceKind::Knight, moves_count: 0 }),
-            'B' => Some(Self { color: Color::White, kind: PieceKind::Bishop, moves_count: 0 }),
-            'Q' => Some(Self { color: Color::White, kind: PieceKind::Queen, moves_count: 0 }),
-            'K' => Some(Self { color: Color::White, kind: PieceKind::King, moves_count: 0 }),
-            'p' => Some(Self { color: Color::Black, kind: PieceKind::Pawn, moves_count: 0 }),
-            'r' => Some(Self { color: Color::Black, kind: PieceKind::Rook, moves_count: 0 }),
-            'n' => Some(Self { color: Color::Black, kind: PieceKind::Knight, moves_count: 0 }),
-            'b' => Some(Self { color: Color::Black, kind: PieceKind::Bishop, moves_count: 0 }),
-            'q' => Some(Self { color: Color::Black, kind: PieceKind::Queen, moves_count: 0 }),
-            'k' => Some(Self { color: Color::Black, kind: PieceKind::King, moves_count: 0 }),
-            _ => None,
-        }
+pub fn piece_to_char(piece: Piece) -> char {
+    let color = piece.color;
+    let kind = piece.kind;
+    match color {
+        Color::White => match kind {
+            PieceKind::Pawn => 'P',
+            PieceKind::Rook => 'R',
+            PieceKind::Knight => 'N',
+            PieceKind::Bishop => 'B',
+            PieceKind::Queen => 'Q',
+            PieceKind::King => 'K',
+        },
+        Color::Black => match kind {
+            PieceKind::Pawn => 'p',
+            PieceKind::Rook => 'r',
+            PieceKind::Knight => 'n',
+            PieceKind::Bishop => 'b',
+            PieceKind::Queen => 'q',
+            PieceKind::King => 'k',
+        },
     }
 }
 
@@ -91,8 +67,8 @@ impl Board {
     }
 
     pub fn new_standard() -> Self {
-        let mut board = from_fen("RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr");
-        board
+        
+        from_fen("RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr")
     }
 
     pub fn make_move(&mut self, mv: &Move) {
@@ -192,7 +168,7 @@ pub fn from_fen(fen: &str) -> Board {
                 y += 1;
             },
             '1'..='8' => {
-                let n = c as u8 - '0' as u8;
+                let n = c as u8 - b'0';
                 for _ in 0..n {
                     board.set(x, y, None);
                     x += 1;
@@ -264,7 +240,7 @@ pub fn to_fen(board: &Board) -> String {
                         fen.push_str(&empty_count.to_string());
                         empty_count = 0;
                     }
-                    fen.push(piece.to_char());
+                    fen.push(piece_to_char(piece));
                 },
                 None => {
                     empty_count += 1;
@@ -282,35 +258,26 @@ pub fn to_fen(board: &Board) -> String {
     fen
 }
 
-pub fn is_tile_empty(board: &Board, xy: (u8, u8)) -> bool {
-    board.get(xy.0, xy.1).is_none()
-}
-
-pub fn is_tile_occupied(board: &Board, xy: (u8, u8)) -> bool {
-    board.get(xy.0, xy.1).is_some()
-}
-
-pub fn find_pieces(board: &Board, color: Color, kind: PieceKind) -> Vec<(u8, u8)> {
+pub fn find_pieces_pos(board: &Board, kind: PieceKind) -> Vec<(u8, u8)> {
     let mut pieces = Vec::new();
     for y in 0..8 {
         for x in 0..8 {
             if let Some(piece) = board.get(x, y) {
-                if piece.color == color && piece.kind == kind {
+                if kind == piece.kind {
                     pieces.push((x, y));
-                }
+                };
             }
         }
     }
     pieces
 }
 
-pub fn find_piece(board: &Board, color: Color, kind: PieceKind) -> Option<(u8, u8)> {
-    for y in 0..8 {
-        for x in 0..8 {
-            if let Some(piece) = board.get(x, y) {
-                if piece.color == color && piece.kind == kind {
-                    return Some((x, y));
-                }
+pub fn find_piece_pos(board: &Board, color: Color, kind: PieceKind) -> Option<(u8, u8)> {
+    let mut pieces = find_pieces_pos(board, kind);
+    for (x, y) in pieces.drain(..) {
+        if let Some(piece) = board.get(x, y) {
+            if color == piece.color {
+                return Some((x, y));
             }
         }
     }
@@ -318,7 +285,7 @@ pub fn find_piece(board: &Board, color: Color, kind: PieceKind) -> Option<(u8, u
 }
 
 pub fn king_pos(board: &Board, color: Color) -> (u8, u8) {
-    find_piece(board, color, PieceKind::King).unwrap_or_else(|| panic!("King not found"))
+    find_piece_pos(board, color, PieceKind::King).unwrap_or_else(|| panic!("King not found"))
 }
 
 impl fmt::Display for Board {
@@ -327,7 +294,7 @@ impl fmt::Display for Board {
         for y in 0..8 {
             for x in 0..8 {
                 match self.get(x, y) {
-                    Some(piece) => write!(f, "{}", piece.to_char())?,
+                    Some(piece) => write!(f, "{}", piece_to_char(piece))?,
                     None => write!(f, ".")?,
                 }
             }

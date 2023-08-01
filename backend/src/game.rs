@@ -1,6 +1,5 @@
-use std::time::Duration;
 // Import necessary modules and dependencies
-use crate::board::{Board, Color, in_bounds, king_pos, Piece, PieceKind};
+use crate::board::{Board, Color, in_bounds, king_pos, make_move, PieceKind};
 use crate::player::Player;
 use crate::moves::{Move, MoveError, MoveGenerator, MoveHistory};
 use crate::moves::MoveType::{Promotion, PromotionCapture};
@@ -12,32 +11,8 @@ pub enum GameStatus {
     Check(Color),
     Checkmate(Color),
     Draw,
-}impl GameStatus {
-    pub fn in_check(&self) -> bool {
-        matches!(self, GameStatus::Check(_))
-    }
-    pub fn is_checkmate(&self) -> bool {
-        matches!(self, GameStatus::Checkmate(_))
-    }
-    pub fn is_draw(&self) -> bool {
-        matches!(self, GameStatus::Draw)
-    }
 }
 
-#[derive(Clone)]
-pub struct Timer {
-    player1_time: Option<Duration>,
-    player2_time: Option<Duration>,
-}
-
-impl Timer {
-    pub fn new() -> Self {
-        Self {
-            player1_time: Some(Duration::new(0, 0)),
-            player2_time: Some(Duration::new(0, 0)),
-        }
-    }
-}
 
 #[derive(Clone)]
 pub struct GameState {
@@ -47,7 +22,6 @@ pub struct GameState {
     pub move_history: Vec<MoveHistory>,
     pub all_moves: Vec<Move>,
     pub game_status: GameStatus,
-    pub timers: Timer,
 }
 
 impl GameState {
@@ -69,7 +43,6 @@ impl GameState {
             move_history,
             all_moves,
             game_status: GameStatus::InProgress,
-            timers: Timer::new(),
         }
     }
 }
@@ -166,8 +139,17 @@ pub fn is_current_player_in_check(game_state: &GameState) -> bool {
     false
 }
 
+pub fn is_draw(game_state: &GameState) -> bool {
+    let mut move_generator = MoveGenerator::new(game_state);
+    let moves = move_generator.generate_current_moves();
+    if moves.is_empty() {
+        return true;
+    }
+    false
+}
+
 pub fn validate_move(game_state: &GameState, pos: (u8,u8,u8,u8)) -> Result<Move, MoveError> {
-    let game_status = &game_state.game_status;
+    let _game_status = &game_state.game_status;
     let moves = game_state.all_moves.clone();
     let piece = game_state.board.get(pos.0, pos.1).unwrap();
     for mv in moves {
@@ -213,7 +195,7 @@ pub fn parse_promotion(input: &str) -> PieceKind {
 }
 
 // Function to get a move from the user and parse it into a Move struct
-pub fn get_user_move() -> (u8, u8, u8, u8) {
+pub fn user_mv_idx() -> (u8, u8, u8, u8) {
     let mut input = String::new();
     println!("Enter your move: (e2-e4) ");
     std::io::stdin().read_line(&mut input).unwrap();
@@ -230,17 +212,17 @@ pub fn get_user_move() -> (u8, u8, u8, u8) {
 // For example, the move "e4" would be parsed as a the current turn's pawn on e2 moving to e4
 // The move "Nf3" would be parsed as the current turn's knight on b1 moving to f3
 // The move "Bxe5" would be parsed as the current turn's bishop on c3 capturing the opponent's pawn on e5
-pub fn parse_move(input: &str) -> (u8, u8, u8, u8) {
+pub fn parse_move(_input: &str) -> (u8, u8, u8, u8) {
     // Error handling
-    let invalid = (0, 0, 0, 0);
+    
     // ... parse the move ...
-    invalid
+    (0, 0, 0, 0)
 }
 
 // Function to get a move from an AI
-pub fn get_ai_move(player: &Player) -> (u8, u8, u8, u8) {
+pub fn ai_mv_idx(_player: &Player) -> (u8, u8, u8, u8) {
     // ... get a move from the AI ...
-    (0, 0, 0, 0)
+    (0, 1, 2, 2)
 }
 
 
@@ -250,7 +232,7 @@ pub fn display_game_state(game_state: &GameState) {
 }
 
 pub fn is_game_over(game_state: &GameState) -> bool {
-    if game_state.all_moves.len() == 0 {
+    if game_state.all_moves.is_empty() {
         return true;
     }
     false

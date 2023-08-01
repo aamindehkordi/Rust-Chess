@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 // Import necessary modules and dependencies
-use crate::board::{Board, Color, in_bounds, is_tile_empty, Piece, PieceKind};
+use crate::board::{Board, Color, in_bounds, Piece, PieceKind};
 use crate::game::{GameState, get_current_player, is_attacked, is_in_check};
 use crate::player::Player;
 
@@ -8,38 +8,7 @@ use crate::player::Player;
 pub enum MoveError {
     MoveIsNotValid,
     MoveDoesNotBlockCheck,
-    MoveIsNotCapturePromotion,
     Other(String),
-}
-impl MoveError {
-    pub fn new(msg: &str) -> Self {
-        Self::Other(msg.to_string())
-    }
-
-    pub fn msg(&self) -> String {
-        match self {
-            Self::MoveIsNotValid => "Move is not valid".to_string(),
-            Self::MoveDoesNotBlockCheck => "Move does not block check".to_string(),
-            Self::MoveIsNotCapturePromotion => "Move is not a capture promotion".to_string(),
-            Self::Other(msg) => msg.to_string(),
-        }
-    }
-
-    pub fn is_not_valid(&self) -> bool {
-        matches!(self, Self::MoveIsNotValid)
-    }
-
-    pub fn does_not_block_check(&self) -> bool {
-        matches!(self, Self::MoveDoesNotBlockCheck)
-    }
-
-    pub fn is_not_capture_promotion(&self) -> bool {
-        matches!(self, Self::MoveIsNotCapturePromotion)
-    }
-
-    pub fn other(&self) -> bool {
-        matches!(self, Self::Other(_))
-    }
 }
 
 // Enum to represent different types of castle moves
