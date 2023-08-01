@@ -8,7 +8,6 @@ use crate::player::Player;
 pub enum MoveError {
     MoveIsNotValid,
     MoveDoesNotBlockCheck,
-    MoveIsNotPromotion,
     MoveIsNotCapturePromotion,
     Other(String),
 }
@@ -21,45 +20,25 @@ impl MoveError {
         match self {
             Self::MoveIsNotValid => "Move is not valid".to_string(),
             Self::MoveDoesNotBlockCheck => "Move does not block check".to_string(),
-            Self::MoveIsNotPromotion => "Move is not a promotion".to_string(),
             Self::MoveIsNotCapturePromotion => "Move is not a capture promotion".to_string(),
             Self::Other(msg) => msg.to_string(),
         }
     }
 
     pub fn is_not_valid(&self) -> bool {
-        match self {
-            Self::MoveIsNotValid => true,
-            _ => false,
-        }
+        matches!(self, Self::MoveIsNotValid)
     }
 
     pub fn does_not_block_check(&self) -> bool {
-        match self {
-            Self::MoveDoesNotBlockCheck => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_not_promotion(&self) -> bool {
-        match self {
-            Self::MoveIsNotPromotion => true,
-            _ => false,
-        }
+        matches!(self, Self::MoveDoesNotBlockCheck)
     }
 
     pub fn is_not_capture_promotion(&self) -> bool {
-        match self {
-            Self::MoveIsNotCapturePromotion => true,
-            _ => false,
-        }
+        matches!(self, Self::MoveIsNotCapturePromotion)
     }
 
     pub fn other(&self) -> bool {
-        match self {
-            Self::Other(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Other(_))
     }
 }
 
@@ -80,32 +59,21 @@ pub enum MoveType {
     EnPassant,
     Promotion(PieceKind),
     PromotionCapture(PieceKind),
-    Invalid,
 }
 
 impl MoveType {
+    pub fn is_normal(&self) -> bool {
+        matches!(self, MoveType::Normal)
+    }
+
     // Function to check if a move type is a promotion
     pub fn is_promotion(&self) -> bool {
-        match self {
-            MoveType::Promotion(_) => true,
-            _ => false,
-        }
+        matches!(self, MoveType::Promotion(_))
     }
 
     // Function to check if a move type is a capture
     pub fn is_promo_capture(&self) -> bool {
-        match self {
-            MoveType::PromotionCapture(_) => true,
-            _ => false,
-        }
-    }
-
-    // Function to check if a move type is valid
-    pub fn is_valid(&self) -> bool {
-        match self {
-            MoveType::Invalid => false,
-            _ => true,
-        }
+        matches!(self, MoveType::PromotionCapture(_))
     }
 }
 
@@ -115,16 +83,18 @@ pub struct Move {
     pub from: (u8, u8),
     pub to: (u8, u8),
     pub move_type: MoveType,
+    pub piece: Piece,
     pub color: Color,
 }
 
 impl Move {
     // Function to create a new move
-    pub fn new(from: (u8, u8), to: (u8, u8), move_type: MoveType, color: Color) -> Self {
+    pub fn new(from: (u8, u8), to: (u8, u8), move_type: MoveType, piece: Piece, color: Color) -> Self {
         Self {
             from,
             to,
             move_type,
+            piece,
             color
         }
     }
@@ -194,7 +164,7 @@ impl<'a> MoveGenerator<'a,> {
 
     fn generate_pawn_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
-
+        let piece = self.board.get(x, y).unwrap();
         let direction = match color {
             Color::White => 1,
             Color::Black => -1,
@@ -203,18 +173,18 @@ impl<'a> MoveGenerator<'a,> {
         // Normal move forward
         let forward_square = (x, (y as i8 + direction) as u8);
         if in_bounds(forward_square) && self.board.get(forward_square.0, forward_square.1).is_none() {
-            let move_type = if forward_square.1 == 0 || forward_square.1 == 7 {
-                MoveType::Promotion(PieceKind::Queen)
+            let mvs = if forward_square.1 == 0 || forward_square.1 == 7 {
+                self.promotion_move(color, (x, y), forward_square)
             } else {
-                MoveType::Normal
+                vec![Move::new((x, y), forward_square, MoveType::Normal, piece, color)]
             };
-            moves.push(Move::new((x, y), forward_square, move_type, color));
+            moves.extend(mvs);
         }
 
         // Double move forward
         let double_forward_square = (x, (y as i8 + 2 * direction) as u8);
-        if y == 1 || y == 6 && in_bounds(double_forward_square) && self.board.get(double_forward_square.0, double_forward_square.1).is_none() {
-            moves.push(Move::new((x, y), double_forward_square, MoveType::DoublePawnPush, color));
+        if (y == 1 || y == 6) && in_bounds(double_forward_square) && self.board.get(double_forward_square.0, double_forward_square.1).is_none() {
+            moves.push(Move::new((x, y), double_forward_square, MoveType::DoublePawnPush, piece, color));
         }
 
         // Captures
@@ -223,12 +193,13 @@ impl<'a> MoveGenerator<'a,> {
             if in_bounds(capture_square) {
                 match self.board.get(capture_square.0, capture_square.1) {
                     Some(piece) if piece.color != color => {
-                        let move_type = if capture_square.1 == 0 || capture_square.1 == 7 {
-                            MoveType::PromotionCapture(PieceKind::Queen)
+                        let mvs = if capture_square.1 == 0 || capture_square.1 == 7 {
+                            self.promotion_attack_move(color, capture_square, capture_square)
                         } else {
-                            MoveType::Capture
+                            vec![Move::new((x, y), capture_square, MoveType::Capture, piece, color)]
+
                         };
-                        moves.push(Move::new((x, y), capture_square, move_type, color));
+                        moves.extend(mvs);
                     },
                     _ => (),
                 }
@@ -240,7 +211,7 @@ impl<'a> MoveGenerator<'a,> {
             if let MoveType::DoublePawnPush = last_move.mv.move_type {
                 if last_move.mv.to.1 == y && (last_move.mv.to.0 as i8 - x as i8).abs() == 1 {
                     let en_passant_move = (last_move.mv.to.0, (last_move.mv.to.1 as i8 + direction) as u8);
-                    moves.push(Move::new((x, y), en_passant_move, MoveType::EnPassant, color));
+                    moves.push(Move::new((x, y), en_passant_move, MoveType::EnPassant, piece, color));
                 }
             }
         }
@@ -252,6 +223,7 @@ impl<'a> MoveGenerator<'a,> {
     fn generate_king_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = (x, y);
+        let piece = self.board.get(x, y).unwrap();
 
         // The king can move in 8 directions: up, down, left, right, and the 4 diagonals.
         let directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
@@ -269,11 +241,11 @@ impl<'a> MoveGenerator<'a,> {
                 match self.board.get(move_to.0, move_to.1) {
                     Some(piece) => {
                         if piece.color != color {
-                            moves.push(Move::new(pos, move_to, MoveType::Capture, color));
+                            moves.push(Move::new(pos, move_to, MoveType::Capture, piece, color));
                         }
                     },
                     None => {
-                        moves.push(Move::new(pos, move_to, MoveType::Normal, color));
+                        moves.push(Move::new(pos, move_to, MoveType::Normal, piece, color));
                     }
                 }
             }
@@ -296,7 +268,7 @@ impl<'a> MoveGenerator<'a,> {
                             // 5. The king does not pass through a square that is attacked by an enemy piece
                             let castle_through = if rook_pos.0 == 0 { [(2, pos.1), (3, pos.1)] } else { [(5, pos.1), (6, pos.1)] };
                             if castle_through.iter().all(|&pos| !is_attacked(self.game_state, pos, color)) {
-                                moves.push(Move::new(pos, if rook_pos.0 == 0 { (2, pos.1) } else { (6, pos.1) }, MoveType::Castle(if rook_pos.0 == 0 { CastleType::QueenSide } else { CastleType::KingSide }), color));
+                                moves.push(Move::new(pos, if rook_pos.0 == 0 { (2, pos.1) } else { (6, pos.1) }, MoveType::Castle(if rook_pos.0 == 0 { CastleType::QueenSide } else { CastleType::KingSide }), piece, color));
                             }
                         }
                     }
@@ -312,7 +284,7 @@ impl<'a> MoveGenerator<'a,> {
     fn generate_rook_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = (x, y);
-
+        let piece = self.board.get(pos.0, pos.1).unwrap();
         // The rook can move in 4 directions: up, down, left, and right.
         let directions = [(-1, 0), (0, -1), (0, 1), (1, 0)];
 
@@ -325,12 +297,12 @@ impl<'a> MoveGenerator<'a,> {
                 match self.board.get(move_to.0, move_to.1) {
                     Some(piece) => {
                         if piece.color != color {
-                            moves.push(Move::new(pos, move_to, MoveType::Capture, color));
+                            moves.push(Move::new(pos, move_to, MoveType::Capture, piece, color));
                         }
                         break;
                     },
                     None => {
-                        moves.push(Move::new(pos, move_to, MoveType::Normal, color));
+                        moves.push(Move::new(pos, move_to, MoveType::Normal, piece, color));
                     }
                 }
                 new_x = (move_to.0 as i8 + direction.0) as u8;
@@ -345,6 +317,7 @@ impl<'a> MoveGenerator<'a,> {
     fn generate_knight_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = (x, y);
+        let piece = self.board.get(pos.0, pos.1).unwrap();
 
         // The knight can move in 8 directions: up, down, left, right, and the 4 diagonals.
         let directions = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)];
@@ -358,11 +331,11 @@ impl<'a> MoveGenerator<'a,> {
                 match self.board.get(move_to.0, move_to.1) {
                     Some(piece) => {
                         if piece.color != color {
-                            moves.push(Move::new(pos, move_to, MoveType::Capture, color));
+                            moves.push(Move::new(pos, move_to, MoveType::Capture, piece, color));
                         }
                     },
                     None => {
-                        moves.push(Move::new(pos, move_to, MoveType::Normal, color));
+                        moves.push(Move::new(pos, move_to, MoveType::Normal, piece, color));
                     }
                 }
             }
@@ -374,6 +347,7 @@ impl<'a> MoveGenerator<'a,> {
     fn generate_bishop_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = (x, y);
+        let piece = self.board.get(pos.0, pos.1).unwrap();
 
         // The bishop can move in 4 directions: up-left, up-right, down-left, and down-right.
         let directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)];
@@ -387,12 +361,12 @@ impl<'a> MoveGenerator<'a,> {
                 match self.board.get(move_to.0, move_to.1) {
                     Some(piece) => {
                         if piece.color != color {
-                            moves.push(Move::new(pos, move_to, MoveType::Capture, color));
+                            moves.push(Move::new(pos, move_to, MoveType::Capture, piece, color));
                         }
                         break;
                     },
                     None => {
-                        moves.push(Move::new(pos, move_to, MoveType::Normal, color));
+                        moves.push(Move::new(pos, move_to, MoveType::Normal, piece, color));
                     }
                 }
                 new_x = (move_to.0 as i8 + direction.0) as u8;
@@ -407,6 +381,7 @@ impl<'a> MoveGenerator<'a,> {
     fn generate_queen_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = (x, y);
+        let piece = self.board.get(pos.0, pos.1).unwrap();
 
         // The queen can move in 8 directions: up, down, left, right, and the 4 diagonals.
         let directions = [(-1, 0), (0, -1), (0, 1), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)];
@@ -420,12 +395,12 @@ impl<'a> MoveGenerator<'a,> {
                 match self.board.get(move_to.0, move_to.1) {
                     Some(piece) => {
                         if piece.color != color {
-                            moves.push(Move::new(pos, move_to, MoveType::Capture, color));
+                            moves.push(Move::new(pos, move_to, MoveType::Capture, piece, color));
                         }
                         break;
                     },
                     None => {
-                        moves.push(Move::new(pos, move_to, MoveType::Normal, color));
+                        moves.push(Move::new(pos, move_to, MoveType::Normal, piece, color));
                     }
                 }
                 new_x = (move_to.0 as i8 + direction.0) as u8;
@@ -438,21 +413,23 @@ impl<'a> MoveGenerator<'a,> {
 
     // Pushes all promotion piece types moves to the list of moves
     pub fn promotion_move(&self, color: Color,fmv: (u8, u8), pmv: (u8, u8)) -> Vec<Move> {
-        let mut moves = Vec::new();
-        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Queen),color));
-        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Rook),color));
-        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Bishop),color));
-        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Knight),color));
+        let mut moves= vec![];
+        let piece = self.board.get(fmv.0, fmv.1).unwrap();
+        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Queen), piece,color));
+        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Rook), piece,color));
+        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Bishop), piece,color));
+        moves.push(Move::new(fmv, pmv, MoveType::Promotion(PieceKind::Knight), piece,color));
         moves
     }
 
     // Pushes all promotion piece types attack moves to the list of moves
     pub fn promotion_attack_move(&self, color: Color,fmv: (u8, u8), pmv: (u8, u8)) -> Vec<Move> {
-        let mut moves = Vec::new();
-        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Queen),color));
-        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Rook),color));
-        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Bishop),color));
-        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Knight),color));
+        let mut moves= vec![];
+        let piece = self.board.get(fmv.0, fmv.1).unwrap();
+        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Queen), piece,color));
+        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Rook), piece,color));
+        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Bishop), piece,color));
+        moves.push(Move::new(fmv, pmv, MoveType::PromotionCapture(PieceKind::Knight), piece,color));
         moves
     }
 

@@ -15,8 +15,7 @@ fn main() {
 
     // Main game loop
     loop {
-        calculate_all_moves(&mut game_state);
-
+        calculate_black_moves(&mut game_state);
         // Display the current game state
         display_game_state(&game_state);
         // Get the current player from the game state
@@ -28,10 +27,11 @@ fn main() {
             PlayerKind::Human => get_user_move(),
             PlayerKind::Computer(_) => get_ai_move(current_player),
         };
-
+        calculate_all_moves(&mut game_state);
         // Validate the move
         match validate_move(&game_state, mv_pos) {
             Ok(mv) => {
+
                 // If the move is valid, apply it to the game state
                 game_state = apply_move(&game_state, &mv);
                 // Check if the game is over
@@ -55,7 +55,6 @@ fn main() {
                 match err {
                     MoveError::MoveIsNotValid => println!("Move is not valid"),
                     MoveError::MoveDoesNotBlockCheck => println!("Move does not block check"),
-                    MoveError::MoveIsNotPromotion => println!("Move is not a promotion"),
                     MoveError::MoveIsNotCapturePromotion => println!("Move is not a capture promotion"),
                     MoveError::Other(msg) => println!("Invalid move: {}", msg),
                 }

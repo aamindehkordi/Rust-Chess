@@ -1,6 +1,6 @@
 use std::time::Duration;
 // Import necessary modules and dependencies
-use crate::board::{Board, Color, king_pos, Piece, PieceKind};
+use crate::board::{Board, Color, in_bounds, king_pos, Piece, PieceKind};
 use crate::player::Player;
 use crate::moves::{Move, MoveError, MoveGenerator, MoveHistory};
 use crate::moves::MoveType::{Promotion, PromotionCapture};
@@ -14,22 +14,13 @@ pub enum GameStatus {
     Draw,
 }impl GameStatus {
     pub fn in_check(&self) -> bool {
-        match self {
-            GameStatus::Check(_) => true,
-            _ => false,
-        }
+        matches!(self, GameStatus::Check(_))
     }
     pub fn is_checkmate(&self) -> bool {
-        match self {
-            GameStatus::Checkmate(_) => true,
-            _ => false,
-        }
+        matches!(self, GameStatus::Checkmate(_))
     }
     pub fn is_draw(&self) -> bool {
-        match self {
-            GameStatus::Draw => true,
-            _ => false,
-        }
+        matches!(self, GameStatus::Draw)
     }
 }
 
@@ -69,7 +60,7 @@ impl GameState {
         ];
         let current_player = 0;
         let move_history = Vec::new();
-        let mut all_moves = Vec::new();
+        let all_moves = Vec::new();
 
         Self {
             board,
@@ -81,35 +72,35 @@ impl GameState {
             timers: Timer::new(),
         }
     }
-
 }
 
 pub fn calculate_all_moves(game_state: &mut GameState) {
     game_state.all_moves.clear();
-    game_state.all_moves.extend(calculate_black_moves(game_state));
-    game_state.all_moves.extend(calculate_white_moves(game_state));
+    calculate_black_moves(game_state);
+    calculate_white_moves(game_state);
 }
 
 pub fn change_current_player(game_state: &mut GameState) {
     game_state.current_player = 1 - game_state.current_player;
 }
-pub fn calculate_white_moves(game_state: &GameState) -> Vec<Move> {
-
-    let mut move_generator = MoveGenerator::new(&game_state);
-    move_generator.generate_moves(Color::White)
+pub fn calculate_white_moves(game_state: &mut GameState) {
+    let mut move_generator = MoveGenerator::new(game_state);
+    let moves = move_generator.generate_moves(Color::White);
+    game_state.all_moves.extend(moves);
 }
 
-pub fn calculate_black_moves(game_state: &GameState) -> Vec<Move> {
-    let mut move_generator = MoveGenerator::new(&game_state);
-    move_generator.generate_moves(Color::Black)
+pub fn calculate_black_moves(game_state: &mut GameState) {
+    let mut move_generator = MoveGenerator::new(game_state);
+    let moves = move_generator.generate_moves(Color::Black);
+    game_state.all_moves.extend(moves);
 }
 
 pub fn apply_move(game_state: &GameState, mv: &Move) -> GameState {
     let mut new_game_state = game_state.clone();
     new_game_state.board.make_move(mv);
-    new_game_state.move_history.push(MoveHistory::new(mv.clone()));
-    calculate_all_moves(&mut new_game_state);
+    new_game_state.move_history.push(MoveHistory::new(*mv));
     change_current_player(&mut new_game_state);
+    calculate_all_moves(&mut new_game_state);
     new_game_state
 }
 
@@ -118,25 +109,31 @@ pub fn get_current_player(game_state: &GameState) -> &Player {
 }
 
 pub fn is_attacked(game_state: &GameState, pos: (u8, u8), color: Color) -> bool {
+    let mut moves = game_state.all_moves.clone();
     // filter all opponent moves from self.all_moves
-    let moves: Vec<Move> = game_state.all_moves.iter().filter(|mv| mv.color != color).map(|mv| mv.clone()).collect();
+    moves.retain(|mv| mv.color != color);
     // check if any of the opponent moves attack the given position
     for mv in moves {
-        if mv.to == pos && mv.color != color {
+        if mv.to == pos {
             return true;
         }
     }
+
     false
 }
 
 pub fn is_in_check(game_state: &GameState, color: Color) -> bool {
     let king_pos = king_pos(&game_state.board, color);
-    let moves: Vec<Move> = game_state.all_moves.iter().filter(|mv| mv.color != color).map(|mv| mv.clone()).collect();
+    let moves: Vec<Move> = game_state.all_moves.iter().filter(|mv| mv.color != color).copied().collect();
     for mv in moves {
         if mv.to == king_pos {
-            if mv.move_type.is_valid() {
-                return true;
+            // if pawn moving forward or promoting, then not in check
+            if let Some(piece) = game_state.board.get(mv.from.0, mv.from.1) {
+                if piece.kind == PieceKind::Pawn && (mv.to.1 as i8 - mv.from.1 as i8).abs() == 1 && (mv.move_type.is_promotion() || mv.move_type.is_normal()){
+                    continue;
+                }
             }
+            return true;
         }
     }
     false
@@ -144,7 +141,7 @@ pub fn is_in_check(game_state: &GameState, color: Color) -> bool {
 
 pub fn will_block_check(game_state: &GameState, mv: Move) -> bool {
     let mut gs_copy = game_state.clone();
-    gs_copy = apply_move(&mut gs_copy, &mv);
+    gs_copy = apply_move(&gs_copy, &mv);
     if is_in_check(&gs_copy, mv.color) {
         return false;
     }
@@ -153,9 +150,9 @@ pub fn will_block_check(game_state: &GameState, mv: Move) -> bool {
 
 pub fn is_in_checkmate(game_state: &GameState, color:Color) -> bool {
     if is_in_check(game_state, color) {
-        let mut move_generator = MoveGenerator::new(&game_state);
+        let mut move_generator = MoveGenerator::new(game_state);
         let moves = move_generator.generate_current_moves();
-        if moves.len() == 0 {
+        if moves.is_empty() {
             return true;
         }
     }
@@ -171,25 +168,25 @@ pub fn is_current_player_in_check(game_state: &GameState) -> bool {
 
 pub fn validate_move(game_state: &GameState, pos: (u8,u8,u8,u8)) -> Result<Move, MoveError> {
     let game_status = &game_state.game_status;
-    let mut move_generator = MoveGenerator::new(&game_state);
-    let moves = move_generator.generate_current_moves();
+    let moves = game_state.all_moves.clone();
+    let piece = game_state.board.get(pos.0, pos.1).unwrap();
     for mv in moves {
         if mv.from == (pos.0, pos.1) && mv.to == (pos.2, pos.3) {
-            if game_status.in_check() && !will_block_check(game_state, mv.clone()) {
+            if !will_block_check(game_state, mv) {
                 return Err(MoveError::MoveDoesNotBlockCheck);
             }
-            if !mv.move_type.is_valid() {
+            if !in_bounds((mv.to.0, mv.to.1)) {
                 return Err(MoveError::MoveIsNotValid);
             }
             if mv.move_type.is_promotion() || mv.move_type.is_promo_capture() {
                 let promotion = ask_for_promotion();
-                let piece = parse_promotion(&promotion);
+                let piece_kind = parse_promotion(&promotion);
                 let mv_type = if mv.move_type.is_promotion() {
-                    Promotion(piece)
+                    Promotion(piece_kind)
                 } else {
-                    PromotionCapture(piece)
+                    PromotionCapture(piece_kind)
                 };
-                let mv = Move::new(mv.from, mv.to, mv_type, mv.color);
+                let mv = Move::new(mv.from, mv.to, mv_type, piece, mv.color);
                 return Ok(mv);
             }
             return Ok(mv);
@@ -223,8 +220,8 @@ pub fn get_user_move() -> (u8, u8, u8, u8) {
 
     // Temporarily Parse the move manually for now
     let chars = input.chars().collect::<Vec<char>>();
-    let from = (chars[0] as u8 - 'a' as u8, chars[1] as u8 - '1' as u8);
-    let to = (chars[3] as u8 - 'a' as u8, chars[4] as u8 - '1' as u8);
+    let from = (chars[0] as u8 - b'a', chars[1] as u8 - b'1');
+    let to = (chars[3] as u8 - b'a', chars[4] as u8 - b'1');
 
     (from.0, from.1, to.0, to.1)
 }
