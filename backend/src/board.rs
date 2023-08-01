@@ -91,7 +91,7 @@ impl Board {
     }
 
     pub fn new_standard() -> Self {
-        let mut board = from_fen("R3K2R/PpP2PpP/8/4p3/3P4/8/pPp2pPp/r3k2r");
+        let mut board = from_fen("RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr");
         board
     }
 
