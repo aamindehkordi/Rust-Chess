@@ -71,62 +71,6 @@ impl Board {
         from_fen("RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr")
     }
 
-    pub fn make_move(&mut self, mv: &Move) {
-        match mv.move_type {
-            MoveType::Normal => {
-                let piece = self.get(mv.from.0, mv.from.1).unwrap();
-                self.set(mv.from.0, mv.from.1, None);
-                self.set(mv.to.0, mv.to.1, Some(piece));
-            },
-            MoveType::DoublePawnPush => {
-                let piece = self.get(mv.from.0, mv.from.1).unwrap();
-                self.set(mv.from.0, mv.from.1, None);
-                self.set(mv.to.0, mv.to.1, Some(piece));
-            },
-            MoveType::Capture => {
-                let piece = self.get(mv.from.0, mv.from.1).unwrap();
-                self.set(mv.from.0, mv.from.1, None);
-                self.set(mv.to.0, mv.to.1, Some(piece));
-            },
-            MoveType::Castle(castle_type) => {
-                let king = self.get(mv.from.0, mv.from.1).unwrap();
-                self.set(mv.from.0, mv.from.1, None);
-                self.set(mv.to.0, mv.to.1, Some(king));
-                match castle_type {
-                    CastleType::KingSide => {
-                        let rook = self.get(7, mv.from.1).unwrap();
-                        self.set(7, mv.from.1, None);
-                        self.set(5, mv.from.1, Some(rook));
-                    },
-                    CastleType::QueenSide => {
-                        let rook = self.get(0, mv.from.1).unwrap();
-                        self.set(0, mv.from.1, None);
-                        self.set(3, mv.from.1, Some(rook));
-                    },
-                }
-            },
-            MoveType::EnPassant => {
-                let piece = self.get(mv.from.0, mv.from.1).unwrap();
-                self.set(mv.from.0, mv.from.1, None);
-                self.set(mv.to.0, mv.to.1, Some(piece));
-                self.set(mv.to.0, mv.from.1, None);
-            },
-            MoveType::Promotion(piece_kind) => {
-                let piece = Piece { color: self.get(mv.from.0, mv.from.1).unwrap().color, kind: piece_kind, moves_count: 0 };
-                self.set(mv.from.0, mv.from.1, None);
-                self.set(mv.to.0, mv.to.1, Some(piece));
-            },
-            MoveType::PromotionCapture(piece_kind) => {
-                let piece = Piece { color: self.get(mv.from.0, mv.from.1).unwrap().color, kind: piece_kind, moves_count: 0 };
-                self.set(mv.from.0, mv.from.1, None);
-                self.set(mv.to.0, mv.to.1, Some(piece));
-            },
-            _ => panic!("Invalid move type"),
-        }
-        // update piece moves_count
-        increment_piece_move_count(self, mv.from);
-    }
-
     #[inline]
     fn idx(x: u8, y: u8) -> usize {
         (y * 8 + x) as usize
@@ -312,4 +256,61 @@ pub fn increment_piece_move_count(board: &mut Board, from: (u8, u8)) {
 
 pub fn in_bounds(pos: (u8, u8)) -> bool {
     pos.0 < 8 && pos.1 < 8
+}
+
+pub fn make_move(b: Board, mv: &Move) -> Board {
+    let mut board = b;
+    match mv.move_type {
+        MoveType::Normal => {
+            let piece = board.get(mv.from.0, mv.from.1).unwrap();
+            board.set(mv.from.0, mv.from.1, None);
+            board.set(mv.to.0, mv.to.1, Some(piece));
+        },
+        MoveType::DoublePawnPush => {
+            let piece = board.get(mv.from.0, mv.from.1).unwrap();
+            board.set(mv.from.0, mv.from.1, None);
+            board.set(mv.to.0, mv.to.1, Some(piece));
+        },
+        MoveType::Capture => {
+            let piece = board.get(mv.from.0, mv.from.1).unwrap();
+            board.set(mv.from.0, mv.from.1, None);
+            board.set(mv.to.0, mv.to.1, Some(piece));
+        },
+        MoveType::Castle(castle_type) => {
+            let king = board.get(mv.from.0, mv.from.1).unwrap();
+            board.set(mv.from.0, mv.from.1, None);
+            board.set(mv.to.0, mv.to.1, Some(king));
+            match castle_type {
+                CastleType::KingSide => {
+                    let rook = board.get(7, mv.from.1).unwrap();
+                    board.set(7, mv.from.1, None);
+                    board.set(5, mv.from.1, Some(rook));
+                },
+                CastleType::QueenSide => {
+                    let rook = board.get(0, mv.from.1).unwrap();
+                    board.set(0, mv.from.1, None);
+                    board.set(3, mv.from.1, Some(rook));
+                },
+            }
+        },
+        MoveType::EnPassant => {
+            let piece = board.get(mv.from.0, mv.from.1).unwrap();
+            board.set(mv.from.0, mv.from.1, None);
+            board.set(mv.to.0, mv.to.1, Some(piece));
+            board.set(mv.to.0, mv.from.1, None);
+        },
+        MoveType::Promotion(piece_kind) => {
+            let piece = Piece { color: board.get(mv.from.0, mv.from.1).unwrap().color, kind: piece_kind, moves_count: 0 };
+            board.set(mv.from.0, mv.from.1, None);
+            board.set(mv.to.0, mv.to.1, Some(piece));
+        },
+        MoveType::PromotionCapture(piece_kind) => {
+            let piece = Piece { color: board.get(mv.from.0, mv.from.1).unwrap().color, kind: piece_kind, moves_count: 0 };
+            board.set(mv.from.0, mv.from.1, None);
+            board.set(mv.to.0, mv.to.1, Some(piece));
+        }
+    };
+    // update piece moves_count
+    increment_piece_move_count(&mut board, mv.from);
+    board
 }

@@ -70,7 +70,9 @@ pub fn calculate_black_moves(game_state: &mut GameState) {
 
 pub fn apply_move(game_state: &GameState, mv: &Move) -> GameState {
     let mut new_game_state = game_state.clone();
-    new_game_state.board.make_move(mv);
+    let mut board = new_game_state.board;
+    board = make_move(board, mv);
+    new_game_state.board = board;
     new_game_state.move_history.push(MoveHistory::new(*mv));
     change_current_player(&mut new_game_state);
     calculate_all_moves(&mut new_game_state);

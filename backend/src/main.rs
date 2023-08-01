@@ -11,9 +11,20 @@ use moves::*;
 
 fn main() {
     // Create a new game state
-    let mut game_state = GameState::new();
+    let game_state = GameState::new();
 
     // Main game loop
+    main_loop(Some(game_state));
+
+}
+
+fn main_loop(gs: Option<GameState>) {
+    let mut game_state: GameState;
+    if let Some(gs) = gs {
+        game_state = gs;
+    } else {
+        game_state = GameState::new();
+    }
     loop {
         calculate_black_moves(&mut game_state);
         // Display the current game state
@@ -24,14 +35,14 @@ fn main() {
         // If the current player is human, get a move from the user input
         // If the current player is an AI, get a move from the AI's "brain"
         let mv_pos = match current_player.kind {
-            PlayerKind::Human => get_user_move(),
-            PlayerKind::Computer(_) => get_ai_move(current_player),
+            PlayerKind::Human => user_mv_idx(),
+            PlayerKind::Computer(_) => ai_mv_idx(current_player),
         };
         calculate_all_moves(&mut game_state);
         // Validate the move
         match validate_move(&game_state, mv_pos) {
             Ok(mv) => {
-
+                game_state.game_status = GameStatus::InProgress;
                 // If the move is valid, apply it to the game state
                 game_state = apply_move(&game_state, &mv);
                 // Check if the game is over
@@ -45,6 +56,13 @@ fn main() {
                     game_state.game_status = GameStatus::Check(get_current_player(&game_state).color);
                     println!("Check!");
                 }
+                // Check for Draw
+                if is_draw(&game_state) {
+                    game_state.game_status = GameStatus::Draw;
+                    println!("Draw!");
+                    break;
+                }
+                // Check for checkmate
                 if is_in_checkmate(&game_state, get_current_player(&game_state).color) {
                     game_state.game_status = GameStatus::Checkmate(get_current_player(&game_state).color);
                     println!("Checkmate!");
@@ -55,7 +73,6 @@ fn main() {
                 match err {
                     MoveError::MoveIsNotValid => println!("Move is not valid"),
                     MoveError::MoveDoesNotBlockCheck => println!("Move does not block check"),
-                    MoveError::MoveIsNotCapturePromotion => println!("Move is not a capture promotion"),
                     MoveError::Other(msg) => println!("Invalid move: {}", msg),
                 }
             }
