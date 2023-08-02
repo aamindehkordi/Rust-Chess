@@ -132,16 +132,16 @@ impl<'a> MoveGenerator<'a,> {
     }
 
     fn generate_pawn_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
-        let mut moves = Vec::new();
-        let piece = self.board.get(x, y).unwrap();
-        let direction = match color {
+        let mut moves = Vec::new(); // Vector to store moves
+        let piece = self.board.get(x, y).unwrap(); // Get the piece at the given position
+        let direction = match color { // Get the direction of the pawn
             Color::White => 1,
             Color::Black => -1,
         };
 
         // Normal move forward
-        let forward_square = (x, (y as i8 + direction) as u8);
-        if in_bounds(forward_square) && self.board.get(forward_square.0, forward_square.1).is_none() {
+        let forward_square = (x, (y as i8 + direction) as u8); // Get the square in front of the pawn
+        if in_bounds(&forward_square) && self.board.get(forward_square.0, forward_square.1).is_none() { // Check if the square is in bounds and empty
             let mvs = if forward_square.1 == 0 || forward_square.1 == 7 {
                 self.promotion_move(color, (x, y), forward_square)
             } else {
@@ -152,14 +152,14 @@ impl<'a> MoveGenerator<'a,> {
 
         // Double move forward
         let double_forward_square = (x, (y as i8 + 2 * direction) as u8);
-        if (y == 1 || y == 6) && in_bounds(double_forward_square) && self.board.get(double_forward_square.0, double_forward_square.1).is_none() {
+        if (y == 1 || y == 6) && in_bounds(&double_forward_square) && self.board.get(double_forward_square.0, double_forward_square.1).is_none() {
             moves.push(Move::new((x, y), double_forward_square, MoveType::DoublePawnPush, piece, color));
         }
 
         // Captures
         for &dx in [-1, 1].iter() {
             let capture_square = ((x as i8 + dx) as u8, (y as i8 + direction) as u8);
-            if in_bounds(capture_square) {
+            if in_bounds(&capture_square) {
                 match self.board.get(capture_square.0, capture_square.1) {
                     Some(piece) if piece.color != color => {
                         let mvs = if capture_square.1 == 0 || capture_square.1 == 7 {
@@ -188,41 +188,20 @@ impl<'a> MoveGenerator<'a,> {
         moves
     }
 
-
     fn generate_king_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = (x, y);
         let piece = self.board.get(x, y).unwrap();
+        let from_pos = (x, y);
 
         // The king can move in 8 directions: up, down, left, right, and the 4 diagonals.
         let directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
 
-        for direction in directions.iter() {
-            let new_x = (pos.0 as i8 + direction.0) as u8;
-            let new_y = (pos.1 as i8 + direction.1) as u8;
-            let move_to = (new_x, new_y);
-
-            if in_bounds(move_to) {
-                // check if the position is attacked by an opponent's piece
-                if is_attacked(self.game_state,move_to, color) {
-                    continue;
-                }
-                match self.board.get(move_to.0, move_to.1) {
-                    Some(piece) => {
-                        if piece.color != color {
-                            moves.push(Move::new(pos, move_to, MoveType::Capture, piece, color));
-                        }
-                    },
-                    None => {
-                        moves.push(Move::new(pos, move_to, MoveType::Normal, piece, color));
-                    }
-                }
-            }
-        }
+        self.dir_in_dirs(color, &mut moves, from_pos, piece, directions.to_vec());
 
         // Castle move generation
         // 1. The king hasn't moved before
-        if self.board.get(pos.0, pos.1).unwrap().moves_count == 0 {
+        if piece.moves_count == 0 {
             // 2. The king is not currently in check
             if !is_in_check(self.game_state,color) {
                 // 3. The rook with which the king is castling hasn't moved before
@@ -247,68 +226,27 @@ impl<'a> MoveGenerator<'a,> {
         moves
     }
 
+    // Function to generate all legal moves for a knight at a given position
+    fn generate_knight_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let from_pos = (x, y);
+        let piece = self.board.get(x, y).unwrap();
 
+        // The knight can move in 8 directions: up up left/right, down down left/right, left left up/down, right right up/down
+        let directions = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)];
+
+        self.dir_in_dirs(color, &mut moves, from_pos, piece, directions.to_vec());
+        moves
+    }
 
     // Function to generate all legal moves for a rook at a given position
     fn generate_rook_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = (x, y);
         let piece = self.board.get(pos.0, pos.1).unwrap();
-        // The rook can move in 4 directions: up, down, left, and right.
-        let directions = [(-1, 0), (0, -1), (0, 1), (1, 0)];
 
-        for direction in directions.iter() {
-            let mut new_x = (pos.0 as i8 + direction.0) as u8;
-            let mut new_y = (pos.1 as i8 + direction.1) as u8;
-            let mut move_to = (new_x, new_y);
+        self.generate_sliding_move(color, &mut moves, pos, piece);
 
-            while in_bounds(move_to) {
-                match self.board.get(move_to.0, move_to.1) {
-                    Some(piece) => {
-                        if piece.color != color {
-                            moves.push(Move::new(pos, move_to, MoveType::Capture, piece, color));
-                        }
-                        break;
-                    },
-                    None => {
-                        moves.push(Move::new(pos, move_to, MoveType::Normal, piece, color));
-                    }
-                }
-                new_x = (move_to.0 as i8 + direction.0) as u8;
-                new_y = (move_to.1 as i8 + direction.1) as u8;
-                move_to = (new_x, new_y);
-            }
-        }
-        moves
-    }
-
-    // Function to generate all legal moves for a knight at a given position
-    fn generate_knight_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
-        let mut moves = Vec::new();
-        let pos = (x, y);
-        let piece = self.board.get(pos.0, pos.1).unwrap();
-
-        // The knight can move in 8 directions: up, down, left, right, and the 4 diagonals.
-        let directions = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)];
-
-        for direction in directions.iter() {
-            let new_x = (pos.0 as i8 + direction.0) as u8;
-            let new_y = (pos.1 as i8 + direction.1) as u8;
-            let move_to = (new_x, new_y);
-
-            if in_bounds(move_to) {
-                match self.board.get(move_to.0, move_to.1) {
-                    Some(piece) => {
-                        if piece.color != color {
-                            moves.push(Move::new(pos, move_to, MoveType::Capture, piece, color));
-                        }
-                    },
-                    None => {
-                        moves.push(Move::new(pos, move_to, MoveType::Normal, piece, color));
-                    }
-                }
-            }
-        }
         moves
     }
 
@@ -318,31 +256,8 @@ impl<'a> MoveGenerator<'a,> {
         let pos = (x, y);
         let piece = self.board.get(pos.0, pos.1).unwrap();
 
-        // The bishop can move in 4 directions: up-left, up-right, down-left, and down-right.
-        let directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)];
+        self.generate_sliding_move(color, &mut moves, pos, piece);
 
-        for direction in directions.iter() {
-            let mut new_x = (pos.0 as i8 + direction.0) as u8;
-            let mut new_y = (pos.1 as i8 + direction.1) as u8;
-            let mut move_to = (new_x, new_y);
-
-            while in_bounds(move_to) {
-                match self.board.get(move_to.0, move_to.1) {
-                    Some(piece) => {
-                        if piece.color != color {
-                            moves.push(Move::new(pos, move_to, MoveType::Capture, piece, color));
-                        }
-                        break;
-                    },
-                    None => {
-                        moves.push(Move::new(pos, move_to, MoveType::Normal, piece, color));
-                    }
-                }
-                new_x = (move_to.0 as i8 + direction.0) as u8;
-                new_y = (move_to.1 as i8 + direction.1) as u8;
-                move_to = (new_x, new_y);
-            }
-        }
         moves
     }
 
@@ -352,31 +267,8 @@ impl<'a> MoveGenerator<'a,> {
         let pos = (x, y);
         let piece = self.board.get(pos.0, pos.1).unwrap();
 
-        // The queen can move in 8 directions: up, down, left, right, and the 4 diagonals.
-        let directions = [(-1, 0), (0, -1), (0, 1), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)];
+        self.generate_sliding_move(color, &mut moves, pos, piece);
 
-        for direction in directions.iter() {
-            let mut new_x = (pos.0 as i8 + direction.0) as u8;
-            let mut new_y = (pos.1 as i8 + direction.1) as u8;
-            let mut move_to = (new_x, new_y);
-
-            while in_bounds(move_to) {
-                match self.board.get(move_to.0, move_to.1) {
-                    Some(piece) => {
-                        if piece.color != color {
-                            moves.push(Move::new(pos, move_to, MoveType::Capture, piece, color));
-                        }
-                        break;
-                    },
-                    None => {
-                        moves.push(Move::new(pos, move_to, MoveType::Normal, piece, color));
-                    }
-                }
-                new_x = (move_to.0 as i8 + direction.0) as u8;
-                new_y = (move_to.1 as i8 + direction.1) as u8;
-                move_to = (new_x, new_y);
-            }
-        }
         moves
     }
 
@@ -402,6 +294,47 @@ impl<'a> MoveGenerator<'a,> {
         moves
     }
 
+    // Function to generate all legal moves for a sliding piece at a given position
+    fn generate_sliding_move(&self, color: Color, moves: &mut Vec<Move>, from_pos: (u8, u8), piece: Piece) {
+        let directions: Vec<(i8,i8)>;
+        // horizontal and vertical directions
+        let hdirections = [(-1, 0), (0, -1), (0, 1), (1, 0)];
+        let ddirections = [(-1, 0), (0, -1), (0, 1), (1, 0)];
+        // diagonal directions
+        if piece.kind == PieceKind::Queen {
+            directions = hdirections.iter().chain(ddirections.iter()).cloned().collect();
+        } else if piece.kind == PieceKind::Rook {
+            directions = hdirections.to_vec();
+        } else { // Bishop
+            directions = ddirections.to_vec();
+        }
+
+        self.dir_in_dirs(color, moves, from_pos, piece, directions);
+    }
+
+    fn dir_in_dirs(&self, color: Color, moves: &mut Vec<Move>, from_pos: (u8, u8), piece: Piece, directions: Vec<(i8, i8)>) {
+        for direction in directions.iter() {
+            let new_x = (from_pos.0 as i8 + direction.0) as u8;
+            let new_y = (from_pos.1 as i8 + direction.1) as u8;
+            let to_pos = (new_x, new_y);
+
+            if in_bounds(&to_pos) {
+                if piece.kind == PieceKind::King && is_attacked(self.game_state, to_pos, color) {
+                    continue;
+                }
+                match self.board.get(to_pos.0, to_pos.1) {
+                    Some(piece) => {
+                        if piece.color != color {
+                            moves.push(Move::new(from_pos, to_pos, MoveType::Capture, piece, color));
+                        }
+                    },
+                    None => {
+                        moves.push(Move::new(from_pos, to_pos, MoveType::Normal, piece, color));
+                    }
+                }
+            }
+        }
+    }
 }
 
 
@@ -415,4 +348,81 @@ pub fn create_notation_for_move(mv: &Move) -> String {
     notation.push(to.0);
     notation.push(to.1);
     notation
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::game::apply_move;
+    use super::*;
+
+    fn test_move_generation(depth: usize) -> usize {
+        if depth == 0 {
+            return 1;
+        }
+        let game_state = GameState::new();
+        let mut num_positions = 0usize;
+        let mut move_generator = MoveGenerator::new(&game_state);
+        let moves = move_generator.generate_current_moves();
+
+        for mv in moves {
+            let _ = apply_move(&game_state, &mv);
+            num_positions += test_move_generation(depth - 1);
+        }
+
+        num_positions
+    }
+
+    #[test]
+    fn test_move_generation_1() {
+        let num_positions = test_move_generation(1);
+        assert_eq!(num_positions, 20); // 20
+    }
+
+    #[test]
+    fn test_move_generation_2() {
+        let num_positions = test_move_generation(2);
+        assert_eq!(num_positions, 400); // 400
+    }
+
+    #[test]
+    fn test_move_generation_3() {
+        let num_positions = test_move_generation(3);
+        assert_eq!(num_positions, 8902); // 8000 531ms
+    }
+
+    #[test]
+    fn test_move_generation_4() {
+        let num_positions = test_move_generation(4);
+        assert_eq!(num_positions, 197281); // 160000 7sec
+    }
+
+    #[test]
+    fn test_move_generation_5() {
+        let num_positions = test_move_generation(5);
+        assert_eq!(num_positions, 4865609); // 3200000 2min
+    }
+
+    #[test]
+    fn test_move_generation_6() {
+        let num_positions = test_move_generation(6);
+        assert_eq!(num_positions, 119060324); // 64000000 42min
+    }
+
+    #[test]
+    fn test_move_generation_7() {
+        let num_positions = test_move_generation(7);
+        assert_eq!(num_positions, 3195901860);
+    }
+
+    #[test]
+    fn test_move_generation_8() {
+        let num_positions = test_move_generation(8);
+        assert_eq!(num_positions, 84998978956);
+    }
+
+    #[test]
+    fn test_move_generation_9() {
+        let num_positions = test_move_generation(9);
+        assert_eq!(num_positions, 2439530234167);
+    }
 }
