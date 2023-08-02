@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 // Import necessary modules and dependencies
-use crate::board::{Board, Color, in_bounds, Piece, PieceKind};
+use crate::board::{Board, Color, in_bounds, make_move, Piece, PieceKind};
 use crate::game::{GameState, get_current_player, is_attacked, is_in_check};
 use crate::player::Player;
 
@@ -150,9 +150,11 @@ impl<'a> MoveGenerator<'a,> {
             moves.extend(mvs);
         }
 
+
         // Double move forward
+        let single_forward_square = (x, (y as i8 + direction) as u8);
         let double_forward_square = (x, (y as i8 + 2 * direction) as u8);
-        if (y == 1 || y == 6) && in_bounds(&double_forward_square) && self.board.get(double_forward_square.0, double_forward_square.1).is_none() {
+        if (y == 1 || y == 6) && in_bounds(&double_forward_square) && self.board.get(single_forward_square.0, single_forward_square.1).is_none() && self.board.get(double_forward_square.0, double_forward_square.1).is_none() {
             moves.push(Move::new((x, y), double_forward_square, MoveType::DoublePawnPush, piece, color));
         }
 
@@ -197,13 +199,27 @@ impl<'a> MoveGenerator<'a,> {
         // The king can move in 8 directions: up, down, left, right, and the 4 diagonals.
         let directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
 
-        self.dir_in_dirs(color, &mut moves, from_pos, piece, directions.to_vec());
+        for &(dx, dy) in directions.iter() {
+            let to_pos = ((x as i8 + dx) as u8, (y as i8 + dy) as u8);
+            if in_bounds(&to_pos) {
+                match self.board.get(to_pos.0, to_pos.1) {
+                    Some(piece) if piece.color != color => {
+                        moves.push(Move::new(from_pos, to_pos, MoveType::Capture, piece, color));
+                    },
+                    None => {
+                        moves.push(Move::new(from_pos, to_pos, MoveType::Normal, piece, color));
+                    },
+                    _ => (),
+                }
+            }
+        }
+
 
         // Castle move generation
         // 1. The king hasn't moved before
         if piece.moves_count == 0 {
             // 2. The king is not currently in check
-            if !is_in_check(self.game_state,color) {
+            if !is_in_check(self.game_state, color) {
                 // 3. The rook with which the king is castling hasn't moved before
                 let rook_positions = if color == Color::White { [(0, 7), (7, 7)] } else { [(0, 0), (7, 0)] };
                 for &rook_pos in &rook_positions {
@@ -216,13 +232,20 @@ impl<'a> MoveGenerator<'a,> {
                             // 5. The king does not pass through a square that is attacked by an enemy piece
                             let castle_through = if rook_pos.0 == 0 { [(2, pos.1), (3, pos.1)] } else { [(5, pos.1), (6, pos.1)] };
                             if castle_through.iter().all(|&pos| !is_attacked(self.game_state, pos, color)) {
-                                moves.push(Move::new(pos, if rook_pos.0 == 0 { (2, pos.1) } else { (6, pos.1) }, MoveType::Castle(if rook_pos.0 == 0 { CastleType::QueenSide } else { CastleType::KingSide }), piece, color));
+                                // 6. The king is not in check after the castle move
+                                let castle_to = if rook_pos.0 == 0 { (2, pos.1) } else { (6, pos.1) };
+                                let mut temp_gs = self.game_state.clone();
+                                temp_gs.board = make_move(temp_gs.board, &Move::new(pos, castle_to, MoveType::Castle(if rook_pos.0 == 0 { CastleType::QueenSide } else { CastleType::KingSide }), piece, color));
+                                if !is_in_check(&temp_gs, color) {
+                                    moves.push(Move::new(pos, castle_to, MoveType::Castle(if rook_pos.0 == 0 { CastleType::QueenSide } else { CastleType::KingSide }), piece, color));
+                                }
                             }
                         }
                     }
                 }
             }
         }
+
         moves
     }
 
@@ -235,7 +258,20 @@ impl<'a> MoveGenerator<'a,> {
         // The knight can move in 8 directions: up up left/right, down down left/right, left left up/down, right right up/down
         let directions = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)];
 
-        self.dir_in_dirs(color, &mut moves, from_pos, piece, directions.to_vec());
+        for direction in &directions {
+            let to_pos = ((x as i8 + direction.0) as u8, (y as i8 + direction.1) as u8);
+            if in_bounds(&to_pos) {
+                match self.board.get(to_pos.0, to_pos.1) {
+                    Some(piece) if piece.color != color => {
+                        moves.push(Move::new(from_pos, to_pos, MoveType::Capture, piece, color));
+                    },
+                    None => {
+                        moves.push(Move::new(from_pos, to_pos, MoveType::Normal, piece, color));
+                    },
+                    _ => (),
+                }
+            }
+        }
         moves
     }
 
@@ -299,7 +335,7 @@ impl<'a> MoveGenerator<'a,> {
         let directions: Vec<(i8,i8)>;
         // horizontal and vertical directions
         let hdirections = [(-1, 0), (0, -1), (0, 1), (1, 0)];
-        let ddirections = [(-1, 0), (0, -1), (0, 1), (1, 0)];
+        let ddirections = [(-1, -1), (-1, 1), (1, -1), (1, 1)];
         // diagonal directions
         if piece.kind == PieceKind::Queen {
             directions = hdirections.iter().chain(ddirections.iter()).cloned().collect();
@@ -309,29 +345,30 @@ impl<'a> MoveGenerator<'a,> {
             directions = ddirections.to_vec();
         }
 
-        self.dir_in_dirs(color, moves, from_pos, piece, directions);
-    }
-
-    fn dir_in_dirs(&self, color: Color, moves: &mut Vec<Move>, from_pos: (u8, u8), piece: Piece, directions: Vec<(i8, i8)>) {
         for direction in directions.iter() {
-            let new_x = (from_pos.0 as i8 + direction.0) as u8;
-            let new_y = (from_pos.1 as i8 + direction.1) as u8;
-            let to_pos = (new_x, new_y);
+            let mut distance = 1;
+            loop {
+                let new_x = (from_pos.0 as i8 + distance * direction.0) as u8;
+                let new_y = (from_pos.1 as i8 + distance * direction.1) as u8;
+                let to_pos = (new_x, new_y);
 
-            if in_bounds(&to_pos) {
-                if piece.kind == PieceKind::King && is_attacked(self.game_state, to_pos, color) {
-                    continue;
+                if !in_bounds(&to_pos) {
+                    break;
                 }
+
                 match self.board.get(to_pos.0, to_pos.1) {
-                    Some(piece) => {
-                        if piece.color != color {
-                            moves.push(Move::new(from_pos, to_pos, MoveType::Capture, piece, color));
+                    Some(to_piece) => {
+                        if to_piece.color != color {
+                            moves.push(Move::new(from_pos, to_pos, MoveType::Capture, to_piece, color));
                         }
+                        break;
                     },
                     None => {
                         moves.push(Move::new(from_pos, to_pos, MoveType::Normal, piece, color));
                     }
                 }
+
+                distance += 1;
             }
         }
     }
@@ -352,77 +389,93 @@ pub fn create_notation_for_move(mv: &Move) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::game::apply_move;
+    use crate::game::{apply_move, undo_move};
     use super::*;
 
-    fn test_move_generation(depth: usize) -> usize {
+
+    fn recursive_mvgen_test(game_state: &mut GameState, color: Color, depth: usize) -> usize {
         if depth == 0 {
             return 1;
         }
-        let game_state = GameState::new();
+
         let mut num_positions = 0usize;
-        let mut move_generator = MoveGenerator::new(&game_state);
-        let moves = move_generator.generate_current_moves();
+        let mut move_generator = MoveGenerator::new(game_state);
+        let moves = move_generator.generate_moves(color);
 
         for mv in moves {
-            let _ = apply_move(&game_state, &mv);
-            num_positions += test_move_generation(depth - 1);
+            // apply the move
+            let mut new_game_state = apply_move(game_state, &mv);
+            // switch color
+            let next_color = if color == Color::White { Color::Black } else { Color::White };
+            num_positions += recursive_mvgen_test(&mut new_game_state, next_color, depth - 1);
+            // undo the move
+            new_game_state = undo_move(&new_game_state);
         }
 
         num_positions
     }
 
+
     #[test]
     fn test_move_generation_1() {
-        let num_positions = test_move_generation(1);
-        assert_eq!(num_positions, 20); // 20
+        let mut game_state = GameState::new();
+        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 1);
+        assert_eq!(num_positions, 20);
     }
 
     #[test]
     fn test_move_generation_2() {
-        let num_positions = test_move_generation(2);
-        assert_eq!(num_positions, 400); // 400
+        let mut game_state = GameState::new();
+        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 2);
+        assert_eq!(num_positions, 400);
     }
 
     #[test]
     fn test_move_generation_3() {
-        let num_positions = test_move_generation(3);
-        assert_eq!(num_positions, 8902); // 8000 531ms
+        let mut game_state = GameState::new();
+        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 3);
+        assert_eq!(num_positions, 8902);
     }
 
     #[test]
     fn test_move_generation_4() {
-        let num_positions = test_move_generation(4);
-        assert_eq!(num_positions, 197281); // 160000 7sec
+        let mut game_state = GameState::new();
+        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 4);
+        assert_eq!(num_positions, 197281); // actual: 197742 17s
     }
 
     #[test]
     fn test_move_generation_5() {
-        let num_positions = test_move_generation(5);
-        assert_eq!(num_positions, 4865609); // 3200000 2min
+        let mut game_state = GameState::new();
+        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 5);
+        assert_eq!(num_positions, 4865609);
     }
 
     #[test]
     fn test_move_generation_6() {
-        let num_positions = test_move_generation(6);
-        assert_eq!(num_positions, 119060324); // 64000000 42min
+        let mut game_state = GameState::new();
+        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 6);
+        assert_eq!(num_positions, 119060324);
     }
 
     #[test]
     fn test_move_generation_7() {
-        let num_positions = test_move_generation(7);
+        let mut game_state = GameState::new();
+        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 7);
         assert_eq!(num_positions, 3195901860);
     }
 
     #[test]
     fn test_move_generation_8() {
-        let num_positions = test_move_generation(8);
+        let mut game_state = GameState::new();
+        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 8);
         assert_eq!(num_positions, 84998978956);
     }
 
     #[test]
     fn test_move_generation_9() {
-        let num_positions = test_move_generation(9);
+        let mut game_state = GameState::new();
+        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 9);
         assert_eq!(num_positions, 2439530234167);
     }
 }

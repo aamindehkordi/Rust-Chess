@@ -1,5 +1,5 @@
 // Import necessary modules and dependencies
-use crate::board::{Board, Color, in_bounds, king_pos, make_move, PieceKind};
+use crate::board::{Board, Color, in_bounds, king_pos, make_move, PieceKind, unmake_move};
 use crate::player::Player;
 use crate::moves::{Move, MoveError, MoveGenerator, MoveHistory};
 use crate::moves::MoveType::{Promotion, PromotionCapture};
@@ -70,10 +70,17 @@ pub fn calculate_black_moves(game_state: &mut GameState) {
 
 pub fn apply_move(game_state: &GameState, mv: &Move) -> GameState {
     let mut new_game_state = game_state.clone();
-    let mut board = new_game_state.board;
-    board = make_move(board, mv);
-    new_game_state.board = board;
+    new_game_state.board = make_move(new_game_state.board, mv);
     new_game_state.move_history.push(MoveHistory::new(*mv));
+    change_current_player(&mut new_game_state);
+    calculate_all_moves(&mut new_game_state);
+    new_game_state
+}
+
+pub fn undo_move(game_state: &GameState) -> GameState {
+    let mut new_game_state = game_state.clone();
+    let last_move = new_game_state.move_history.pop().unwrap();
+    new_game_state.board = unmake_move(new_game_state.board, &last_move.mv);
     change_current_player(&mut new_game_state);
     calculate_all_moves(&mut new_game_state);
     new_game_state

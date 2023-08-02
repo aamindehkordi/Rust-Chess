@@ -17,6 +17,14 @@ pub enum Color {
     White,
     Black,
 }
+impl Color {
+    pub fn other(self) -> Self {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Piece {
@@ -254,6 +262,12 @@ pub fn increment_piece_move_count(board: &mut Board, from: (u8, u8)) {
     }
 }
 
+pub fn decrement_piece_move_count(board: &mut Board, from: (u8, u8)) {
+    if let Some(piece) = board.get(from.0, from.1) {
+        board.set(from.0, from.1, Some(Piece { moves_count: (piece.moves_count as i8 - 1)as u8, ..piece }));
+    }
+}
+
 pub fn in_bounds(pos: &(u8, u8)) -> bool {
     pos.0 < 8 && pos.1 < 8
 }
@@ -312,5 +326,65 @@ pub fn make_move(b: Board, mv: &Move) -> Board {
     };
     // update piece moves_count
     increment_piece_move_count(&mut board, mv.from);
+    board
+}
+
+pub fn unmake_move(b: Board, mv: &Move) -> Board {
+    let mut board = b;
+    match mv.move_type {
+        MoveType::Normal => {
+            let piece = board.get(mv.to.0, mv.to.1).unwrap();
+            board.set(mv.to.0, mv.to.1, None);
+            board.set(mv.from.0, mv.from.1, Some(piece));
+        },
+        MoveType::DoublePawnPush => {
+            let piece = board.get(mv.to.0, mv.to.1).unwrap();
+            board.set(mv.to.0, mv.to.1, None);
+            board.set(mv.from.0, mv.from.1, Some(piece));
+        },
+        MoveType::Capture => {
+            let piece = board.get(mv.to.0, mv.to.1).unwrap();
+            board.set(mv.to.0, mv.to.1, None);
+            board.set(mv.from.0, mv.from.1, Some(piece));
+        },
+        MoveType::Castle(castle_type) => {
+            let king = board.get(mv.to.0, mv.to.1).unwrap();
+            board.set(mv.to.0, mv.to.1, None);
+            board.set(mv.from.0, mv.from.1, Some(king));
+            match castle_type {
+                CastleType::KingSide => {
+                    let rook = board.get(5, mv.from.1).unwrap();
+                    board.set(5, mv.from.1, None);
+                    board.set(7, mv.from.1, Some(rook));
+                },
+                CastleType::QueenSide => {
+                    let rook = board.get(3, mv.from.1).unwrap();
+                    board.set(3, mv.from.1, None);
+                    board.set(0, mv.from.1, Some(rook));
+                },
+            }
+        },
+        MoveType::EnPassant => {
+            let piece = board.get(mv.to.0, mv.to.1).unwrap();
+            board.set(mv.to.0, mv.to.1, None);
+            board.set(mv.from.0, mv.from.1, Some(piece));
+            let piece = Piece { color: board.get(mv.to.0, mv.from.1).unwrap().color, kind: PieceKind::Pawn, moves_count: 0 };
+            board.set(mv.to.0, mv.from.1, Some(piece));
+        },
+        MoveType::Promotion(_) => {
+            let piece = Piece { color: board.get(mv.to.0, mv.to.1).unwrap().color, kind: PieceKind::Pawn, moves_count: 0 };
+            board.set(mv.to.0, mv.to.1, None);
+            board.set(mv.from.0, mv.from.1, Some(piece));
+        },
+        MoveType::PromotionCapture(_) => {
+            let piece = Piece { color: board.get(mv.to.0, mv.to.1).unwrap().color, kind: PieceKind::Pawn, moves_count: 0 };
+            board.set(mv.to.0, mv.to.1, None);
+            board.set(mv.from.0, mv.from.1, Some(piece));
+            let piece = Piece { color: board.get(mv.to.0, mv.from.1).unwrap().color, kind: PieceKind::Pawn, moves_count: 0 };
+            board.set(mv.to.0, mv.from.1, Some(piece));
+        }
+    };
+    // update piece moves_count
+    decrement_piece_move_count(&mut board, mv.from);
     board
 }
