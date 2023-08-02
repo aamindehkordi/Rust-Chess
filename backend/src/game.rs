@@ -159,7 +159,7 @@ pub fn validate_move(game_state: &GameState, pos: (u8,u8,u8,u8)) -> Result<Move,
             if !will_block_check(game_state, mv) {
                 return Err(MoveError::MoveDoesNotBlockCheck);
             }
-            if !in_bounds((mv.to.0, mv.to.1)) {
+            if !in_bounds(&(mv.to.0, mv.to.1)) {
                 return Err(MoveError::MoveIsNotValid);
             }
             if mv.move_type.is_promotion() || mv.move_type.is_promo_capture() {

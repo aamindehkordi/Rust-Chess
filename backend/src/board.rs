@@ -254,7 +254,7 @@ pub fn increment_piece_move_count(board: &mut Board, from: (u8, u8)) {
     }
 }
 
-pub fn in_bounds(pos: (u8, u8)) -> bool {
+pub fn in_bounds(pos: &(u8, u8)) -> bool {
     pos.0 < 8 && pos.1 < 8
 }
 
