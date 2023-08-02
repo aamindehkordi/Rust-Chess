@@ -393,21 +393,20 @@ mod tests {
     use super::*;
 
 
-    fn recursive_mvgen_test(game_state: &mut GameState, color: Color, depth: usize) -> usize {
+    fn recursive_mvgen_test(game_state: &mut GameState, depth: usize) -> usize {
         if depth == 0 {
             return 1;
         }
 
         let mut num_positions = 0usize;
         let mut move_generator = MoveGenerator::new(game_state);
-        let moves = move_generator.generate_moves(color);
+        let moves = move_generator.generate_current_moves();
 
         for mv in moves {
             // apply the move
             let mut new_game_state = apply_move(game_state, &mv);
             // switch color
-            let next_color = if color == Color::White { Color::Black } else { Color::White };
-            num_positions += recursive_mvgen_test(&mut new_game_state, next_color, depth - 1);
+            num_positions += recursive_mvgen_test(&mut new_game_state, depth - 1);
             // undo the move
             new_game_state = undo_move(&new_game_state);
         }
@@ -419,63 +418,63 @@ mod tests {
     #[test]
     fn test_move_generation_1() {
         let mut game_state = GameState::new();
-        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 1);
+        let num_positions = recursive_mvgen_test(&mut game_state, 1);
         assert_eq!(num_positions, 20);
     }
 
     #[test]
     fn test_move_generation_2() {
         let mut game_state = GameState::new();
-        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 2);
+        let num_positions = recursive_mvgen_test(&mut game_state, 2);
         assert_eq!(num_positions, 400);
     }
 
     #[test]
     fn test_move_generation_3() {
         let mut game_state = GameState::new();
-        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 3);
+        let num_positions = recursive_mvgen_test(&mut game_state, 3);
         assert_eq!(num_positions, 8902);
     }
 
     #[test]
     fn test_move_generation_4() {
         let mut game_state = GameState::new();
-        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 4);
+        let num_positions = recursive_mvgen_test(&mut game_state, 4);
         assert_eq!(num_positions, 197281); // actual: 197742 17s
     }
 
     #[test]
     fn test_move_generation_5() {
         let mut game_state = GameState::new();
-        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 5);
+        let num_positions = recursive_mvgen_test(&mut game_state, 5);
         assert_eq!(num_positions, 4865609);
     }
 
     #[test]
     fn test_move_generation_6() {
         let mut game_state = GameState::new();
-        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 6);
+        let num_positions = recursive_mvgen_test(&mut game_state, 6);
         assert_eq!(num_positions, 119060324);
     }
 
     #[test]
     fn test_move_generation_7() {
         let mut game_state = GameState::new();
-        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 7);
+        let num_positions = recursive_mvgen_test(&mut game_state, 7);
         assert_eq!(num_positions, 3195901860);
     }
 
     #[test]
     fn test_move_generation_8() {
         let mut game_state = GameState::new();
-        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 8);
+        let num_positions = recursive_mvgen_test(&mut game_state, 8);
         assert_eq!(num_positions, 84998978956);
     }
 
     #[test]
     fn test_move_generation_9() {
         let mut game_state = GameState::new();
-        let num_positions = recursive_mvgen_test(&mut game_state, Color::White, 9);
+        let num_positions = recursive_mvgen_test(&mut game_state, 9);
         assert_eq!(num_positions, 2439530234167);
     }
 }
