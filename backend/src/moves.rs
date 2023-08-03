@@ -345,19 +345,6 @@ impl<'a> MoveGenerator<'a,> {
     }
 }
 
-
-pub fn create_notation_for_move(mv: &Move) -> String {
-    let mut notation = String::new();
-    let from = (mv.from.0 as char, mv.from.1 as char);
-    let to = (mv.to.0 as char, mv.to.1 as char);
-    notation.push(from.0);
-    notation.push(from.1);
-    notation.push('-');
-    notation.push(to.0);
-    notation.push(to.1);
-    notation
-}
-
 #[cfg(test)]
 mod tests {
     use crate::game::{apply_move, undo_move};
