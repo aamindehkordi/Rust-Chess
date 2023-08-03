@@ -22,20 +22,21 @@ impl Game {
     }
 
     pub fn play(&mut self) {
-        let mut player = Player::new(Color::White);
+        let player = Player::new(Color::White);
         loop {
             display_board(&self.board);
             let mv_idx = user_mv_idx();
-            let from: Position = (mv_idx.0, mv_idx.1).into();
-            let to: Position = (mv_idx.2, mv_idx.3).into();
+            let from: Position = (mv_idx.0, mv_idx.1);
+            let to: Position = (mv_idx.2, mv_idx.3);
             let from_square = self.board.get(from);
-            let to_square = self.board.get(to);
+            let _to_square = self.board.get(to);
             if let Some(piece) = from_square {
                 if piece.color == player.color {
-                    let moves = get_moves(&self, &piece);
+                    let moves = get_moves(self, &piece);
                     for mv in moves {
                         if mv.to == to {
                             self.board.make_move(mv);
+                            self.game_state.next_turn();
                         }
                     }
                 }

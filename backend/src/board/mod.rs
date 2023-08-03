@@ -90,7 +90,7 @@ impl Board {
 
     pub fn make_move(&mut self, m: Move) {
         self.move_history.push(m.clone());
-        let mut piece = m.from_piece.clone();
+        let mut piece = m.from_piece;
         piece.has_moved = true;
         let pos = piece.position;
         piece.position = m.to;

@@ -1,6 +1,6 @@
-use crate::board::Board;
-use crate::board::piece::PieceKind;
-use crate::game::Game;
+
+
+
 use crate::game::player::{Color, Player};
 use crate::rules::r#move::Move;
 
@@ -17,6 +17,12 @@ pub struct GameState {
     pub black_in_check: bool, // Black in check flag
 }
 
+impl Default for GameState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GameState {
     pub fn new() -> Self {
         Self {
@@ -28,6 +34,15 @@ impl GameState {
             black_in_check: false,
         }
     }
+
+    pub fn next_turn(&mut self) {
+        if self.turn == 0 {
+            self.turn = 1;
+        } else {
+            self.turn = 0;
+        }
+    }
+
 
     pub fn is_in_check(&self, color: Color) -> bool {
         match color {

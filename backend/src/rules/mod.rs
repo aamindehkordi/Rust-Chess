@@ -18,7 +18,7 @@ pub fn generate_pawn_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
 
         // Normal move forward
         let forward_pos = (x, (y as i8 + direction) as u8); // Get the square in front of the pawn
-        let forward_square = game.board.get(forward_pos); // Get the piece at the square in front of the pawn
+        let _forward_square = game.board.get(forward_pos); // Get the piece at the square in front of the pawn
         if in_bounds(forward_pos) && game.board.get(forward_pos).is_none() { // Check if the square is in bounds and empty
             let mvs = if forward_pos.1 == 0 || forward_pos.1 == 7 {
                 promotion_move(game.clone(), color, pos, forward_pos)
@@ -31,7 +31,7 @@ pub fn generate_pawn_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
 
         // Double move forward
         let double_forward_pos = (x, (y as i8 + 2 * direction) as u8);
-        let double_forward_square = game.board.get(double_forward_pos);
+        let _double_forward_square = game.board.get(double_forward_pos);
         if (y == 1 || y == 6) && in_bounds(double_forward_pos) && game.board.get(forward_pos).is_none() && game.board.get(double_forward_pos).is_none() {
             moves.push(Move::new(piece, double_forward_pos, MoveType::DoublePawnPush, piece.color));
         }
@@ -39,7 +39,7 @@ pub fn generate_pawn_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
         // Captures
         for &dx in [-1, 1].iter() {
             let capture_pos = ((x as i8 + dx) as u8, (y as i8 + direction) as u8);
-            let capture_square = game.board.get(capture_pos);
+            let _capture_square = game.board.get(capture_pos);
             if in_bounds(capture_pos) {
                 match game.board.get(capture_pos) {
                     Some(piece) if piece.color != color => {
@@ -71,7 +71,7 @@ pub fn generate_pawn_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
 
     pub fn generate_king_moves(game: Game, pos: Position, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
-        let mut gs = game.game_state.clone();
+        let gs = &game.game_state;
         let (x, y) = pos;
         let piece = game.board.get(pos).unwrap();
 
@@ -123,7 +123,7 @@ pub fn generate_pawn_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
     pub fn generate_knight_moves(game: Game, from_pos: Position, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let (x, y) = from_pos;
-        let piece = game.board.get(from_pos).unwrap();
+        let _piece = game.board.get(from_pos).unwrap();
 
         // The knight can move in 8 directions: up up left/right, down down left/right, left left up/down, right right up/down
         let directions = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)];
@@ -136,7 +136,7 @@ pub fn generate_pawn_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
     }
 
     // Pushes all promotion piece types moves to the list of moves
-    pub fn promotion_move(game: Game, color: Color,fmv: (u8, u8), pmv: (u8, u8)) -> Vec<Move> {
+    pub fn promotion_move(game: Game, _color: Color,fmv: (u8, u8), pmv: (u8, u8)) -> Vec<Move> {
         let mut moves= vec![];
         let piece = game.board.get(fmv).unwrap();
         let to_pos = pmv;
@@ -148,7 +148,7 @@ pub fn generate_pawn_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
     }
 
     // Pushes all promotion piece types attack moves to the list of moves
-    pub fn promotion_attack_move(game: Game, color: Color,fmv: (u8, u8), pmv: (u8, u8)) -> Vec<Move> {
+    pub fn promotion_attack_move(game: Game, _color: Color,fmv: (u8, u8), pmv: (u8, u8)) -> Vec<Move> {
         let mut moves= vec![];
         let piece = game.board.get(fmv).unwrap();
         let to_pos = pmv;

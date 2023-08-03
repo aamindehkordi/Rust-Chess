@@ -1,6 +1,6 @@
 use std::fmt::Display;
 use crate::game::player::Color;
-use crate::board::{Board, Position};
+use crate::board::{Position};
 use crate::game::Game;
 use crate::rules::{generate_king_moves, generate_knight_moves, generate_pawn_moves, generate_sliding_move};
 use crate::rules::r#move::Move;
@@ -57,16 +57,16 @@ impl Piece {
 }
 
 pub fn get_moves(game: &Game, piece: &Piece) -> Vec<Move> {
-    let mut moves = match piece.kind {
+    
+
+    match piece.kind {
         PieceKind::Pawn => generate_pawn_moves(game.clone(), piece.position, piece.color),
         PieceKind::Rook => generate_sliding_move(game.clone(), piece.position, piece.color),
         PieceKind::Knight => generate_knight_moves(game.clone(), piece.position, piece.color),
         PieceKind::Bishop => generate_sliding_move(game.clone(), piece.position, piece.color),
         PieceKind::Queen => generate_sliding_move(game.clone(), piece.position, piece.color),
         PieceKind::King => generate_king_moves(game.clone(), piece.position, piece.color),
-    };
-
-    moves
+    }
 }
 
 impl Display for Piece {
