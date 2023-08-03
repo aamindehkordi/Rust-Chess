@@ -1,7 +1,6 @@
-use std::time::Duration;
-use crate::board::Board;
 use crate::board::piece::PieceKind;
-
+use crate::board::Board;
+use std::time::Duration;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Color {
@@ -54,10 +53,7 @@ pub struct Brain {
 
 impl Brain {
     pub fn new(board: Board, color: Color) -> Self {
-        Self {
-            board,
-            color,
-        }
+        Self { board, color }
     }
 }
 
@@ -78,7 +74,6 @@ impl Player {
             color,
         }
     }
-
 }
 
 pub fn ask_for_promotion() -> String {
@@ -128,4 +123,3 @@ pub fn ai_mv_idx(_player: &Player) -> (u8, u8, u8, u8) {
     // ... get a move from the AI ...
     (0, 1, 2, 2)
 }
-

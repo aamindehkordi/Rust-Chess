@@ -1,11 +1,10 @@
 pub mod game_state;
 pub mod player;
 
-use crate::board::{Board, display_board, Position};
 use crate::board::piece::get_moves;
+use crate::board::{display_board, Board, Position};
 use crate::game::game_state::GameState;
-use crate::game::player::{Color, Player, user_mv_idx};
-
+use crate::game::player::{user_mv_idx, Color, Player};
 
 #[derive(Clone)]
 pub struct Game {
@@ -41,7 +40,6 @@ impl Game {
                     }
                 }
             }
-
         }
     }
 }
@@ -62,6 +60,3 @@ pub fn is_attacked(game: Game, pos: Position, color: Color) -> bool {
     }
     attacked
 }
-
-
-

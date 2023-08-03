@@ -47,12 +47,7 @@ impl MoveType {
 }
 
 impl Move {
-    pub fn new(
-        from_piece: Piece,
-        to: Position,
-        move_type: MoveType,
-        color: Color,
-    ) -> Self {
+    pub fn new(from_piece: Piece, to: Position, move_type: MoveType, color: Color) -> Self {
         Self {
             from_piece,
             to,
@@ -62,6 +57,9 @@ impl Move {
     }
 
     pub fn is_capture(&self) -> bool {
-        matches!(self.move_type, MoveType::Capture | MoveType::PromotionCapture(_))
+        matches!(
+            self.move_type,
+            MoveType::Capture | MoveType::PromotionCapture(_)
+        )
     }
 }

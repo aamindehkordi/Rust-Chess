@@ -100,8 +100,7 @@ impl Board {
         self.update_bitboards();
     }
 
-    pub fn update_bitboards(&mut self){
-
+    pub fn update_bitboards(&mut self) {
         // Reset bitboards
         self.reset_bitboards();
 
@@ -112,20 +111,15 @@ impl Board {
                 self.piece_bitboards[piece::idx(piece.kind, piece.color)] |= bitboard;
                 self.color_bitboards[piece::color_idx(piece.color)] |= bitboard;
                 self.all_pieces_bitboard |= bitboard;
-
             }
         }
-
-
     }
-
 }
 
 #[inline]
 pub fn idx(pos: Position) -> usize {
     (pos.1 * 8 + pos.0) as usize
 }
-
 
 pub fn squares_from_fen(fen: &str) -> [Square; 64] {
     let mut squares = [None; 64];
@@ -135,62 +129,110 @@ pub fn squares_from_fen(fen: &str) -> [Square; 64] {
             '/' => {
                 pos.0 = 0;
                 pos.1 += 1;
-            },
+            }
             '1'..='8' => {
                 let n = c as u8 - b'0';
                 for _ in 0..n {
                     squares[idx(pos)] = None;
                     pos.0 += 1;
                 }
-            },
+            }
             'p' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::Pawn, pos, player::Color::Black));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::Pawn,
+                    pos,
+                    player::Color::Black,
+                ));
                 pos.0 += 1;
-            },
+            }
             'r' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::Rook, pos, player::Color::Black));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::Rook,
+                    pos,
+                    player::Color::Black,
+                ));
                 pos.0 += 1;
-            },
+            }
             'n' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::Knight, pos, player::Color::Black));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::Knight,
+                    pos,
+                    player::Color::Black,
+                ));
                 pos.0 += 1;
-            },
+            }
             'b' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::Bishop, pos, player::Color::Black));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::Bishop,
+                    pos,
+                    player::Color::Black,
+                ));
                 pos.0 += 1;
-            },
+            }
             'q' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::Queen, pos, player::Color::Black));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::Queen,
+                    pos,
+                    player::Color::Black,
+                ));
                 pos.0 += 1;
-            },
+            }
             'k' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::King, pos, player::Color::Black));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::King,
+                    pos,
+                    player::Color::Black,
+                ));
                 pos.0 += 1;
-            },
+            }
             'P' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::Pawn, pos, player::Color::White));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::Pawn,
+                    pos,
+                    player::Color::White,
+                ));
                 pos.0 += 1;
-            },
+            }
             'R' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::Rook, pos, player::Color::White));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::Rook,
+                    pos,
+                    player::Color::White,
+                ));
                 pos.0 += 1;
-            },
+            }
             'N' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::Knight, pos, player::Color::White));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::Knight,
+                    pos,
+                    player::Color::White,
+                ));
                 pos.0 += 1;
-            },
+            }
             'B' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::Bishop, pos, player::Color::White));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::Bishop,
+                    pos,
+                    player::Color::White,
+                ));
                 pos.0 += 1;
-            },
+            }
             'Q' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::Queen, pos, player::Color::White));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::Queen,
+                    pos,
+                    player::Color::White,
+                ));
                 pos.0 += 1;
-            },
+            }
             'K' => {
-                squares[idx(pos)] = Some(Piece::new(piece::PieceKind::King, pos, player::Color::White));
+                squares[idx(pos)] = Some(Piece::new(
+                    piece::PieceKind::King,
+                    pos,
+                    player::Color::White,
+                ));
                 pos.0 += 1;
-            },
+            }
             _ => (),
         }
     }
@@ -212,10 +254,9 @@ pub fn display_board(board: &Board) {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use crate::board::{Board, display_board, piece};
+    use crate::board::{display_board, piece, Board};
 
     #[test]
     pub fn test_standard_board_creation() {
@@ -225,6 +266,3 @@ mod tests {
         assert_eq!(board.get((0, 0)).unwrap().kind, piece::PieceKind::Rook);
     }
 }
-
-
-
