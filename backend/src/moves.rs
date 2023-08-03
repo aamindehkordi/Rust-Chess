@@ -361,13 +361,10 @@ mod tests {
         let mut moves = move_generator.generate_moves(color);
         moves.retain(|m| m.from == pos);
 
-    fn recursive_mvgen_test(game_state: &mut GameState, depth: usize) -> usize {
-        if depth == 0 {
-            return 1;
-        }
         if moves.len() != expected {
             display_moves(gs, &moves);
         }
+        assert_eq!(moves.len(), expected);
     }
 
     fn place_piece(gs: &mut GameState, pos: (u8, u8), color: Color, kind: PieceKind) {
