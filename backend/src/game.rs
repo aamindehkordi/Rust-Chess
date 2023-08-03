@@ -25,8 +25,28 @@ pub struct GameState {
 }
 
 impl GameState {
-    // Function to create a new game state
     pub fn new() -> Self {
+        let board = Board::new();
+        let players = [
+            Player::new("Player 1".to_string(), Human, Color::White),
+            Player::new("Player 2".to_string(), Human, Color::Black),
+        ];
+        let current_player = 0;
+        let move_history = Vec::new();
+        let all_moves = Vec::new();
+
+        Self {
+            board,
+            players,
+            current_player,
+            move_history,
+            all_moves,
+            check_state: CheckState::new(),
+        }
+    }
+
+    // Function to create a new game state
+    pub fn new_standard() -> Self {
         let board = Board::new_standard();
         let players = [
             Player::new("Player 1".to_string(), Human, Color::White),
@@ -52,10 +72,6 @@ pub fn calculate_all_moves(game_state: &mut GameState) {
     calculate_black_moves(game_state);
     calculate_white_moves(game_state);
 }
-
-pub fn change_current_player(game_state: &mut GameState) {
-    game_state.current_player = 1 - game_state.current_player;
-}
 pub fn calculate_white_moves(game_state: &mut GameState) {
     let mut move_generator = MoveGenerator::new(game_state);
     let moves = move_generator.generate_moves(Color::White);
@@ -68,21 +84,19 @@ pub fn calculate_black_moves(game_state: &mut GameState) {
     game_state.all_moves.extend(moves);
 }
 
-pub fn apply_move(game_state: &GameState, mv: &Move) -> GameState {
+pub fn apply_move(game_state: GameState, mv: &Move) -> GameState {
     let mut new_game_state = game_state.clone();
     new_game_state.board = make_move(new_game_state.board, mv);
     new_game_state.move_history.push(MoveHistory::new(*mv));
     change_current_player(&mut new_game_state);
-    calculate_all_moves(&mut new_game_state);
     new_game_state
 }
 
-pub fn undo_move(game_state: &GameState) -> GameState {
+pub fn undo_move(game_state: GameState) -> GameState {
     let mut new_game_state = game_state.clone();
     let last_move = new_game_state.move_history.pop().unwrap();
     new_game_state.board = unmake_move(new_game_state.board, &last_move.mv);
     change_current_player(&mut new_game_state);
-    calculate_all_moves(&mut new_game_state);
     new_game_state
 }
 
@@ -121,7 +135,7 @@ pub fn is_in_check(game_state: &GameState, color: Color) -> bool {
     false
 }
 
-pub fn will_block_check(game_state: &GameState, mv: Move) -> bool {
+pub fn mv_will_block_check(game_state: &GameState, mv: Move) -> bool {
     let mut gs_copy = game_state.clone();
     gs_copy = apply_move(&gs_copy, &mv);
     if is_in_check(&gs_copy, mv.color) {
@@ -163,10 +177,10 @@ pub fn validate_move(game_state: &GameState, pos: (u8,u8,u8,u8)) -> Result<Move,
     let piece = game_state.board.get(pos.0, pos.1).unwrap();
     for mv in moves {
         if mv.from == (pos.0, pos.1) && mv.to == (pos.2, pos.3) {
-            if !will_block_check(game_state, mv) {
+            if !mv_will_block_check(game_state, mv) {
                 return Err(MoveError::MoveDoesNotBlockCheck);
             }
-            if !in_bounds(&(mv.to.0, mv.to.1)) {
+            if !in_bounds(mv.to.0, mv.to.1) {
                 return Err(MoveError::MoveIsNotValid);
             }
             if mv.move_type.is_promotion() || mv.move_type.is_promo_capture() {
