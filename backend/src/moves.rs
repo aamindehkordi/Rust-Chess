@@ -116,10 +116,10 @@ impl<'a> MoveGenerator<'a,> {
             match piece.kind {
                 PieceKind::King => self.moves.extend(self.generate_king_moves(x, y, color)),
                 PieceKind::Pawn => self.moves.extend(self.generate_pawn_moves(x, y, color)),
-                PieceKind::Rook => self.moves.extend(self.generate_rook_moves(x, y, color)),
+                PieceKind::Rook => self.moves.extend(self.generate_sliding_move(x, y, color)),
                 PieceKind::Knight => self.moves.extend(self.generate_knight_moves(x, y, color)),
-                PieceKind::Bishop => self.moves.extend(self.generate_bishop_moves(x, y, color)),
-                PieceKind::Queen => self.moves.extend(self.generate_queen_moves(x, y, color)),
+                PieceKind::Bishop => self.moves.extend(self.generate_sliding_move(x, y, color)),
+                PieceKind::Queen => self.moves.extend(self.generate_sliding_move(x, y, color)),
             }
         }
         self.moves.clone()
@@ -203,17 +203,7 @@ impl<'a> MoveGenerator<'a,> {
 
         for &(dx, dy) in directions.iter() {
             let to_pos = ((x as i8 + dx) as u8, (y as i8 + dy) as u8);
-            if in_bounds(&to_pos) {
-                match self.board.get(to_pos.0, to_pos.1) {
-                    Some(piece) if piece.color != color => {
-                        moves.push(Move::new(from_pos, to_pos, MoveType::Capture, piece, color));
-                    },
-                    None => {
-                        moves.push(Move::new(from_pos, to_pos, MoveType::Normal, piece, color));
-                    },
-                    _ => (),
-                }
-            }
+            self.normal_capture(color, from_pos, to_pos, &mut moves);
         }
 
 
@@ -262,51 +252,8 @@ impl<'a> MoveGenerator<'a,> {
 
         for direction in &directions {
             let to_pos = ((x as i8 + direction.0) as u8, (y as i8 + direction.1) as u8);
-            if in_bounds(&to_pos) {
-                match self.board.get(to_pos.0, to_pos.1) {
-                    Some(piece) if piece.color != color => {
-                        moves.push(Move::new(from_pos, to_pos, MoveType::Capture, piece, color));
-                    },
-                    None => {
-                        moves.push(Move::new(from_pos, to_pos, MoveType::Normal, piece, color));
-                    },
-                    _ => (),
-                }
-            }
+            self.normal_capture(color, from_pos, to_pos, &mut moves);
         }
-        moves
-    }
-
-    // Function to generate all legal moves for a rook at a given position
-    fn generate_rook_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
-        let mut moves = Vec::new();
-        let pos = (x, y);
-        let piece = self.board.get(pos.0, pos.1).unwrap();
-
-        self.generate_sliding_move(color, &mut moves, pos, piece);
-
-        moves
-    }
-
-    // Function to generate all legal moves for a bishop at a given position
-    fn generate_bishop_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
-        let mut moves = Vec::new();
-        let pos = (x, y);
-        let piece = self.board.get(pos.0, pos.1).unwrap();
-
-        self.generate_sliding_move(color, &mut moves, pos, piece);
-
-        moves
-    }
-
-    // Function to generate all legal moves for a queen at a given position
-    fn generate_queen_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
-        let mut moves = Vec::new();
-        let pos = (x, y);
-        let piece = self.board.get(pos.0, pos.1).unwrap();
-
-        self.generate_sliding_move(color, &mut moves, pos, piece);
-
         moves
     }
 
@@ -332,8 +279,29 @@ impl<'a> MoveGenerator<'a,> {
         moves
     }
 
+    pub fn normal_capture(&self, color: Color, from_pos: (u8, u8), to_pos: (u8, u8), moves: &mut Vec<Move>) -> bool{
+        let piece = self.board.get(from_pos.0, from_pos.1).unwrap();
+        if in_bounds(to_pos.0, to_pos.1) {
+            match self.board.get(to_pos.0, to_pos.1) {
+                Some(to_piece) if to_piece.color != color => {
+                    moves.push(Move::new(from_pos, to_pos, MoveType::Capture, to_piece, color));
+                    return true;
+                },
+                None => {
+                    moves.push(Move::new(from_pos, to_pos, MoveType::Normal, piece, color));
+                    return false;
+                }
+                _ => (),
+            }
+        }
+        true
+    }
+
     // Function to generate all legal moves for a sliding piece at a given position
-    fn generate_sliding_move(&self, color: Color, moves: &mut Vec<Move>, from_pos: (u8, u8), piece: Piece) {
+    pub fn generate_sliding_move(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let from_pos = (x, y);
+        let piece = self.board.get(from_pos.0, from_pos.1).unwrap();
         let directions: Vec<(i8,i8)>;
         // horizontal and vertical directions
         let hdirections = [(-1, 0), (0, -1), (0, 1), (1, 0)];
@@ -354,7 +322,7 @@ impl<'a> MoveGenerator<'a,> {
                 let new_y = (from_pos.1 as i8 + distance * direction.1) as u8;
                 let to_pos = (new_x, new_y);
 
-                if !in_bounds(&to_pos) {
+                if !in_bounds(new_x, new_y) {
                     break;
                 }
 
@@ -369,10 +337,11 @@ impl<'a> MoveGenerator<'a,> {
                         moves.push(Move::new(from_pos, to_pos, MoveType::Normal, piece, color));
                     }
                 }
-
+                else if self.normal_capture(color, from_pos, to_pos, &mut moves) { break; }
                 distance += 1;
             }
         }
+        moves
     }
 }
 
