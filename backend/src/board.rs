@@ -92,6 +92,18 @@ impl Board {
         self.0[Self::idx(x, y)] = piece;
     }
 
+    pub fn iter_all_pieces(&self) -> impl Iterator<Item=(u8, u8, Piece)> + '_ {
+        self.0.iter().enumerate().filter_map(move |(i, piece)| {
+            if let Some(piece) = piece {
+                let x = (i % 8) as u8;
+                let y = (i / 8) as u8;
+                Some((x, y, *piece))
+            } else {
+                None
+            }
+        })
+    }
+
     pub fn iter_pieces(&self, color: Color) -> impl Iterator<Item=(u8, u8, Piece)> + '_ {
         self.0.iter().enumerate().filter_map(move |(i, piece)| {
             if let Some(piece) = piece {
@@ -237,7 +249,10 @@ pub fn find_piece_pos(board: &Board, color: Color, kind: PieceKind) -> Option<(u
 }
 
 pub fn king_pos(board: &Board, color: Color) -> (u8, u8) {
-    find_piece_pos(board, color, PieceKind::King).unwrap_or_else(|| panic!("King not found"))
+    if find_piece_pos(board, color, PieceKind::King).is_none() {
+        return (255_u8, 255_u8);
+    }
+    find_piece_pos(board, color, PieceKind::King).unwrap()
 }
 
 impl fmt::Display for Board {
@@ -268,8 +283,8 @@ pub fn decrement_piece_move_count(board: &mut Board, from: (u8, u8)) {
     }
 }
 
-pub fn in_bounds(pos: &(u8, u8)) -> bool {
-    pos.0 < 8 && pos.1 < 8
+pub fn in_bounds(x: u8, y: u8) -> bool {
+    x < 8 && y < 8
 }
 
 pub fn make_move(b: Board, mv: &Move) -> Board {
