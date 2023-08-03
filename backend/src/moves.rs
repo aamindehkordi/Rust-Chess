@@ -30,6 +30,31 @@ pub enum MoveType {
     PromotionCapture(PieceKind),
 }
 
+// Struct to represent a move
+#[derive(Copy, Clone)]
+pub struct Move {
+    pub from: (u8, u8),
+    pub to: (u8, u8),
+    pub move_type: MoveType,
+    pub piece: Piece,
+    pub color: Color,
+}
+
+// Struct to represent a move history
+#[derive(Clone)]
+pub struct MoveHistory {
+    pub mv: Move,
+    pub captured_piece: Option<Piece>,
+    pub notation: String,
+}
+
+pub struct MoveGenerator<'a> {
+    game_state: &'a GameState,
+    board: &'a Board,
+    player: &'a Player,
+    moves: Vec<Move>,
+}
+
 impl MoveType {
     pub fn is_normal(&self) -> bool {
         matches!(self, MoveType::Normal)
@@ -44,16 +69,6 @@ impl MoveType {
     pub fn is_promo_capture(&self) -> bool {
         matches!(self, MoveType::PromotionCapture(_))
     }
-}
-
-// Struct to represent a move
-#[derive(Copy, Clone)]
-pub struct Move {
-    pub from: (u8, u8),
-    pub to: (u8, u8),
-    pub move_type: MoveType,
-    pub piece: Piece,
-    pub color: Color,
 }
 
 impl Move {
@@ -73,14 +88,6 @@ impl Move {
     }
 }
 
-// Struct to represent a move history
-#[derive(Clone)]
-pub struct MoveHistory {
-    pub mv: Move,
-    pub captured_piece: Option<Piece>,
-    pub notation: String,
-}
-
 impl MoveHistory {
     // Function to create a new move history
     pub fn new(mv: Move) -> Self {
@@ -91,13 +98,6 @@ impl MoveHistory {
             notation,
         }
     }
-}
-
-pub struct MoveGenerator<'a> {
-    game_state: &'a GameState,
-    board: &'a Board,
-    player: &'a Player,
-    moves: Vec<Move>,
 }
 impl<'a> MoveGenerator<'a,> {
     pub fn new(game_state: &'a GameState) -> Self {
@@ -116,10 +116,8 @@ impl<'a> MoveGenerator<'a,> {
             match piece.kind {
                 PieceKind::King => self.moves.extend(self.generate_king_moves(x, y, color)),
                 PieceKind::Pawn => self.moves.extend(self.generate_pawn_moves(x, y, color)),
-                PieceKind::Rook => self.moves.extend(self.generate_sliding_move(x, y, color)),
                 PieceKind::Knight => self.moves.extend(self.generate_knight_moves(x, y, color)),
-                PieceKind::Bishop => self.moves.extend(self.generate_sliding_move(x, y, color)),
-                PieceKind::Queen => self.moves.extend(self.generate_sliding_move(x, y, color)),
+                _ => self.moves.extend(self.generate_sliding_move(x, y, color)),
             }
         }
         self.moves.clone()
