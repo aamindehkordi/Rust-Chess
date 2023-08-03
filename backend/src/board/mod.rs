@@ -37,7 +37,7 @@ pub struct Board {
 
 impl Board {
     pub fn new_standard() -> Self {
-        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+        let fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr";
         let mut board = Self {
             squares: [None; 64],
 
