@@ -39,12 +39,14 @@ fn main_loop(gs: Option<GameState>) {
             PlayerKind::Computer(_) => ai_mv_idx(current_player),
         };
         calculate_all_moves(&mut game_state);
+        calculate_check_state(&mut game_state);
         // Validate the move
         match validate_move(&game_state, mv_pos) {
             Ok(mv) => {
-                game_state.game_status = GameStatus::InProgress;
                 // If the move is valid, apply it to the game state
-                game_state = apply_move(&game_state, &mv);
+                game_state = apply_move(game_state, &mv);
+                game_state.check_state = calculate_check_state(&game_state);
+                calculate_all_moves(&mut game_state);
                 // Check if the game is over
                 if is_game_over(&game_state) {
                     // If the game is over, display the game state and break out of the loop

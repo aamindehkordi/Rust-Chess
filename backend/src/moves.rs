@@ -1,7 +1,7 @@
 use std::cmp::{max, min};
 // Import necessary modules and dependencies
-use crate::board::{Board, Color, in_bounds, make_move, Piece, PieceKind};
-use crate::game::{GameState, get_current_player, is_attacked, is_in_check};
+use crate::board::{Board, Color, in_bounds, king_pos, make_move, Piece, PieceKind};
+use crate::game::{GameState, get_current_player, is_attacked, is_in_check, mv_will_block_check, validate_move};
 use crate::player::Player;
 
 #[derive(Debug)]
@@ -326,16 +326,11 @@ impl<'a> MoveGenerator<'a,> {
                     break;
                 }
 
-                match self.board.get(to_pos.0, to_pos.1) {
-                    Some(to_piece) => {
-                        if to_piece.color != color {
-                            moves.push(Move::new(from_pos, to_pos, MoveType::Capture, to_piece, color));
-                        }
-                        break;
-                    },
-                    None => {
-                        moves.push(Move::new(from_pos, to_pos, MoveType::Normal, piece, color));
-                    }
+                let check_state = self.game_state.check_state.clone();
+                if check_state.in_check() {
+                    if check_state.king_rays.contains_key(&to_pos) {
+                        if self.normal_capture(color, from_pos, to_pos, &mut moves) { break; }
+                    } else { break; }
                 }
                 else if self.normal_capture(color, from_pos, to_pos, &mut moves) { break; }
                 distance += 1;
@@ -347,7 +342,7 @@ impl<'a> MoveGenerator<'a,> {
 
 #[cfg(test)]
 mod tests {
-    use crate::game::{apply_move, undo_move};
+    use crate::game::{apply_move, calculate_all_moves, calculate_check_state, display_game_state, undo_move};
     use super::*;
     fn queen_gs(pos: (u8, u8), color: Color) -> GameState {
         let mut game_state = GameState::new();

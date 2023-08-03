@@ -1,9 +1,99 @@
+use std::collections::HashMap;
 // Import necessary modules and dependencies
-use crate::board::{Board, Color, in_bounds, king_pos, make_move, PieceKind, unmake_move};
+use crate::board::{Board, Color, from_fen, in_bounds, king_pos, make_move, Piece, PieceKind, unmake_move};
 use crate::player::Player;
-use crate::moves::{Move, MoveError, MoveGenerator, MoveHistory};
-use crate::moves::MoveType::{Promotion, PromotionCapture};
+use crate::moves::{Move, MoveError, MoveGenerator, MoveHistory, MoveType};
+use crate::moves::MoveType::{Normal, Promotion, PromotionCapture};
 use crate::player::PlayerKind::Human;
+
+#[derive(Clone)]
+pub struct CheckState {
+    pub white_in_check: bool,
+    pub black_in_check: bool,
+    pub attacked_by_white: HashMap<(u8, u8), Vec<(u8, u8)>>,
+    pub attacked_by_black: HashMap<(u8, u8), Vec<(u8, u8)>>,
+    pub king_rays: HashMap<(u8, u8), Vec<(u8, u8)>>,
+}
+
+impl CheckState {
+    fn new() -> Self {
+        Self {
+            white_in_check: false,
+            black_in_check: false,
+            attacked_by_white: HashMap::new(),
+            attacked_by_black: HashMap::new(),
+            king_rays: HashMap::new(),
+
+
+        }
+    }
+    pub fn in_check(&self) -> bool {
+        self.white_in_check || self.black_in_check
+    }
+}
+pub fn calculate_king_rays(game_state: &GameState, color: Color) -> HashMap<(u8, u8), Vec<(u8, u8)>> {
+    let mut king_rays = HashMap::new();
+    let king_pos = king_pos(&game_state.board, color);
+    // get all theoretical lines that the king can get attacked from without move generator
+    let file: Vec<(u8, u8)> = (0..8).map(|x| (x, king_pos.1)).collect();
+    let rank: Vec<(u8, u8)> = (0..8).map(|y| (king_pos.0, y)).collect();
+    let diag1: Vec<(u8, u8)> = (0..8).map(|i| (king_pos.0 + i, king_pos.1 + i)).take_while(|(x, y)| in_bounds(*x, *y)).collect();
+    let diag2: Vec<(u8, u8)> = (0..8).map(|i| (king_pos.0 + i, king_pos.1 - i)).take_while(|(x, y)| in_bounds(*x, *y)).collect();
+    let diag3: Vec<(u8, u8)> = (0..8).map(|i| (king_pos.0 - i, king_pos.1 + i)).take_while(|(x, y)| in_bounds(*x, *y)).collect();
+    let diag4: Vec<(u8, u8)> = (0..8).map(|i| (king_pos.0 - i, king_pos.1 - i)).take_while(|(x, y)| in_bounds(*x, *y)).collect();
+
+    king_rays.insert(king_pos, file);
+    king_rays.insert(king_pos, rank);
+    king_rays.insert(king_pos, diag1);
+    king_rays.insert(king_pos, diag2);
+    king_rays.insert(king_pos, diag3);
+    king_rays.insert(king_pos, diag4);
+
+    king_rays
+}
+pub fn calculate_check_state(game_state: &GameState) -> CheckState {
+    let mut check_state = CheckState::new();
+    let color = get_current_player(&game_state).color;
+    check_state.king_rays = calculate_king_rays(game_state, color);
+    // Loop through all pieces on the board
+    for (x, y, piece) in game_state.board.iter_pieces(color) {
+        let mut gen = MoveGenerator::new(game_state);
+        let mut moves = match piece.kind {
+            PieceKind::Pawn => gen.generate_pawn_moves(x, y, piece.color),
+            PieceKind::Knight => gen.generate_knight_moves(x, y, piece.color),
+            PieceKind::Bishop => gen.generate_sliding_move(x, y, piece.color),
+            PieceKind::Rook => gen.generate_sliding_move(x, y, piece.color),
+            PieceKind::Queen => gen.generate_sliding_move(x, y, piece.color),
+            PieceKind::King => gen.generate_king_moves(x, y, piece.color),
+        };
+
+        // Loop through all moves for the piece
+        for mv in moves {
+            if mv.piece.kind == PieceKind::Pawn && (mv.move_type.is_promotion() || mv.move_type.is_normal()) {
+                continue;
+            }
+            if mv.color == Color::White {
+                check_state.attacked_by_white.entry(mv.to).or_insert(Vec::new()).push((x, y));
+            }
+            if mv.color == Color::Black {
+                check_state.attacked_by_black.entry(mv.to).or_insert(Vec::new()).push((x, y));
+            }
+            // If the move is a capture, check if it is a check
+            if mv.is_capture() {
+                let (x2, y2) = mv.to;
+                let piece2 = game_state.board.get(x2, y2).unwrap();
+                if piece2.kind == PieceKind::King {
+                    match piece2.color {
+                        Color::White => check_state.white_in_check = true,
+                        Color::Black => check_state.black_in_check = true,
+                    }
+                }
+            }
+        }
+    }
+
+    check_state
+}
 
 #[derive(Clone)]
 pub struct GameState {
@@ -12,8 +102,9 @@ pub struct GameState {
     pub current_player: usize,  // index into players array
     pub move_history: Vec<MoveHistory>,
     pub all_moves: Vec<Move>,
-    pub game_status: GameStatus,
+    pub check_state: CheckState,
 }
+
 
 impl GameState {
     pub fn new() -> Self {
@@ -53,9 +144,44 @@ impl GameState {
             current_player,
             move_history,
             all_moves,
-            game_status: GameStatus::InProgress,
+            check_state: CheckState::new(),
         }
     }
+
+    pub fn new_from_fen(fen: &str) -> Self {
+        let board = from_fen(fen);
+        let players = [
+            Player::new("Player 1".to_string(), Human, Color::White),
+            Player::new("Player 2".to_string(), Human, Color::Black),
+        ];
+        let current_player = 0;
+        let move_history = Vec::new();
+        let all_moves = Vec::new();
+
+        Self {
+            board,
+            players,
+            current_player,
+            move_history,
+            all_moves,
+            check_state: CheckState::new(),
+        }
+    }
+
+    pub fn temp(board: Board, players: [Player; 2], current_player: usize, move_history: Vec<MoveHistory>, all_moves: Vec<Move>, check_state: CheckState) -> Self {
+        Self {
+            board,
+            players,
+            current_player,
+            move_history,
+            all_moves,
+            check_state,
+        }
+    }
+}
+
+pub fn change_current_player(game_state: &mut GameState) {
+    game_state.current_player = 1 - game_state.current_player;
 }
 
 pub fn calculate_all_moves(game_state: &mut GameState) {
@@ -128,8 +254,9 @@ pub fn is_in_check(game_state: &GameState, color: Color) -> bool {
 
 pub fn mv_will_block_check(game_state: &GameState, mv: Move) -> bool {
     let mut gs_copy = game_state.clone();
-    gs_copy = apply_move(&gs_copy, &mv);
-    if is_in_check(&gs_copy, mv.color) {
+    gs_copy = apply_move(gs_copy, &mv);
+    gs_copy.check_state = calculate_check_state(&mut gs_copy);
+    if gs_copy.check_state.in_check() {
         return false;
     }
     true
@@ -163,7 +290,6 @@ pub fn is_draw(game_state: &GameState) -> bool {
 }
 
 pub fn validate_move(game_state: &GameState, pos: (u8,u8,u8,u8)) -> Result<Move, MoveError> {
-    let _game_status = &game_state.game_status;
     let moves = game_state.all_moves.clone();
     let piece = game_state.board.get(pos.0, pos.1).unwrap();
     for mv in moves {
