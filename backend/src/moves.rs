@@ -68,6 +68,9 @@ impl Move {
         }
     }
 
+    pub fn is_capture(&self) -> bool {
+        matches!(self.move_type, MoveType::Capture | MoveType::PromotionCapture(_))
+    }
 }
 
 // Struct to represent a move history
@@ -96,7 +99,6 @@ pub struct MoveGenerator<'a> {
     player: &'a Player,
     moves: Vec<Move>,
 }
-
 impl<'a> MoveGenerator<'a,> {
     pub fn new(game_state: &'a GameState) -> Self {
         Self {
@@ -131,7 +133,7 @@ impl<'a> MoveGenerator<'a,> {
         self.moves.clone()
     }
 
-    fn generate_pawn_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
+    pub fn generate_pawn_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new(); // Vector to store moves
         let piece = self.board.get(x, y).unwrap(); // Get the piece at the given position
         let direction = match color { // Get the direction of the pawn
@@ -141,7 +143,7 @@ impl<'a> MoveGenerator<'a,> {
 
         // Normal move forward
         let forward_square = (x, (y as i8 + direction) as u8); // Get the square in front of the pawn
-        if in_bounds(&forward_square) && self.board.get(forward_square.0, forward_square.1).is_none() { // Check if the square is in bounds and empty
+        if in_bounds(forward_square.0, forward_square.1) && self.board.get(forward_square.0, forward_square.1).is_none() { // Check if the square is in bounds and empty
             let mvs = if forward_square.1 == 0 || forward_square.1 == 7 {
                 self.promotion_move(color, (x, y), forward_square)
             } else {
@@ -154,14 +156,14 @@ impl<'a> MoveGenerator<'a,> {
         // Double move forward
         let single_forward_square = (x, (y as i8 + direction) as u8);
         let double_forward_square = (x, (y as i8 + 2 * direction) as u8);
-        if (y == 1 || y == 6) && in_bounds(&double_forward_square) && self.board.get(single_forward_square.0, single_forward_square.1).is_none() && self.board.get(double_forward_square.0, double_forward_square.1).is_none() {
+        if (y == 1 || y == 6) && in_bounds(double_forward_square.0, double_forward_square.1) && self.board.get(single_forward_square.0, single_forward_square.1).is_none() && self.board.get(double_forward_square.0, double_forward_square.1).is_none() {
             moves.push(Move::new((x, y), double_forward_square, MoveType::DoublePawnPush, piece, color));
         }
 
         // Captures
         for &dx in [-1, 1].iter() {
             let capture_square = ((x as i8 + dx) as u8, (y as i8 + direction) as u8);
-            if in_bounds(&capture_square) {
+            if in_bounds(capture_square.0, capture_square.1) {
                 match self.board.get(capture_square.0, capture_square.1) {
                     Some(piece) if piece.color != color => {
                         let mvs = if capture_square.1 == 0 || capture_square.1 == 7 {
@@ -190,7 +192,7 @@ impl<'a> MoveGenerator<'a,> {
         moves
     }
 
-    fn generate_king_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
+    pub fn generate_king_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let pos = (x, y);
         let piece = self.board.get(x, y).unwrap();
@@ -250,7 +252,7 @@ impl<'a> MoveGenerator<'a,> {
     }
 
     // Function to generate all legal moves for a knight at a given position
-    fn generate_knight_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
+    pub fn generate_knight_moves(&self, x: u8, y: u8, color: Color) -> Vec<Move> {
         let mut moves = Vec::new();
         let from_pos = (x, y);
         let piece = self.board.get(x, y).unwrap();

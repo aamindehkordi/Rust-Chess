@@ -11,7 +11,7 @@ use moves::*;
 
 fn main() {
     // Create a new game state
-    let game_state = GameState::new();
+    let game_state = GameState::new_standard();
 
     // Main game loop
     main_loop(Some(game_state));
@@ -23,7 +23,7 @@ fn main_loop(gs: Option<GameState>) {
     if let Some(gs) = gs {
         game_state = gs;
     } else {
-        game_state = GameState::new();
+        game_state = GameState::new_standard();
     }
     loop {
         calculate_black_moves(&mut game_state);
@@ -49,23 +49,6 @@ fn main_loop(gs: Option<GameState>) {
                 if is_game_over(&game_state) {
                     // If the game is over, display the game state and break out of the loop
                     display_game_state(&game_state);
-                    break;
-                }
-                // Check for check
-                if is_current_player_in_check(&game_state) {
-                    game_state.game_status = GameStatus::Check(get_current_player(&game_state).color);
-                    println!("Check!");
-                }
-                // Check for Draw
-                if is_draw(&game_state) {
-                    game_state.game_status = GameStatus::Draw;
-                    println!("Draw!");
-                    break;
-                }
-                // Check for checkmate
-                if is_in_checkmate(&game_state, get_current_player(&game_state).color) {
-                    game_state.game_status = GameStatus::Checkmate(get_current_player(&game_state).color);
-                    println!("Checkmate!");
                     break;
                 }
             },

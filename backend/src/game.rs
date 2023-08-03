@@ -6,15 +6,6 @@ use crate::moves::MoveType::{Promotion, PromotionCapture};
 use crate::player::PlayerKind::Human;
 
 #[derive(Clone)]
-pub enum GameStatus {
-    InProgress,
-    Check(Color),
-    Checkmate(Color),
-    Draw,
-}
-
-
-#[derive(Clone)]
 pub struct GameState {
     pub board: Board,
     pub players: [Player; 2],
