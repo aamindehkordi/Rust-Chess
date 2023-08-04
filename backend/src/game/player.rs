@@ -14,6 +14,21 @@ impl Color {
             Color::Black => Color::White,
         }
     }
+
+    pub fn to_idx(self) -> u8 {
+        match self {
+            Color::White => 0,
+            Color::Black => 1,
+        }
+    }
+}
+
+pub fn from_idx(idx: u8) -> Color {
+    match idx {
+        0 => Color::White,
+        1 => Color::Black,
+        _ => panic!("Invalid color index"),
+    }
 }
 
 #[derive(Clone)]
