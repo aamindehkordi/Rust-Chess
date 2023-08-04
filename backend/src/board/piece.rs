@@ -62,17 +62,6 @@ impl Piece {
     }
 }
 
-pub fn get_moves(game: &Game, piece: &Piece) -> Vec<Move> {
-    match piece.kind {
-        PieceKind::Pawn => generate_pawn_moves(game.clone(), piece.position, piece.color),
-        PieceKind::Rook => generate_sliding_move(game.clone(), piece.position, piece.color),
-        PieceKind::Knight => generate_knight_moves(game.clone(), piece.position, piece.color),
-        PieceKind::Bishop => generate_sliding_move(game.clone(), piece.position, piece.color),
-        PieceKind::Queen => generate_sliding_move(game.clone(), piece.position, piece.color),
-        PieceKind::King => generate_king_moves(game.clone(), piece.position, piece.color),
-    }
-}
-
 pub fn to_char(piece: Piece) -> char {
     let mut char: String = String::new();
     char = match piece.kind {

@@ -49,7 +49,6 @@ pub fn generate_pawn_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
     // Captures
     for &dx in [-1, 1].iter() {
         let capture_pos = ((x as i8 + dx) as u8, (y as i8 + direction) as u8);
-        let _capture_square = game.board.get(capture_pos);
         if in_bounds(capture_pos) {
             match game.board.get(capture_pos) {
                 Some(piece) if piece.color != color => {
@@ -329,3 +328,6 @@ pub fn generate_sliding_move(game: Game, from_pos: Position, color: Color) -> Ve
 pub fn in_bounds(pos: Position) -> bool {
     pos.0 < 8 && pos.1 < 8
 }
+
+
+

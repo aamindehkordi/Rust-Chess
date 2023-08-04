@@ -1,10 +1,12 @@
 pub mod game_state;
 pub mod player;
 
-use crate::board::piece::get_moves;
+use crate::board::piece::{Piece, PieceKind};
 use crate::board::{display_board, Board, Position};
 use crate::game::game_state::GameState;
 use crate::game::player::{user_mv_idx, Color, Player};
+use crate::rules::{generate_king_moves, generate_knight_moves, generate_pawn_moves, generate_sliding_move};
+use crate::rules::r#move::Move;
 
 #[derive(Clone)]
 pub struct Game {
@@ -14,39 +16,50 @@ pub struct Game {
 
 impl Default for Game {
     fn default() -> Self {
-        Self::new()
+        Self::new_standard()
     }
 }
 
 impl Game {
     pub fn new() -> Self {
         Self {
+            board: Board::new(),
+            game_state: GameState::new(),
+        }
+    }
+
+    pub fn new_standard() -> Self {
+        Self {
             board: Board::new_standard(),
             game_state: GameState::new(),
         }
     }
 
-    pub fn play(&mut self) {
-        let player = Player::new(Color::White);
-        loop {
-            display_board(&self.board);
-            let mv_idx = user_mv_idx();
-            let from: Position = (mv_idx.0, mv_idx.1);
-            let to: Position = (mv_idx.2, mv_idx.3);
-            let from_square = self.board.get(from);
-            if let Some(piece) = from_square {
-                if piece.color == player.color {
-                    let moves = get_moves(self, &piece);
-                    for mv in moves {
-                        if mv.to == to {
-                            self.board.make_move(mv);
-                            self.game_state.next_turn();
-                        }
-                    }
-                }
+}
+pub fn play(mut game: Game) {
+    loop {
+        display_board(&game.board);
+        let mv_idx = user_mv_idx();
+        let from: Position = (mv_idx.0, mv_idx.1);
+        let to: Position = (mv_idx.2, mv_idx.3);
+        game = apply_move(game, from, to);
+    }
+}
+
+pub fn apply_move(game: Game, from: Position, to: Position) -> Game {
+    let mut game = game.clone();
+    let from_square = game.board.get(from);
+    if let Some(piece) = from_square {
+        let moves = get_moves(&game, &piece);
+        for mv in moves {
+            if mv.to == to {
+                game.board.make_move(mv);
+                game.game_state.next_turn();
             }
         }
     }
+    game.game_state.next_turn();
+    game.clone()
 }
 
 pub fn is_attacked_not_bb(game: Game, pos: Position, color: Color) -> bool {
@@ -63,4 +76,35 @@ pub fn is_attacked_not_bb(game: Game, pos: Position, color: Color) -> bool {
         }
     }
     attacked
+}
+
+pub fn get_current_moves(game: &Game) -> Vec<Move> {
+    let mut moves: Vec<Move> = Vec::new();
+    let color = crate::player::from_idx(game.game_state.turn);
+
+    for piece in game.board.squares.iter().flatten() {
+        if piece.color == color {
+            moves.append(&mut get_moves(game, piece));
+        }
+    }
+    moves
+}
+
+pub fn get_all_moves(game: &Game) -> Vec<Move> {
+    let mut moves: Vec<Move> = Vec::new();
+    for piece in game.board.squares.iter().flatten() {
+        moves.append(&mut get_moves(game, piece));
+    }
+    moves
+}
+
+pub fn get_moves(game: &Game, piece: &Piece) -> Vec<Move> {
+    match piece.kind {
+        PieceKind::Pawn => generate_pawn_moves(game.clone(), piece.position, piece.color),
+        PieceKind::Rook => generate_sliding_move(game.clone(), piece.position, piece.color),
+        PieceKind::Knight => generate_knight_moves(game.clone(), piece.position, piece.color),
+        PieceKind::Bishop => generate_sliding_move(game.clone(), piece.position, piece.color),
+        PieceKind::Queen => generate_sliding_move(game.clone(), piece.position, piece.color),
+        PieceKind::King => generate_king_moves(game.clone(), piece.position, piece.color),
+    }
 }
