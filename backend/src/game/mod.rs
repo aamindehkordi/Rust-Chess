@@ -12,6 +12,12 @@ pub struct Game {
     pub game_state: GameState,
 }
 
+impl Default for Game {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Game {
     pub fn new() -> Self {
         Self {
@@ -28,7 +34,6 @@ impl Game {
             let from: Position = (mv_idx.0, mv_idx.1);
             let to: Position = (mv_idx.2, mv_idx.3);
             let from_square = self.board.get(from);
-            let _to_square = self.board.get(to);
             if let Some(piece) = from_square {
                 if piece.color == player.color {
                     let moves = get_moves(self, &piece);
@@ -46,14 +51,13 @@ impl Game {
 
 pub fn is_attacked(game: Game, pos: Position, color: Color) -> bool {
     let mut attacked = false;
-    for square in game.board.squares.iter() {
-        if let Some(piece) = square {
-            if piece.color == color {
-                let moves = get_moves(&game, piece);
-                for mv in moves {
-                    if mv.to == pos {
-                        attacked = true;
-                    }
+    for square in game.board.squares.iter().flatten() {
+        let piece = square;
+        if piece.color == color {
+            let moves = get_moves(&game, piece);
+            for mv in moves {
+                if mv.to == pos {
+                    attacked = true;
                 }
             }
         }
