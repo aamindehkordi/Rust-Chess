@@ -23,6 +23,7 @@ pub struct Piece {
     pub position: Position,
     pub color: Color,
     pub has_moved: bool,
+    pub first_move: bool,
     pub en_passant: Option<bool>,
     pub can_castle: Option<bool>,
 }
@@ -35,6 +36,7 @@ impl Piece {
                 position,
                 color,
                 has_moved: false,
+                first_move: true,
                 en_passant: Some(false),
                 can_castle: None,
             },
@@ -43,6 +45,7 @@ impl Piece {
                 position,
                 color,
                 has_moved: false,
+                first_move: true,
                 en_passant: None,
                 can_castle: Some(false),
             },
@@ -51,6 +54,7 @@ impl Piece {
                 position,
                 color,
                 has_moved: false,
+                first_move: true,
                 en_passant: None,
                 can_castle: None,
             },
@@ -89,12 +93,8 @@ impl Display for Piece {
     }
 }
 
-pub const COLOR_IDX: [i8; 2] = [0, 1]; // [White, Black]
-pub const PIECE_KIND_IDX: [u8; 6] = [0, 1, 2, 3, 4, 5]; // [King, Pawn, Knight, Bishop, Rook, Queen]
-pub const PIECE_IDX: [u8; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; // [White King, White Pawn, White Knight, White Bishop, White Rook, White Queen, Black King, Black Pawn, Black Knight, Black Bishop, Black Rook, Black Queen]
-
 pub fn idx(kind: PieceKind, color: Color) -> usize {
-    let mut idx: usize = 0;
+    let mut idx: usize;
     match kind {
         PieceKind::Pawn => idx = 1,
         PieceKind::Knight => idx = 2,
