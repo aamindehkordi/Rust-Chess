@@ -328,6 +328,3 @@ pub fn generate_sliding_move(game: Game, from_pos: Position, color: Color) -> Ve
 pub fn in_bounds(pos: Position) -> bool {
     pos.0 < 8 && pos.1 < 8
 }
-
-
-

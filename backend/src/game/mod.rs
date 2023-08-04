@@ -4,9 +4,11 @@ pub mod player;
 use crate::board::piece::{Piece, PieceKind};
 use crate::board::{display_board, Board, Position};
 use crate::game::game_state::GameState;
-use crate::game::player::{user_mv_idx, Color, Player};
-use crate::rules::{generate_king_moves, generate_knight_moves, generate_pawn_moves, generate_sliding_move};
+use crate::game::player::{user_mv_idx, Color};
 use crate::rules::r#move::Move;
+use crate::rules::{
+    generate_king_moves, generate_knight_moves, generate_pawn_moves, generate_sliding_move,
+};
 
 #[derive(Clone)]
 pub struct Game {
@@ -34,7 +36,6 @@ impl Game {
             game_state: GameState::new(),
         }
     }
-
 }
 pub fn play(mut game: Game) {
     loop {
@@ -47,7 +48,7 @@ pub fn play(mut game: Game) {
 }
 
 pub fn apply_move(game: Game, from: Position, to: Position) -> Game {
-    let mut game = game.clone();
+    let mut game = game;
     let from_square = game.board.get(from);
     if let Some(piece) = from_square {
         let moves = get_moves(&game, &piece);

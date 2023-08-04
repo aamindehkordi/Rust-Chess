@@ -5,6 +5,6 @@ pub mod rules;
 use crate::game::*;
 
 fn main() {
-    let mut game = Game::new_standard();
+    let game = Game::new_standard();
     play(game);
 }

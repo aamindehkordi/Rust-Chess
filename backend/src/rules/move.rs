@@ -66,16 +66,14 @@ impl Move {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::board::piece::{Piece, PieceKind};
     use crate::board::{display_board, idx, Square};
-    use crate::game::{apply_move, Game, get_all_moves, get_current_moves, get_moves};
     use crate::game::player::Color;
+    use crate::game::{apply_move, get_current_moves, get_moves, Game};
     use crate::rules::in_bounds;
     use crate::rules::r#move::Move;
-
 
     fn display_moves(game: &mut Game, moves: &[Move]) {
         for mv in moves.iter() {
@@ -105,7 +103,7 @@ mod tests {
 
         num_positions
     }
-    fn queen_scenario(game: &mut Game, pos: (u8, u8), expected: usize, color: Color) {
+    fn queen_scenario(game: &mut Game, pos: (u8, u8), expected: usize, _color: Color) {
         let queen = game.board.get(pos).unwrap();
         let mut moves = get_moves(game, &queen);
         moves.retain(|m| m.from == pos);
@@ -115,27 +113,45 @@ mod tests {
         }
         assert_eq!(moves.len(), expected);
     }
-    
+
     fn game_with_piece_at(pos: (u8, u8), color: Color, kind: PieceKind) -> Game {
         let mut game = Game::new();
         game.game_state.turn = color.to_idx();
         game.board.squares = place_piece(game.board.squares, pos, color, kind);
         game
     }
-    
+
     fn game_with_queen_at(pos: (u8, u8), color: Color) -> Game {
         game_with_piece_at(pos, color, PieceKind::Queen)
     }
 
     fn place_piece(sq: [Square; 64], pos: (u8, u8), color: Color, kind: PieceKind) -> [Square; 64] {
-        let mut squares = sq.clone();
+        let mut squares = sq;
         squares[idx(pos)] = Some(Piece::new(kind, pos, color));
         squares
     }
 
-    fn scattered_surround_by(gs: &mut Game, pos: (u8, u8), color: Color, kind: PieceKind, distance: i8) {
-        let directions = [(-distance, -distance), (-distance, 0), (-distance, distance), (0, -distance), (0, distance), (distance, -distance), (distance, 0), (distance, distance)];
-        let positions = directions.iter().map(|(x, y)| ((pos.0 as i8 + x) as u8, (pos.1 as i8 + y)as u8)).collect::<Vec<(u8, u8)>>();
+    fn scattered_surround_by(
+        gs: &mut Game,
+        pos: (u8, u8),
+        color: Color,
+        kind: PieceKind,
+        distance: i8,
+    ) {
+        let directions = [
+            (-distance, -distance),
+            (-distance, 0),
+            (-distance, distance),
+            (0, -distance),
+            (0, distance),
+            (distance, -distance),
+            (distance, 0),
+            (distance, distance),
+        ];
+        let positions = directions
+            .iter()
+            .map(|(x, y)| ((pos.0 as i8 + x) as u8, (pos.1 as i8 + y) as u8))
+            .collect::<Vec<(u8, u8)>>();
         for pos in positions {
             if in_bounds(pos) {
                 place_piece(gs.board.squares, pos, color, kind);
@@ -149,7 +165,7 @@ mod tests {
         let color = Color::White;
         let mut game = game_with_queen_at(queen_pos, color);
         queen_scenario(&mut game, queen_pos, 27, color);
-        
+
         // Now, add a white rook at (3, 5) and a black rook at (5, 3).
         place_piece(game.board.squares, (3, 5), color, PieceKind::Rook);
         place_piece(game.board.squares, (5, 3), color.other(), PieceKind::Rook);
@@ -275,5 +291,4 @@ mod tests {
         let num_positions = recursive_mvgen_test(&mut game, 9);
         assert_eq!(num_positions, 2439530234167);
     }
-
 }
