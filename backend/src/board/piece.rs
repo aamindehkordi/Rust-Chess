@@ -73,6 +73,30 @@ pub fn get_moves(game: &Game, piece: &Piece) -> Vec<Move> {
     }
 }
 
+pub fn to_char(piece: Piece) -> char {
+    let mut char: String = String::new();
+    char = match piece.kind {
+        PieceKind::Pawn => "P",
+        PieceKind::Rook => "R",
+        PieceKind::Knight => "N",
+        PieceKind::Bishop => "B",
+        PieceKind::Queen => "Q",
+        PieceKind::King => "K",
+    }
+    .parse()
+    .unwrap();
+    if piece.color == Color::Black {
+        char = char.to_lowercase();
+    }
+    char.chars().next().unwrap()
+}
+
+impl PartialEq for Piece {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind && self.color == other.color
+    }
+}
+
 impl Display for Piece {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut char: String = String::new();
