@@ -3,7 +3,7 @@ pub mod r#move;
 use crate::board::piece::PieceKind;
 use crate::board::Position;
 use crate::game::player::Color;
-use crate::game::{is_attacked, Game};
+use crate::game::{is_attacked_not_bb, Game};
 use crate::rules::r#move::{CastleType, Move, MoveType};
 use std::cmp::{max, min};
 
@@ -141,7 +141,7 @@ pub fn generate_king_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
                         };
                         if castle_through
                             .iter()
-                            .all(|&pos| !is_attacked(game.clone(), pos, color))
+                            .all(|&pos| !is_attacked_not_bb(game.clone(), pos, color))
                         {
                             // 6. The king is not in check after the castle move
                             let to_pos = if rook_pos.0 == 0 {
