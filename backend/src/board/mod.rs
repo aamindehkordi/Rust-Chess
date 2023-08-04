@@ -263,7 +263,6 @@ pub fn display_board(board: &Board) {
 #[cfg(test)]
 mod tests {
     use crate::board::{display_board, piece, Board};
-    use crate::board::piece::get_moves;
     use crate::board::piece::PieceKind::{Bishop, Pawn, Queen};
     use crate::game::player::Color;
     use crate::game::player::Color::{Black, White};
@@ -421,55 +420,54 @@ mod tests {
     // Piece Index [King, Pawn, Knight, Bishop, Rook, Queen]
     // All Pieces Index White King, White Pawn, White Knight, White Bishop, White Rook, White Queen
     //                  Black King, Black Pawn, Black Knight, Black Bishop, Black Rook, Black Queen
-
     #[test]
     pub fn test_bitboard() {
         let mut board = Board::new_standard();
         display_board(&board);
-        assert_eq!(board.all_pieces_bitboard.count_ones(), 32);
-        assert_eq!(board.all_pieces_bitboard.count_zeros(), 32);
+        assert_eq!(board.board_info.all_pieces_bitboard.count_ones(), 32);
+        assert_eq!(board.board_info.all_pieces_bitboard.count_zeros(), 32);
 
         // pieces
-        assert_eq!(board.color_bitboards[0].count_ones(), 16);
-        assert_eq!(board.color_bitboards[0].count_zeros(), 48);
-        assert_eq!(board.color_bitboards[1].count_ones(), 16);
-        assert_eq!(board.color_bitboards[1].count_zeros(), 48);
+        assert_eq!(board.board_info.color_bitboards[0].count_ones(), 16);
+        assert_eq!(board.board_info.color_bitboards[0].count_zeros(), 48);
+        assert_eq!(board.board_info.color_bitboards[1].count_ones(), 16);
+        assert_eq!(board.board_info.color_bitboards[1].count_zeros(), 48);
 
         // kings
-        assert_eq!(board.piece_bitboards[0].count_ones(), 1);
-        assert_eq!(board.piece_bitboards[6].count_ones(), 1);
-        assert_eq!(board.piece_bitboards[0].count_zeros(), 63);
-        assert_eq!(board.piece_bitboards[6].count_zeros(), 63);
+        assert_eq!(board.board_info.piece_bitboards[0].count_ones(), 1);
+        assert_eq!(board.board_info.piece_bitboards[6].count_ones(), 1);
+        assert_eq!(board.board_info.piece_bitboards[0].count_zeros(), 63);
+        assert_eq!(board.board_info.piece_bitboards[6].count_zeros(), 63);
 
         // pawns
-        assert_eq!(board.piece_bitboards[1].count_ones(), 8);
-        assert_eq!(board.piece_bitboards[7].count_ones(), 8);
-        assert_eq!(board.piece_bitboards[1].count_zeros(), 56);
-        assert_eq!(board.piece_bitboards[7].count_zeros(), 56);
+        assert_eq!(board.board_info.piece_bitboards[1].count_ones(), 8);
+        assert_eq!(board.board_info.piece_bitboards[7].count_ones(), 8);
+        assert_eq!(board.board_info.piece_bitboards[1].count_zeros(), 56);
+        assert_eq!(board.board_info.piece_bitboards[7].count_zeros(), 56);
 
         // knights
-        assert_eq!(board.piece_bitboards[2].count_ones(), 2);
-        assert_eq!(board.piece_bitboards[8].count_ones(), 2);
-        assert_eq!(board.piece_bitboards[2].count_zeros(), 62);
-        assert_eq!(board.piece_bitboards[8].count_zeros(), 62);
+        assert_eq!(board.board_info.piece_bitboards[2].count_ones(), 2);
+        assert_eq!(board.board_info.piece_bitboards[8].count_ones(), 2);
+        assert_eq!(board.board_info.piece_bitboards[2].count_zeros(), 62);
+        assert_eq!(board.board_info.piece_bitboards[8].count_zeros(), 62);
 
         // bishops
-        assert_eq!(board.piece_bitboards[3].count_ones(), 2);
-        assert_eq!(board.piece_bitboards[9].count_ones(), 2);
-        assert_eq!(board.piece_bitboards[3].count_zeros(), 62);
-        assert_eq!(board.piece_bitboards[9].count_zeros(), 62);
+        assert_eq!(board.board_info.piece_bitboards[3].count_ones(), 2);
+        assert_eq!(board.board_info.piece_bitboards[9].count_ones(), 2);
+        assert_eq!(board.board_info.piece_bitboards[3].count_zeros(), 62);
+        assert_eq!(board.board_info.piece_bitboards[9].count_zeros(), 62);
 
         // rooks
-        assert_eq!(board.piece_bitboards[4].count_ones(), 2);
-        assert_eq!(board.piece_bitboards[10].count_ones(), 2);
-        assert_eq!(board.piece_bitboards[4].count_zeros(), 62);
-        assert_eq!(board.piece_bitboards[10].count_zeros(), 62);
+        assert_eq!(board.board_info.piece_bitboards[4].count_ones(), 2);
+        assert_eq!(board.board_info.piece_bitboards[10].count_ones(), 2);
+        assert_eq!(board.board_info.piece_bitboards[4].count_zeros(), 62);
+        assert_eq!(board.board_info.piece_bitboards[10].count_zeros(), 62);
 
         // queens
-        assert_eq!(board.piece_bitboards[5].count_ones(), 1);
-        assert_eq!(board.piece_bitboards[11].count_ones(), 1);
-        assert_eq!(board.piece_bitboards[5].count_zeros(), 63);
-        assert_eq!(board.piece_bitboards[11].count_zeros(), 63);
+        assert_eq!(board.board_info.piece_bitboards[5].count_ones(), 1);
+        assert_eq!(board.board_info.piece_bitboards[11].count_ones(), 1);
+        assert_eq!(board.board_info.piece_bitboards[5].count_zeros(), 63);
+        assert_eq!(board.board_info.piece_bitboards[11].count_zeros(), 63);
     }
 
     #[test]
@@ -485,8 +483,8 @@ mod tests {
         assert_eq!(board.get(to).unwrap().kind, Pawn);
         assert!(board.get(from).is_none());
 
-        assert_eq!(board.piece_bitboards[1].count_ones(), 8);
-        assert_eq!(board.piece_bitboards[1].count_zeros(), 56);
+        assert_eq!(board.board_info.piece_bitboards[1].count_ones(), 8);
+        assert_eq!(board.board_info.piece_bitboards[1].count_zeros(), 56);
     }
 
     #[test]
@@ -513,8 +511,8 @@ mod tests {
         assert_eq!(board.get(to).unwrap().kind, Pawn);
         assert!(board.get(from).is_none());
 
-        assert_eq!(board.piece_bitboards[1].count_ones(), 7);
-        assert_eq!(board.piece_bitboards[1].count_zeros(), 57);
+        assert_eq!(board.board_info.piece_bitboards[1].count_ones(), 8);
+        assert_eq!(board.board_info.piece_bitboards[1].count_zeros(), 56);
     }
 
     #[test]
