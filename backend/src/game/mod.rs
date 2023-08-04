@@ -49,7 +49,7 @@ impl Game {
     }
 }
 
-pub fn is_attacked(game: Game, pos: Position, color: Color) -> bool {
+pub fn is_attacked_not_bb(game: Game, pos: Position, color: Color) -> bool {
     let mut attacked = false;
     for square in game.board.squares.iter().flatten() {
         let piece = square;
@@ -64,3 +64,7 @@ pub fn is_attacked(game: Game, pos: Position, color: Color) -> bool {
     }
     attacked
 }
+
+
+
+
