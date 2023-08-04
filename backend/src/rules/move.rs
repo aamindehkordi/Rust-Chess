@@ -25,6 +25,7 @@ pub enum MoveType {
 #[derive(Clone)]
 pub struct Move {
     pub from_piece: Piece,
+    pub from: Position,
     pub to: Position,
     pub move_type: MoveType,
     pub color: Color,
@@ -50,6 +51,7 @@ impl Move {
     pub fn new(from_piece: Piece, to: Position, move_type: MoveType, color: Color) -> Self {
         Self {
             from_piece,
+            from: from_piece.position,
             to,
             move_type,
             color,
