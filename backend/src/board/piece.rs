@@ -117,7 +117,7 @@ impl Display for Piece {
     }
 }
 
-pub fn idx(kind: PieceKind, color: Color) -> usize {
+pub fn piece_idx(kind: PieceKind, color: Color) -> usize {
     let mut idx: usize;
     match kind {
         PieceKind::Pawn => idx = 1,
