@@ -64,7 +64,3 @@ pub fn is_attacked_not_bb(game: Game, pos: Position, color: Color) -> bool {
     }
     attacked
 }
-
-
-
-

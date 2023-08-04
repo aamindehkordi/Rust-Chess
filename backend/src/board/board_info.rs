@@ -1,4 +1,4 @@
-use crate::board::piece::{color_idx, Piece, piece_idx};
+use crate::board::piece::{color_idx, piece_idx};
 use crate::board::Square;
 
 pub type Bitboard = u64;
@@ -82,6 +82,4 @@ impl BoardInfo {
             }
         }
     }
-
-
 }

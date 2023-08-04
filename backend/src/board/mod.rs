@@ -1,10 +1,10 @@
 use crate::board::board_info::BoardInfo;
-use crate::board::piece::{Piece,  to_char};
+use crate::board::piece::{to_char, Piece};
 use crate::game::player;
-use crate::rules::r#move::{Move, MoveType};
+use crate::rules::r#move::Move;
 
-pub mod piece;
 mod board_info;
+pub mod piece;
 
 pub type Position = (u8, u8);
 pub type Square = Option<Piece>;
@@ -59,11 +59,12 @@ impl Board {
         self.squares[idx(pos)]
     }
 
-
     pub fn make_move(&mut self, m: Move) {
         self.move_history.push(m.clone());
         let mut piece = m.from_piece;
-        if piece.first_move { piece.first_move = false; }
+        if piece.first_move {
+            piece.first_move = false;
+        }
         piece.has_moved = true;
         let pos = piece.position;
         piece.position = m.to;
@@ -262,13 +263,15 @@ pub fn display_board(board: &Board) {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::{display_board, piece, Board};
     use crate::board::piece::PieceKind::{Bishop, Pawn, Queen};
+    use crate::board::{display_board, piece, Board};
     use crate::game::player::Color;
     use crate::game::player::Color::{Black, White};
     use crate::rules::r#move::CastleType::KingSide;
     use crate::rules::r#move::Move;
-    use crate::rules::r#move::MoveType::{Capture, Castle, EnPassant, Normal, Promotion, PromotionCapture};
+    use crate::rules::r#move::MoveType::{
+        Capture, Castle, EnPassant, Normal, Promotion, PromotionCapture,
+    };
 
     #[test]
     pub fn test_standard_board_creation() {
@@ -373,7 +376,6 @@ mod tests {
         assert_eq!(board.get(to).unwrap().kind, piece::PieceKind::Knight);
 
         // continue to castle once implemented.
-
     }
 
     #[test]
@@ -422,7 +424,7 @@ mod tests {
     //                  Black King, Black Pawn, Black Knight, Black Bishop, Black Rook, Black Queen
     #[test]
     pub fn test_bitboard() {
-        let mut board = Board::new_standard();
+        let board = Board::new_standard();
         display_board(&board);
         assert_eq!(board.board_info.all_pieces_bitboard.count_ones(), 32);
         assert_eq!(board.board_info.all_pieces_bitboard.count_zeros(), 32);
@@ -530,5 +532,4 @@ mod tests {
 
         assert_eq!(board.get(from).unwrap().kind, Pawn);
     }
-
 }
