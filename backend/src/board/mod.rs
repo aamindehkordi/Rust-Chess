@@ -1,6 +1,6 @@
 use crate::board::piece::Piece;
 use crate::game::player;
-use crate::rules::r#move::Move;
+use crate::rules::r#move::{Move, MoveType};
 
 pub mod piece;
 
@@ -33,12 +33,18 @@ pub struct Board {
     pub black_can_castle_queenside: bool,
 
     pub move_history: Vec<Move>,
+    pub captured_pieces: Vec<Piece>,
+}
+
+impl Default for Board {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Board {
-    pub fn new_standard() -> Self {
-        let fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr";
-        let mut board = Self {
+    pub fn new() -> Self {
+        Self {
             squares: [None; 64],
 
             piece_bitboards: [0; 12],
@@ -62,7 +68,22 @@ impl Board {
             black_can_castle_queenside: true,
 
             move_history: Vec::new(),
-        };
+            captured_pieces: Vec::new(),
+        }
+    }
+
+    pub fn new_from_fen(fen: &str) -> Self {
+        let mut board = Self::new();
+
+        board.squares = squares_from_fen(fen);
+        board.update_bitboards();
+
+        board
+    }
+
+    pub fn new_standard() -> Self {
+        let fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr";
+        let mut board = Self::new();
 
         board.squares = squares_from_fen(fen);
         board.update_bitboards();
@@ -91,11 +112,32 @@ impl Board {
     pub fn make_move(&mut self, m: Move) {
         self.move_history.push(m.clone());
         let mut piece = m.from_piece;
+        if piece.first_move { piece.first_move = false; }
         piece.has_moved = true;
         let pos = piece.position;
         piece.position = m.to;
+        if let Some(captured_piece) = self.squares[idx(m.to)] {
+            self.captured_pieces.push(captured_piece);
+        }
         self.squares[idx(pos)] = None;
         self.squares[idx(m.to)] = Some(piece);
+
+        self.update_bitboards();
+    }
+
+    pub fn undo_move(&mut self) {
+        let m = self.move_history.pop().unwrap();
+        let mut piece = m.from_piece;
+        //piece.first_move = true;
+        let pos = piece.position;
+        piece.position = m.from;
+        if m.is_capture() {
+            let captured_piece = self.captured_pieces.pop().unwrap();
+            self.squares[idx(m.to)] = Some(captured_piece);
+        } else {
+            self.squares[idx(m.to)] = None;
+        }
+        self.squares[idx(pos)] = Some(piece);
 
         self.update_bitboards();
     }
@@ -257,6 +299,13 @@ pub fn display_board(board: &Board) {
 #[cfg(test)]
 mod tests {
     use crate::board::{display_board, piece, Board};
+    use crate::board::piece::get_moves;
+    use crate::board::piece::PieceKind::{Bishop, Pawn, Queen};
+    use crate::game::player::Color;
+    use crate::game::player::Color::{Black, White};
+    use crate::rules::r#move::CastleType::KingSide;
+    use crate::rules::r#move::Move;
+    use crate::rules::r#move::MoveType::{Capture, Castle, EnPassant, Normal, Promotion, PromotionCapture};
 
     #[test]
     pub fn test_standard_board_creation() {
@@ -265,4 +314,259 @@ mod tests {
 
         assert_eq!(board.get((0, 0)).unwrap().kind, piece::PieceKind::Rook);
     }
+
+    #[test]
+    pub fn test_fen_board_creation() {
+        let board = Board::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        display_board(&board);
+
+        assert_eq!(board.get((0, 0)).unwrap().kind, piece::PieceKind::Rook);
+    }
+
+    fn test_move(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
+        let m = Move::new(board.get(from).unwrap(), to, Normal, color);
+        board.make_move(m);
+    }
+
+    fn test_capture(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
+        let m = Move::new(board.get(from).unwrap(), to, Capture, color);
+        board.make_move(m);
+    }
+
+    fn test_en_passant(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
+        let m = Move::new(board.get(from).unwrap(), to, EnPassant, color);
+        board.make_move(m);
+    }
+
+    fn test_promotion(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
+        let m = Move::new(board.get(from).unwrap(), to, Promotion(Queen), color);
+        board.make_move(m);
+    }
+
+    fn test_promotion_capture(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
+        let m = Move::new(board.get(from).unwrap(), to, PromotionCapture(Queen), color);
+        board.make_move(m);
+    }
+
+    fn test_queenside_castle(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
+        let m = Move::new(board.get(from).unwrap(), to, Castle(KingSide), color);
+        board.make_move(m);
+    }
+
+    fn test_kingside_castle(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
+        let m = Move::new(board.get(from).unwrap(), to, Castle(KingSide), color);
+        board.make_move(m);
+    }
+
+    fn test_undo(board: &mut Board) {
+        board.undo_move();
+    }
+
+    #[test]
+    pub fn test_moves() {
+        let mut board = Board::new_standard();
+        display_board(&board);
+
+        let from = (4, 1); // e2
+        let to = (4, 3); // e4
+        test_move(&mut board, from, to, White);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, Pawn);
+
+        let from = (4, 6); // e7
+        let to = (4, 4); // e5
+        test_move(&mut board, from, to, Black);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, Pawn);
+
+        let from = (3, 0); // d1
+        let to = (7, 4); // h5
+        test_move(&mut board, from, to, White);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, Queen);
+
+        let from = (5, 7); // f8
+        let to = (1, 3); // b4
+        test_move(&mut board, from, to, Black);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, Bishop);
+
+        let from = (1, 0); // b1
+        let to = (2, 2); // c3
+        test_move(&mut board, from, to, White);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, piece::PieceKind::Knight);
+
+        let from = (6, 7); // g8
+        let to = (5, 5); // f6
+        test_move(&mut board, from, to, Black);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, piece::PieceKind::Knight);
+
+        // continue to castle once implemented.
+
+    }
+
+    #[test]
+    pub fn undo_moves() {
+        let mut board = Board::new_standard();
+        display_board(&board);
+
+        let from = (0, 1); // Pawn
+        let to = (0, 3);
+        test_move(&mut board, from, to, White);
+        display_board(&board);
+
+        test_undo(&mut board);
+        display_board(&board);
+
+        assert_eq!(board.get(from).unwrap().kind, Pawn);
+    }
+
+    #[test]
+    pub fn test_capture_moves() {
+        let mut board = Board::new_standard();
+        display_board(&board);
+
+        let from = (0, 1); // Pawn
+        let to = (0, 3);
+        test_move(&mut board, from, to, White);
+        display_board(&board);
+
+        let from = (1, 6); // Pawn
+        let to = (1, 4);
+        test_move(&mut board, from, to, Black);
+        display_board(&board);
+
+        let from = (0, 3); // Pawn
+        let to = (1, 4);
+        test_capture(&mut board, from, to, White);
+        display_board(&board);
+
+        assert_eq!(board.captured_pieces.len(), 1);
+        assert_eq!(board.get(to).unwrap().kind, Pawn);
+    }
+
+    // Color Index [White, Black]
+    // Piece Index [King, Pawn, Knight, Bishop, Rook, Queen]
+    // All Pieces Index White King, White Pawn, White Knight, White Bishop, White Rook, White Queen
+    //                  Black King, Black Pawn, Black Knight, Black Bishop, Black Rook, Black Queen
+
+    #[test]
+    pub fn test_bitboard() {
+        let mut board = Board::new_standard();
+        display_board(&board);
+        assert_eq!(board.all_pieces_bitboard.count_ones(), 32);
+        assert_eq!(board.all_pieces_bitboard.count_zeros(), 32);
+
+        // pieces
+        assert_eq!(board.color_bitboards[0].count_ones(), 16);
+        assert_eq!(board.color_bitboards[0].count_zeros(), 48);
+        assert_eq!(board.color_bitboards[1].count_ones(), 16);
+        assert_eq!(board.color_bitboards[1].count_zeros(), 48);
+
+        // kings
+        assert_eq!(board.piece_bitboards[0].count_ones(), 1);
+        assert_eq!(board.piece_bitboards[6].count_ones(), 1);
+        assert_eq!(board.piece_bitboards[0].count_zeros(), 63);
+        assert_eq!(board.piece_bitboards[6].count_zeros(), 63);
+
+        // pawns
+        assert_eq!(board.piece_bitboards[1].count_ones(), 8);
+        assert_eq!(board.piece_bitboards[7].count_ones(), 8);
+        assert_eq!(board.piece_bitboards[1].count_zeros(), 56);
+        assert_eq!(board.piece_bitboards[7].count_zeros(), 56);
+
+        // knights
+        assert_eq!(board.piece_bitboards[2].count_ones(), 2);
+        assert_eq!(board.piece_bitboards[8].count_ones(), 2);
+        assert_eq!(board.piece_bitboards[2].count_zeros(), 62);
+        assert_eq!(board.piece_bitboards[8].count_zeros(), 62);
+
+        // bishops
+        assert_eq!(board.piece_bitboards[3].count_ones(), 2);
+        assert_eq!(board.piece_bitboards[9].count_ones(), 2);
+        assert_eq!(board.piece_bitboards[3].count_zeros(), 62);
+        assert_eq!(board.piece_bitboards[9].count_zeros(), 62);
+
+        // rooks
+        assert_eq!(board.piece_bitboards[4].count_ones(), 2);
+        assert_eq!(board.piece_bitboards[10].count_ones(), 2);
+        assert_eq!(board.piece_bitboards[4].count_zeros(), 62);
+        assert_eq!(board.piece_bitboards[10].count_zeros(), 62);
+
+        // queens
+        assert_eq!(board.piece_bitboards[5].count_ones(), 1);
+        assert_eq!(board.piece_bitboards[11].count_ones(), 1);
+        assert_eq!(board.piece_bitboards[5].count_zeros(), 63);
+        assert_eq!(board.piece_bitboards[11].count_zeros(), 63);
+    }
+
+    #[test]
+    pub fn test_bitboard_move() {
+        let mut board = Board::new_standard();
+        display_board(&board);
+
+        let from = (0, 1); // Pawn
+        let to = (0, 3);
+        test_move(&mut board, from, to, White);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, Pawn);
+        assert!(board.get(from).is_none());
+
+        assert_eq!(board.piece_bitboards[1].count_ones(), 8);
+        assert_eq!(board.piece_bitboards[1].count_zeros(), 56);
+    }
+
+    #[test]
+    pub fn test_bitboard_capture() {
+        let mut board = Board::new_standard();
+        display_board(&board);
+
+        let from = (0, 1); // Pawn
+        let to = (0, 3);
+        test_move(&mut board, from, to, White);
+        display_board(&board);
+
+        let from = (1, 6); // Pawn
+        let to = (1, 4);
+        test_move(&mut board, from, to, Black);
+        display_board(&board);
+
+        let from = (0, 3); // Pawn
+        let to = (1, 4);
+        test_capture(&mut board, from, to, White);
+        display_board(&board);
+
+        assert_eq!(board.captured_pieces.len(), 1);
+        assert_eq!(board.get(to).unwrap().kind, Pawn);
+        assert!(board.get(from).is_none());
+
+        assert_eq!(board.piece_bitboards[1].count_ones(), 7);
+        assert_eq!(board.piece_bitboards[1].count_zeros(), 57);
+    }
+
+    #[test]
+    pub fn test_bitboard_undo() {
+        let mut board = Board::new_standard();
+        display_board(&board);
+
+        let from = (0, 1); // Pawn
+        let to = (0, 3);
+        test_move(&mut board, from, to, White);
+        display_board(&board);
+
+        test_undo(&mut board);
+        display_board(&board);
+
+        assert_eq!(board.get(from).unwrap().kind, Pawn);
+    }
+
 }
