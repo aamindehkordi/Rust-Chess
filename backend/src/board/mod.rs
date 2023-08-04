@@ -1,37 +1,18 @@
-use crate::board::piece::Piece;
+use crate::board::board_info::BoardInfo;
+use crate::board::piece::{Piece,  to_char};
 use crate::game::player;
 use crate::rules::r#move::{Move, MoveType};
 
 pub mod piece;
+mod board_info;
 
 pub type Position = (u8, u8);
 pub type Square = Option<Piece>;
-pub type Bitboard = u64;
 
 #[derive(Clone)]
 pub struct Board {
     pub squares: [Square; 64],
-
-    pub piece_bitboards: [Bitboard; 12],
-    pub color_bitboards: [Bitboard; 2],
-    pub all_pieces_bitboard: Bitboard,
-
-    pub piece_capture_bitboards: [Bitboard; 12],
-    pub color_capture_bitboards: [Bitboard; 2],
-    pub all_pieces_capture_bitboard: Bitboard,
-
-    pub piece_move_bitboards: [Bitboard; 12],
-    pub color_move_bitboards: [Bitboard; 2],
-    pub all_pieces_move_bitboard: Bitboard,
-
-    pub white_king_pos: Position,
-    pub black_king_pos: Position,
-
-    pub white_can_castle_kingside: bool,
-    pub white_can_castle_queenside: bool,
-    pub black_can_castle_kingside: bool,
-    pub black_can_castle_queenside: bool,
-
+    pub board_info: BoardInfo,
     pub move_history: Vec<Move>,
     pub captured_pieces: Vec<Piece>,
 }
@@ -44,28 +25,11 @@ impl Default for Board {
 
 impl Board {
     pub fn new() -> Self {
+        let squares = [None; 64];
         Self {
-            squares: [None; 64],
+            squares,
 
-            piece_bitboards: [0; 12],
-            color_bitboards: [0; 2],
-            all_pieces_bitboard: 0,
-
-            piece_capture_bitboards: [0; 12],
-            color_capture_bitboards: [0; 2],
-            all_pieces_capture_bitboard: 0,
-
-            piece_move_bitboards: [0; 12],
-            color_move_bitboards: [0; 2],
-            all_pieces_move_bitboard: 0,
-
-            white_king_pos: (4, 0),
-            black_king_pos: (4, 7),
-
-            white_can_castle_kingside: true,
-            white_can_castle_queenside: true,
-            black_can_castle_kingside: true,
-            black_can_castle_queenside: true,
+            board_info: BoardInfo::new(squares),
 
             move_history: Vec::new(),
             captured_pieces: Vec::new(),
@@ -76,7 +40,7 @@ impl Board {
         let mut board = Self::new();
 
         board.squares = squares_from_fen(fen);
-        board.update_bitboards();
+        board.board_info.update_bitboards(board.squares);
 
         board
     }
@@ -86,7 +50,7 @@ impl Board {
         let mut board = Self::new();
 
         board.squares = squares_from_fen(fen);
-        board.update_bitboards();
+        board.board_info.update_bitboards(board.squares);
 
         board
     }
@@ -95,19 +59,6 @@ impl Board {
         self.squares[idx(pos)]
     }
 
-    pub fn reset_bitboards(&mut self) {
-        self.piece_bitboards = [0; 12];
-        self.color_bitboards = [0; 2];
-        self.all_pieces_bitboard = 0;
-
-        self.piece_capture_bitboards = [0; 12];
-        self.color_capture_bitboards = [0; 2];
-        self.all_pieces_capture_bitboard = 0;
-
-        self.piece_move_bitboards = [0; 12];
-        self.color_move_bitboards = [0; 2];
-        self.all_pieces_move_bitboard = 0;
-    }
 
     pub fn make_move(&mut self, m: Move) {
         self.move_history.push(m.clone());
@@ -122,7 +73,7 @@ impl Board {
         self.squares[idx(pos)] = None;
         self.squares[idx(m.to)] = Some(piece);
 
-        self.update_bitboards();
+        self.board_info.update_bitboards(self.squares);
     }
 
     pub fn undo_move(&mut self) {
@@ -139,22 +90,7 @@ impl Board {
         }
         self.squares[idx(pos)] = Some(piece);
 
-        self.update_bitboards();
-    }
-
-    pub fn update_bitboards(&mut self) {
-        // Reset bitboards
-        self.reset_bitboards();
-
-        // Update bitboards
-        for pos in 0..64 {
-            if let Some(piece) = self.squares[pos] {
-                let bitboard = 1 << pos;
-                self.piece_bitboards[piece::idx(piece.kind, piece.color)] |= bitboard;
-                self.color_bitboards[piece::color_idx(piece.color)] |= bitboard;
-                self.all_pieces_bitboard |= bitboard;
-            }
-        }
+        self.board_info.update_bitboards(self.squares);
     }
 }
 
@@ -279,6 +215,34 @@ pub fn squares_from_fen(fen: &str) -> [Square; 64] {
         }
     }
     squares
+}
+
+pub fn fen_from_squares(squares: &[Square; 64]) -> String {
+    let mut fen = String::new();
+    let mut empty_squares = 0;
+    for y in 0..8 {
+        for x in 0..8 {
+            let pos = (x, y);
+            let idx = idx(pos);
+            if let Some(piece) = squares[idx] {
+                if empty_squares > 0 {
+                    fen.push_str(&empty_squares.to_string());
+                    empty_squares = 0;
+                }
+                fen.push(to_char(piece));
+            } else {
+                empty_squares += 1;
+            }
+        }
+        if empty_squares > 0 {
+            fen.push_str(&empty_squares.to_string());
+            empty_squares = 0;
+        }
+        if y < 7 {
+            fen.push('/');
+        }
+    }
+    fen
 }
 
 pub fn display_board(board: &Board) {
