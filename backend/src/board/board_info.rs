@@ -64,18 +64,37 @@ impl BoardInfo {
         self.color_move_bitboards = [0; 2];
     }
 
-    pub fn update_bitboards(&mut self, squares: [Square; 64]) {
-        // Reset bitboards
-        self.reset_bitboards();
+    pub fn king(&self, color: Color) -> Bitboard {
+        self.piece_bitboards[bb_piece_idx(PieceKind::King, color)]
+    }
 
-        // Update bitboards
-        for pos in 0..64 {
-            if let Some(piece) = squares[pos] {
-                let bitboard = 1 << pos;
-                self.piece_bitboards[piece_idx(piece.kind, piece.color)] |= bitboard;
-                self.color_bitboards[color_idx(piece.color)] |= bitboard;
-                self.all_pieces_bitboard |= bitboard;
-            }
+    pub fn queen(&self, color: Color) -> Bitboard {
+        self.piece_bitboards[bb_piece_idx(PieceKind::Queen, color)]
+    }
+
+    pub fn rook(&self, color: Color) -> Bitboard {
+        self.piece_bitboards[bb_piece_idx(PieceKind::Rook, color)]
+    }
+
+    pub fn bishop(&self, color: Color) -> Bitboard {
+        self.piece_bitboards[bb_piece_idx(PieceKind::Bishop, color)]
+    }
+
+    pub fn knight(&self, color: Color) -> Bitboard {
+        self.piece_bitboards[bb_piece_idx(PieceKind::Knight, color)]
+    }
+
+    pub fn pawn(&self, color: Color) -> Bitboard {
+        self.piece_bitboards[bb_piece_idx(PieceKind::Pawn, color)]
+    }
+
+
+
+    pub fn king_pos(&self, color: Color) -> Position {
+        if color == Color::White {
+            self.white_king_pos
+        } else {
+            self.black_king_pos
         }
     }
 }

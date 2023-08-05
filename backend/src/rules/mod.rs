@@ -321,14 +321,20 @@ pub fn capture_or_normal(
     moves: &mut Vec<Move>,
 ) -> bool {
     if in_bounds(to_pos) {
+        let nmv = Move::new(piece, to_pos, MoveType::Normal, piece.color);
+        let cmv = Move::new(piece, to_pos, MoveType::Capture, piece.color);
+
+        if game.game_state.is_in_check(color) && (!will_block_check(game.clone(), nmv.clone()) || !will_block_check(game.clone(), cmv.clone()) ){
+            return true;
+        }
+
         let to_square = game.board.get(to_pos);
         match to_square {
             Some(to_piece) if to_piece.color != color => {
-                moves.push(Move::new(piece, to_pos, MoveType::Capture, piece.color));
-                return true;
+                moves.push(cmv);
             }
             None => {
-                moves.push(Move::new(piece, to_pos, MoveType::Normal, piece.color));
+                moves.push(nmv);
                 return false;
             }
             _ => (),
