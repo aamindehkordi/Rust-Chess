@@ -1,10 +1,9 @@
-use std::fmt::Display;
 use crate::board::board_info::{bb_color_idx, bb_piece_idx, BoardInfo};
-use crate::board::piece::{to_char, Piece, get_moves};
-use crate::game::game_state::GameState;
-use crate::game::{Game, get_all_moves, player};
+use crate::board::piece::{get_moves, to_char, Piece};
+
 use crate::game::player::Color;
-use crate::rules::r#move::{Move, MoveType};
+use crate::game::{player, Game};
+use crate::rules::r#move::Move;
 
 mod board_info;
 pub mod piece;
@@ -100,7 +99,7 @@ impl Board {
     }
 }
 
-pub fn update_bitboards(game: &Game) -> BoardInfo{
+pub fn update_bitboards(game: &Game) -> BoardInfo {
     let board = &game.board;
     let board_info = board.board_info.clone();
     let mut bi = board_info;
@@ -123,10 +122,12 @@ pub fn update_bitboards(game: &Game) -> BoardInfo{
             for mv in moves {
                 let bit_index = idx(mv.to);
                 if mv.is_capture() {
-                    bi.piece_capture_bitboards[bb_piece_idx(piece.kind, piece.color)] |= 1 << bit_index;
+                    bi.piece_capture_bitboards[bb_piece_idx(piece.kind, piece.color)] |=
+                        1 << bit_index;
                     bi.color_capture_bitboards[bb_color_idx(piece.color)] |= 1 << bit_index;
                 } else {
-                    bi.piece_move_bitboards[bb_piece_idx(piece.kind, piece.color)] |= 1 << bit_index;
+                    bi.piece_move_bitboards[bb_piece_idx(piece.kind, piece.color)] |=
+                        1 << bit_index;
                     bi.color_move_bitboards[bb_color_idx(piece.color)] |= 1 << bit_index;
                 }
             }
@@ -139,8 +140,6 @@ pub fn update_bitboards(game: &Game) -> BoardInfo{
 pub fn update_board(game: &Game) -> Board {
     let mut board = game.board.clone();
     board.board_info = update_bitboards(game);
-
-
 
     board
 }

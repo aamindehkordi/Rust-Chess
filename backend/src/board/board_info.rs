@@ -1,23 +1,22 @@
-use crate::board::piece::{PieceKind};
-use crate::board::{Board, Square};
+use crate::board::piece::PieceKind;
+use crate::board::Square;
 use crate::game::player::Color;
-use crate::rules::r#move::{Move, MoveType};
 
 pub type Bitboard = u64;
 pub type Position = (u8, u8);
 
 #[derive(Clone)]
 pub struct BoardInfo {
-    pub squares: [Square; 64], // Array of 64 Option<Piece> values
+    pub squares: [Square; 64],           // Array of 64 Option<Piece> values
     pub piece_bitboards: [Bitboard; 12], // Array of 12 Bitboards, one for each piece type
     pub player_bitboards: [Bitboard; 2], // Array of 2 Bitboards, one for each player
-    pub all_pieces_bitboard: Bitboard, // Bitboard of all pieces
+    pub all_pieces_bitboard: Bitboard,   // Bitboard of all pieces
 
     pub piece_capture_bitboards: [Bitboard; 12], // Array of 12 Bitboards, one for each piece that can be captured
     pub color_capture_bitboards: [Bitboard; 2], // Array of 2 Bitboards, one for each player whose pieces can be captured
 
     pub piece_move_bitboards: [Bitboard; 12], // Array of 12 Bitboards, one for each piece's moves
-    pub color_move_bitboards: [Bitboard; 2], // Array of 2 Bitboards, one for each player's moves
+    pub color_move_bitboards: [Bitboard; 2],  // Array of 2 Bitboards, one for each player's moves
 
     pub white_king_pos: Position,
     pub black_king_pos: Position,
@@ -87,8 +86,6 @@ impl BoardInfo {
     pub fn pawn(&self, color: Color) -> Bitboard {
         self.piece_bitboards[bb_piece_idx(PieceKind::Pawn, color)]
     }
-
-
 
     pub fn king_pos(&self, color: Color) -> Position {
         if color == Color::White {

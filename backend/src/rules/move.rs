@@ -1,7 +1,7 @@
-use std::fmt::Display;
 use crate::board::piece::{Piece, PieceKind};
 use crate::board::Position;
 use crate::game::player::Color;
+use std::fmt::Display;
 
 // Enum to represent different types of castle moves
 #[derive(Copy, Clone, PartialEq)]
@@ -34,7 +34,7 @@ pub struct Move {
 
 impl Display for Move {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let (x1, y1) = self.from;
+        let (_x1, _y1) = self.from;
         let (x2, y2) = self.to;
         let from_piece = self.from_piece;
         let move_type = self.move_type.clone();
@@ -60,7 +60,10 @@ impl Display for Move {
                 mv.push_str(&format!("{} x({}, {})", from_piece, x2, y2));
             }
             MoveType::Promotion(promo_piece) => {
-                mv.push_str(&format!("{} to ({}, {})={}", from_piece, x2, y2, promo_piece));
+                mv.push_str(&format!(
+                    "{} to ({}, {})={}",
+                    from_piece, x2, y2, promo_piece
+                ));
             }
             MoveType::PromotionCapture(promo_piece) => {
                 mv.push_str(&format!("{} x({}, {})={}", from_piece, x2, y2, promo_piece));
@@ -110,7 +113,7 @@ mod tests {
     use crate::board::piece::{get_moves, Piece, PieceKind};
     use crate::board::{display_board, idx, in_bounds, Square};
     use crate::game::player::Color;
-    use crate::game::{apply_move, Game, get_current_moves};
+    use crate::game::{apply_move, get_current_moves, Game};
     use crate::rules::r#move::Move;
 
     fn display_moves(game: &mut Game, moves: &[Move]) {
@@ -206,7 +209,7 @@ mod tests {
 
         // Now, add a white rook at (3, 5) and a black rook at (5, 3).
         game.board.squares[idx((3, 5))] = Some(Piece::new(PieceKind::Rook, (3, 5), color));
-        game.board.squares[idx((5, 3))] = Some(Piece::new(PieceKind::Rook,(5, 3), color.other()));
+        game.board.squares[idx((5, 3))] = Some(Piece::new(PieceKind::Rook, (5, 3), color.other()));
 
         // The queen should now have 22 moves: 5 on the rank, 4 on the file, 7 on one diagonal, and 6 on the other diagonal.
         queen_scenario(&mut game, queen_pos, 22, color);
@@ -250,7 +253,7 @@ mod tests {
         let mut game = game_with_queen_at(queen_pos, color);
 
         // Add an enemy rook at (7, 4) and the white king at (5, 4).
-        game.board.squares[idx((7, 4))] = Some(Piece::new(PieceKind::Rook,(7, 4), color.other()));
+        game.board.squares[idx((7, 4))] = Some(Piece::new(PieceKind::Rook, (7, 4), color.other()));
         game.board.squares[idx((5, 4))] = Some(Piece::new(PieceKind::King, (5, 4), color));
 
         // The queen should now have 1 moves: (7, 4).
@@ -260,8 +263,8 @@ mod tests {
         let mut game = game_with_queen_at(queen_pos, color);
 
         // Add an enemy rook at (7, 4) and the white king at (3, 4).
-        game.board.squares[idx((7, 4))] = Some(Piece::new(PieceKind::Rook,(7, 4), color.other()));
-        game.board.squares[idx((3, 4))] = Some(Piece::new(PieceKind::King,(3, 4), color));
+        game.board.squares[idx((7, 4))] = Some(Piece::new(PieceKind::Rook, (7, 4), color.other()));
+        game.board.squares[idx((3, 4))] = Some(Piece::new(PieceKind::King, (3, 4), color));
 
         // The queen should now have 4 moves: to (4, 4), (5, 4), (6,4).
         queen_scenario(&mut game, queen_pos, 4, color);

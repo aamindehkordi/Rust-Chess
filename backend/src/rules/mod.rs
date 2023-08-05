@@ -1,9 +1,9 @@
 pub mod r#move;
 
+use crate::board::in_bounds;
 use crate::board::piece::{Piece, PieceKind};
-use crate::board::{in_bounds, Position};
 use crate::game::player::Color;
-use crate::game::{is_attacked_not_bb, Game, apply_move};
+use crate::game::{apply_move, is_attacked_not_bb, Game};
 use crate::rules::r#move::{CastleType, Move, MoveType};
 use std::cmp::{max, min};
 
@@ -307,7 +307,7 @@ pub fn promotion_attack_move(game: Game, _color: Color, fmv: (u8, u8), pmv: (u8,
 }
 
 pub fn will_block_check(game: Game, mv: Move) -> bool {
-    let mut temp = game.clone();
+    let mut temp = game;
     temp = apply_move(temp, mv.from, mv.to);
     let gs = temp.game_state;
     gs.is_in_check(mv.color)
@@ -324,7 +324,10 @@ pub fn capture_or_normal(
         let nmv = Move::new(piece, to_pos, MoveType::Normal, piece.color);
         let cmv = Move::new(piece, to_pos, MoveType::Capture, piece.color);
 
-        if game.game_state.is_in_check(color) && (!will_block_check(game.clone(), nmv.clone()) || !will_block_check(game.clone(), cmv.clone()) ){
+        if game.game_state.is_in_check(color)
+            && (!will_block_check(game.clone(), nmv.clone())
+                || !will_block_check(game.clone(), cmv.clone()))
+        {
             return true;
         }
 

@@ -1,10 +1,10 @@
 pub mod game_state;
 pub mod player;
 
-use crate::board::{Board, display_board, piece, Position, update_board};
 use crate::board::piece::get_moves;
+use crate::board::{display_board, update_board, Board, Position};
 use crate::game::game_state::GameState;
-use crate::game::player::{Color, from_idx, user_mv_idx};
+use crate::game::player::{from_idx, user_mv_idx, Color};
 use crate::rules::r#move::Move;
 
 #[derive(Clone)]
@@ -33,11 +33,9 @@ impl Game {
             game_state: GameState::new(),
         }
     }
-
-
 }
 pub fn update(game: Game, mv: Move) -> Game {
-    let mut game = game.clone();
+    let mut game = game;
     let mut gs = &mut game.game_state;
     gs.fen = game.board.to_fen();
     game.board.make_move(mv);

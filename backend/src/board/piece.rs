@@ -1,10 +1,12 @@
 use crate::board::Position;
 use crate::game::player::Color;
 
-use std::fmt::Display;
 use crate::game::Game;
-use crate::rules::{generate_king_moves, generate_knight_moves, generate_pawn_moves, generate_sliding_move};
 use crate::rules::r#move::Move;
+use crate::rules::{
+    generate_king_moves, generate_knight_moves, generate_pawn_moves, generate_sliding_move,
+};
+use std::fmt::Display;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum PieceKind {
@@ -119,7 +121,7 @@ impl Display for Piece {
 }
 
 pub fn get_moves(game: &Game, p: &Piece) -> Vec<Move> {
-    let piece = p.clone();
+    let piece = *p;
     match piece.kind {
         PieceKind::Pawn => generate_pawn_moves(game.clone(), piece),
         PieceKind::Rook => generate_sliding_move(game.clone(), piece),
