@@ -36,6 +36,18 @@ impl Game {
 
 
 }
+pub fn update(game: Game, mv: Move) -> Game {
+    let mut game = game.clone();
+    let mut gs = &mut game.game_state;
+    gs.fen = game.board.to_fen();
+    game.board.make_move(mv);
+    gs.white_in_check = game.board.in_check(Color::White);
+    gs.black_in_check = game.board.in_check(Color::Black);
+    gs.next_turn();
+    game.board = update_board(&game);
+    game
+}
+
 pub fn play(mut game: Game) {
     loop {
         display_board(&game.board);
@@ -53,8 +65,7 @@ pub fn apply_move(game: Game, from: Position, to: Position) -> Game {
         let moves = get_moves(&game, &piece);
         for mv in moves {
             if mv.to == to {
-                game.board.make_move(mv);
-                game.game_state.next_turn();
+                game = update(game, mv);
             }
         }
     }
@@ -96,15 +107,4 @@ pub fn get_all_moves(game: &Game) -> Vec<Move> {
         moves.append(&mut get_moves(game, piece));
     }
     moves
-}
-
-pub fn get_moves(game: &Game, piece: &Piece) -> Vec<Move> {
-    match piece.kind {
-        PieceKind::Pawn => generate_pawn_moves(game.clone(), piece.position, piece.color),
-        PieceKind::Rook => generate_sliding_move(game.clone(), piece.position, piece.color),
-        PieceKind::Knight => generate_knight_moves(game.clone(), piece.position, piece.color),
-        PieceKind::Bishop => generate_sliding_move(game.clone(), piece.position, piece.color),
-        PieceKind::Queen => generate_sliding_move(game.clone(), piece.position, piece.color),
-        PieceKind::King => generate_king_moves(game.clone(), piece.position, piece.color),
-    }
 }

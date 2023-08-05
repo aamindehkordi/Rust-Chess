@@ -16,6 +16,19 @@ pub enum PieceKind {
     King,
 }
 
+impl Display for PieceKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PieceKind::Pawn => write!(f, "Pawn"),
+            PieceKind::Rook => write!(f, "Rook"),
+            PieceKind::Knight => write!(f, "Knight"),
+            PieceKind::Bishop => write!(f, "Bishop"),
+            PieceKind::Queen => write!(f, "Queen"),
+            PieceKind::King => write!(f, "King"),
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct Piece {
     pub kind: PieceKind,
@@ -115,13 +128,4 @@ pub fn get_moves(game: &Game, p: &Piece) -> Vec<Move> {
         PieceKind::Queen => generate_sliding_move(game.clone(), piece),
         PieceKind::King => generate_king_moves(game.clone(), piece),
     }
-    idx
-}
-
-pub fn color_idx(color: Color) -> usize {
-    let mut idx: usize = 0;
-    if color == Color::Black {
-        idx = 1;
-    }
-    idx
 }

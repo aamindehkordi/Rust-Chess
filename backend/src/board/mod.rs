@@ -57,6 +57,17 @@ impl Board {
         self.squares[idx(pos)]
     }
 
+    pub fn to_fen(&self) -> String {
+        fen_from_squares(&self.squares)
+    }
+
+    pub fn in_check(&self, color: Color) -> bool {
+        let enemy_color = color.other();
+        let king = self.board_info.king(color);
+        let enemy_moves = self.board_info.color_move_bitboards[bb_color_idx(enemy_color)];
+        (king & enemy_moves) != 0
+    }
+
     pub fn make_move(&mut self, m: Move) {
         self.move_history.push(m.clone());
         let mut piece = m.from_piece;
@@ -285,6 +296,12 @@ pub fn fen_from_squares(squares: &[Square; 64]) -> String {
     fen
 }
 
+pub fn is_fen_in_check(fen: &str, color: Color) -> bool {
+    let mut board = Board::new();
+    board.squares = squares_from_fen(fen);
+    board.in_check(color)
+}
+
 pub fn display_board(board: &Board) {
     for y in 0..8 {
         for x in 0..8 {
@@ -473,10 +490,10 @@ mod tests {
         assert_eq!(board.board_info.all_pieces_bitboard.count_zeros(), 32);
 
         // pieces
-        assert_eq!(board.board_info.color_bitboards[0].count_ones(), 16);
-        assert_eq!(board.board_info.color_bitboards[0].count_zeros(), 48);
-        assert_eq!(board.board_info.color_bitboards[1].count_ones(), 16);
-        assert_eq!(board.board_info.color_bitboards[1].count_zeros(), 48);
+        assert_eq!(board.board_info.player_bitboards[0].count_ones(), 16);
+        assert_eq!(board.board_info.player_bitboards[0].count_zeros(), 48);
+        assert_eq!(board.board_info.player_bitboards[1].count_ones(), 16);
+        assert_eq!(board.board_info.player_bitboards[1].count_zeros(), 48);
 
         // kings
         assert_eq!(board.board_info.piece_bitboards[0].count_ones(), 1);

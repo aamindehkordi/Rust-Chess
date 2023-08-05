@@ -32,6 +32,44 @@ pub struct Move {
     pub color: Color,
 }
 
+impl Display for Move {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (x1, y1) = self.from;
+        let (x2, y2) = self.to;
+        let from_piece = self.from_piece;
+        let move_type = self.move_type.clone();
+        let mut mv = String::new();
+        match move_type {
+            MoveType::Normal => {
+                mv.push_str(&format!("{} to ({}, {})", from_piece, x2, y2));
+            }
+            MoveType::DoublePawnPush => {
+                mv.push_str(&format!("{} to ({}, {})", from_piece, x2, y2));
+            }
+            MoveType::Capture => {
+                mv.push_str(&format!("{} x({}, {})", from_piece, x2, y2));
+            }
+            MoveType::Castle(castle_type) => {
+                if castle_type == CastleType::KingSide {
+                    mv.push_str("O-O");
+                } else {
+                    mv.push_str("O-O-O");
+                }
+            }
+            MoveType::EnPassant => {
+                mv.push_str(&format!("{} x({}, {})", from_piece, x2, y2));
+            }
+            MoveType::Promotion(promo_piece) => {
+                mv.push_str(&format!("{} to ({}, {})={}", from_piece, x2, y2, promo_piece));
+            }
+            MoveType::PromotionCapture(promo_piece) => {
+                mv.push_str(&format!("{} x({}, {})={}", from_piece, x2, y2, promo_piece));
+            }
+        }
+        write!(f, "{}", mv)
+    }
+}
+
 impl MoveType {
     pub fn is_normal(&self) -> bool {
         matches!(self, MoveType::Normal)
