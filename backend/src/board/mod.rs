@@ -1,12 +1,16 @@
-use crate::board::board_info::BoardInfo;
-use crate::board::piece::{to_char, Piece};
-use crate::game::player;
-use crate::rules::r#move::Move;
+use std::fmt::Display;
+use crate::board::board_info::{bb_color_idx, bb_piece_idx, BoardInfo};
+use crate::board::piece::{to_char, Piece, get_moves};
+use crate::game::game_state::GameState;
+use crate::game::{Game, get_all_moves, player};
+use crate::game::player::Color;
+use crate::rules::r#move::{Move, MoveType};
 
 mod board_info;
 pub mod piece;
 
 pub type Position = (u8, u8);
+
 pub type Square = Option<Piece>;
 
 #[derive(Clone)]
@@ -40,19 +44,13 @@ impl Board {
         let mut board = Self::new();
 
         board.squares = squares_from_fen(fen);
-        board.board_info.update_bitboards(board.squares);
 
         board
     }
 
     pub fn new_standard() -> Self {
         let fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr";
-        let mut board = Self::new();
-
-        board.squares = squares_from_fen(fen);
-        board.board_info.update_bitboards(board.squares);
-
-        board
+        Self::new_from_fen(fen)
     }
 
     pub fn get(&self, pos: Position) -> Square {
@@ -73,8 +71,6 @@ impl Board {
         }
         self.squares[idx(pos)] = None;
         self.squares[idx(m.to)] = Some(piece);
-
-        self.board_info.update_bitboards(self.squares);
     }
 
     pub fn undo_move(&mut self) {
@@ -90,9 +86,52 @@ impl Board {
             self.squares[idx(m.to)] = None;
         }
         self.squares[idx(pos)] = Some(piece);
-
-        self.board_info.update_bitboards(self.squares);
     }
+}
+
+pub fn update_bitboards(game: &Game) -> BoardInfo{
+    let board = &game.board;
+    let board_info = board.board_info.clone();
+    let mut bi = board_info;
+    // Reset bitboards
+    bi.reset_bitboards();
+
+    // Update squares
+    bi.squares = board.squares;
+
+    // Update bitboards
+    for (i, square) in bi.squares.iter().enumerate() {
+        if let Some(piece) = square {
+            let piece_bitboard = 1 << i;
+            let player_bitboard = 1 << i;
+
+            bi.piece_bitboards[bb_piece_idx(piece.kind, piece.color)] |= piece_bitboard;
+            bi.player_bitboards[bb_color_idx(piece.color)] |= player_bitboard;
+            bi.all_pieces_bitboard |= piece_bitboard;
+            let moves = get_moves(game, piece);
+            for mv in moves {
+                let bit_index = idx(mv.to);
+                if mv.is_capture() {
+                    bi.piece_capture_bitboards[bb_piece_idx(piece.kind, piece.color)] |= 1 << bit_index;
+                    bi.color_capture_bitboards[bb_color_idx(piece.color)] |= 1 << bit_index;
+                } else {
+                    bi.piece_move_bitboards[bb_piece_idx(piece.kind, piece.color)] |= 1 << bit_index;
+                    bi.color_move_bitboards[bb_color_idx(piece.color)] |= 1 << bit_index;
+                }
+            }
+        }
+    }
+
+    bi
+}
+
+pub fn update_board(game: &Game) -> Board {
+    let mut board = game.board.clone();
+    board.board_info = update_bitboards(game);
+
+
+
+    board
 }
 
 #[inline]
@@ -259,6 +298,10 @@ pub fn display_board(board: &Board) {
         }
         println!();
     }
+}
+
+pub fn in_bounds(pos: Position) -> bool {
+    pos.0 < 8 && pos.1 < 8
 }
 
 #[cfg(test)]

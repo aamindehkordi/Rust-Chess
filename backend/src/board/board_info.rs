@@ -1,23 +1,23 @@
-use crate::board::piece::{color_idx, piece_idx};
-use crate::board::Square;
+use crate::board::piece::{PieceKind};
+use crate::board::{Board, Square};
+use crate::game::player::Color;
+use crate::rules::r#move::{Move, MoveType};
 
 pub type Bitboard = u64;
 pub type Position = (u8, u8);
 
 #[derive(Clone)]
 pub struct BoardInfo {
-    pub squares: [Square; 64],
-    pub piece_bitboards: [Bitboard; 12],
-    pub color_bitboards: [Bitboard; 2],
-    pub all_pieces_bitboard: Bitboard,
+    pub squares: [Square; 64], // Array of 64 Option<Piece> values
+    pub piece_bitboards: [Bitboard; 12], // Array of 12 Bitboards, one for each piece type
+    pub player_bitboards: [Bitboard; 2], // Array of 2 Bitboards, one for each player
+    pub all_pieces_bitboard: Bitboard, // Bitboard of all pieces
 
-    pub piece_capture_bitboards: [Bitboard; 12],
-    pub color_capture_bitboards: [Bitboard; 2],
-    pub all_pieces_capture_bitboard: Bitboard,
+    pub piece_capture_bitboards: [Bitboard; 12], // Array of 12 Bitboards, one for each piece that can be captured
+    pub color_capture_bitboards: [Bitboard; 2], // Array of 2 Bitboards, one for each player whose pieces can be captured
 
-    pub piece_move_bitboards: [Bitboard; 12],
-    pub color_move_bitboards: [Bitboard; 2],
-    pub all_pieces_move_bitboard: Bitboard,
+    pub piece_move_bitboards: [Bitboard; 12], // Array of 12 Bitboards, one for each piece's moves
+    pub color_move_bitboards: [Bitboard; 2], // Array of 2 Bitboards, one for each player's moves
 
     pub white_king_pos: Position,
     pub black_king_pos: Position,
@@ -33,16 +33,14 @@ impl BoardInfo {
         Self {
             squares,
             piece_bitboards: [0; 12],
-            color_bitboards: [0; 2],
+            player_bitboards: [0; 2],
             all_pieces_bitboard: 0,
 
             piece_capture_bitboards: [0; 12],
             color_capture_bitboards: [0; 2],
-            all_pieces_capture_bitboard: 0,
 
             piece_move_bitboards: [0; 12],
             color_move_bitboards: [0; 2],
-            all_pieces_move_bitboard: 0,
 
             white_king_pos: (0, 0),
             black_king_pos: (0, 0),
@@ -56,16 +54,14 @@ impl BoardInfo {
 
     pub fn reset_bitboards(&mut self) {
         self.piece_bitboards = [0; 12];
-        self.color_bitboards = [0; 2];
+        self.player_bitboards = [0; 2];
         self.all_pieces_bitboard = 0;
 
         self.piece_capture_bitboards = [0; 12];
         self.color_capture_bitboards = [0; 2];
-        self.all_pieces_capture_bitboard = 0;
 
         self.piece_move_bitboards = [0; 12];
         self.color_move_bitboards = [0; 2];
-        self.all_pieces_move_bitboard = 0;
     }
 
     pub fn update_bitboards(&mut self, squares: [Square; 64]) {
@@ -82,4 +78,28 @@ impl BoardInfo {
             }
         }
     }
+}
+
+pub fn bb_color_idx(color: Color) -> usize {
+    if color == Color::White {
+        0
+    } else {
+        1
+    }
+}
+
+pub fn bb_piece_idx(kind: PieceKind, color: Color) -> usize {
+    let mut idx: usize;
+    match kind {
+        PieceKind::Pawn => idx = 1,
+        PieceKind::Knight => idx = 2,
+        PieceKind::Bishop => idx = 3,
+        PieceKind::Rook => idx = 4,
+        PieceKind::Queen => idx = 5,
+        PieceKind::King => idx = 0,
+    }
+    if color == Color::Black {
+        idx += 6;
+    }
+    idx
 }

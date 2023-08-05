@@ -1,16 +1,17 @@
 pub mod r#move;
 
-use crate::board::piece::PieceKind;
-use crate::board::Position;
+use crate::board::piece::{Piece, PieceKind};
+use crate::board::{in_bounds, Position};
 use crate::game::player::Color;
-use crate::game::{is_attacked_not_bb, Game};
+use crate::game::{is_attacked_not_bb, Game, apply_move};
 use crate::rules::r#move::{CastleType, Move, MoveType};
 use std::cmp::{max, min};
 
-pub fn generate_pawn_moves(game: Game, pos: Position, color: Color) -> Vec<Move> {
+pub fn generate_pawn_moves(game: Game, piece: Piece) -> Vec<Move> {
     let mut moves = Vec::new(); // Vector to store moves
-    let (x, y) = pos; // Get the position of the pawn
-    let piece = game.board.get(pos).unwrap(); // Get the piece at the given position
+    let pos = piece.position; // Get the position of the pawn
+    let (x, y) = pos; // Get the x and y coordinates of the pawn
+    let color = piece.color; // Get the color of the pawn
     let direction = match color {
         // Get the direction of the pawn
         Color::White => 1,
@@ -87,9 +88,11 @@ pub fn generate_pawn_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
     moves
 }
 
-pub fn generate_king_moves(game: Game, pos: Position, color: Color) -> Vec<Move> {
+pub fn generate_king_moves(game: Game, piece: Piece) -> Vec<Move> {
     let mut moves = Vec::new();
     let gs = &game.game_state;
+    let pos = piece.position;
+    let color = piece.color;
     let (x, y) = pos;
     let piece = game.board.get(pos).unwrap();
 
@@ -107,7 +110,7 @@ pub fn generate_king_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
 
     for &(dx, dy) in directions.iter() {
         let to_pos = ((x as i8 + dx) as u8, (y as i8 + dy) as u8);
-        capture_or_normal(game.clone(), color, pos, to_pos, &mut moves);
+        capture_or_normal(game.clone(), color, piece, to_pos, &mut moves);
     }
 
     // Castle move generation
@@ -174,8 +177,10 @@ pub fn generate_king_moves(game: Game, pos: Position, color: Color) -> Vec<Move>
 }
 
 // Function to generate all legal moves for a knight at a given position
-pub fn generate_knight_moves(game: Game, from_pos: Position, color: Color) -> Vec<Move> {
+pub fn generate_knight_moves(game: Game, piece: Piece) -> Vec<Move> {
     let mut moves = Vec::new();
+    let color = piece.color;
+    let from_pos = piece.position;
     let (x, y) = from_pos;
     let _piece = game.board.get(from_pos).unwrap();
 
@@ -193,7 +198,46 @@ pub fn generate_knight_moves(game: Game, from_pos: Position, color: Color) -> Ve
 
     for direction in &directions {
         let to_pos = ((x as i8 + direction.0) as u8, (y as i8 + direction.1) as u8);
-        capture_or_normal(game.clone(), color, from_pos, to_pos, &mut moves);
+        capture_or_normal(game.clone(), color, piece, to_pos, &mut moves);
+    }
+    moves
+}
+
+// Function to generate all legal moves for a sliding piece at a given position
+pub fn generate_sliding_move(game: Game, piece: Piece) -> Vec<Move> {
+    let mut moves = Vec::new();
+    let from_pos = piece.position;
+    let color = piece.color;
+    let directions: Vec<(i8, i8)>;
+    // horizontal and vertical directions
+    let hdirections = [(-1, 0), (0, -1), (0, 1), (1, 0)];
+    let ddirections = [(-1, -1), (-1, 1), (1, -1), (1, 1)];
+    // diagonal directions
+    if piece.kind == PieceKind::Queen {
+        directions = hdirections
+            .iter()
+            .chain(ddirections.iter())
+            .cloned()
+            .collect();
+    } else if piece.kind == PieceKind::Rook {
+        directions = hdirections.to_vec();
+    } else {
+        // Bishop
+        directions = ddirections.to_vec();
+    }
+
+    for direction in directions.iter() {
+        let mut distance = 1;
+        loop {
+            let new_x = (from_pos.0 as i8 + distance * direction.0) as u8;
+            let new_y = (from_pos.1 as i8 + distance * direction.1) as u8;
+            let to_pos = (new_x, new_y);
+
+            if capture_or_normal(game.clone(), color, piece, to_pos, &mut moves) {
+                break;
+            }
+            distance += 1;
+        }
     }
     moves
 }
@@ -265,11 +309,10 @@ pub fn promotion_attack_move(game: Game, _color: Color, fmv: (u8, u8), pmv: (u8,
 pub fn capture_or_normal(
     game: Game,
     color: Color,
-    from_pos: (u8, u8),
+    piece: Piece,
     to_pos: (u8, u8),
     moves: &mut Vec<Move>,
 ) -> bool {
-    let piece = game.board.get(from_pos).unwrap();
     if in_bounds(to_pos) {
         let to_square = game.board.get(to_pos);
         match to_square {
@@ -285,46 +328,4 @@ pub fn capture_or_normal(
         }
     }
     true
-}
-
-// Function to generate all legal moves for a sliding piece at a given position
-pub fn generate_sliding_move(game: Game, from_pos: Position, color: Color) -> Vec<Move> {
-    let mut moves = Vec::new();
-    let piece = game.board.get(from_pos).unwrap();
-    let directions: Vec<(i8, i8)>;
-    // horizontal and vertical directions
-    let hdirections = [(-1, 0), (0, -1), (0, 1), (1, 0)];
-    let ddirections = [(-1, -1), (-1, 1), (1, -1), (1, 1)];
-    // diagonal directions
-    if piece.kind == PieceKind::Queen {
-        directions = hdirections
-            .iter()
-            .chain(ddirections.iter())
-            .cloned()
-            .collect();
-    } else if piece.kind == PieceKind::Rook {
-        directions = hdirections.to_vec();
-    } else {
-        // Bishop
-        directions = ddirections.to_vec();
-    }
-
-    for direction in directions.iter() {
-        let mut distance = 1;
-        loop {
-            let new_x = (from_pos.0 as i8 + distance * direction.0) as u8;
-            let new_y = (from_pos.1 as i8 + distance * direction.1) as u8;
-            let to_pos = (new_x, new_y);
-
-            if capture_or_normal(game.clone(), color, from_pos, to_pos, &mut moves) {
-                break;
-            }
-            distance += 1;
-        }
-    }
-    moves
-}
-
-pub fn in_bounds(pos: Position) -> bool {
-    pos.0 < 8 && pos.1 < 8
 }

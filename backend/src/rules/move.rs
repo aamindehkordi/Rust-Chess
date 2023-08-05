@@ -1,16 +1,17 @@
+use std::fmt::Display;
 use crate::board::piece::{Piece, PieceKind};
 use crate::board::Position;
 use crate::game::player::Color;
 
 // Enum to represent different types of castle moves
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum CastleType {
     KingSide,
     QueenSide,
 }
 
 // Enum to represent different types of moves
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum MoveType {
     Normal,
     DoublePawnPush,
@@ -68,11 +69,10 @@ impl Move {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::piece::{Piece, PieceKind};
-    use crate::board::{display_board, idx, Square};
+    use crate::board::piece::{get_moves, Piece, PieceKind};
+    use crate::board::{display_board, idx, in_bounds, Square};
     use crate::game::player::Color;
-    use crate::game::{apply_move, get_current_moves, get_moves, Game};
-    use crate::rules::in_bounds;
+    use crate::game::{apply_move, Game, get_current_moves};
     use crate::rules::r#move::Move;
 
     fn display_moves(game: &mut Game, moves: &[Move]) {
@@ -80,6 +80,8 @@ mod tests {
             let mut gs = game.clone();
             gs = apply_move(gs, mv.from, mv.to);
             display_board(&gs.board);
+            println!("Move: {:}", mv);
+            println!("----------------------------------")
         }
     }
 
@@ -117,7 +119,7 @@ mod tests {
     fn game_with_piece_at(pos: (u8, u8), color: Color, kind: PieceKind) -> Game {
         let mut game = Game::new();
         game.game_state.turn = color.to_idx();
-        game.board.squares = place_piece(game.board.squares, pos, color, kind);
+        game.board.squares[idx(pos)] = Some(Piece::new(kind, pos, color));
         game
     }
 
@@ -125,10 +127,8 @@ mod tests {
         game_with_piece_at(pos, color, PieceKind::Queen)
     }
 
-    fn place_piece(sq: [Square; 64], pos: (u8, u8), color: Color, kind: PieceKind) -> [Square; 64] {
-        let mut squares = sq;
-        squares[idx(pos)] = Some(Piece::new(kind, pos, color));
-        squares
+    fn place_piece(sq: &mut [Square; 64], pos: (u8, u8), color: Color, kind: PieceKind) {
+        sq[idx(pos)] = Some(Piece::new(kind, pos, color));
     }
 
     fn scattered_surround_by(
@@ -154,7 +154,7 @@ mod tests {
             .collect::<Vec<(u8, u8)>>();
         for pos in positions {
             if in_bounds(pos) {
-                place_piece(gs.board.squares, pos, color, kind);
+                gs.board.squares[idx(pos)] = Some(Piece::new(kind, pos, color));
             }
         }
     }
@@ -167,8 +167,8 @@ mod tests {
         queen_scenario(&mut game, queen_pos, 27, color);
 
         // Now, add a white rook at (3, 5) and a black rook at (5, 3).
-        place_piece(game.board.squares, (3, 5), color, PieceKind::Rook);
-        place_piece(game.board.squares, (5, 3), color.other(), PieceKind::Rook);
+        game.board.squares[idx((3, 5))] = Some(Piece::new(PieceKind::Rook, (3, 5), color));
+        game.board.squares[idx((5, 3))] = Some(Piece::new(PieceKind::Rook,(5, 3), color.other()));
 
         // The queen should now have 22 moves: 5 on the rank, 4 on the file, 7 on one diagonal, and 6 on the other diagonal.
         queen_scenario(&mut game, queen_pos, 22, color);
@@ -212,8 +212,8 @@ mod tests {
         let mut game = game_with_queen_at(queen_pos, color);
 
         // Add an enemy rook at (7, 4) and the white king at (5, 4).
-        place_piece(game.board.squares, (7, 4), color.other(), PieceKind::Rook);
-        place_piece(game.board.squares, (5, 4), color, PieceKind::King);
+        game.board.squares[idx((7, 4))] = Some(Piece::new(PieceKind::Rook,(7, 4), color.other()));
+        game.board.squares[idx((5, 4))] = Some(Piece::new(PieceKind::King, (5, 4), color));
 
         // The queen should now have 1 moves: (7, 4).
         queen_scenario(&mut game, queen_pos, 2, color);
@@ -222,8 +222,8 @@ mod tests {
         let mut game = game_with_queen_at(queen_pos, color);
 
         // Add an enemy rook at (7, 4) and the white king at (3, 4).
-        place_piece(game.board.squares, (7, 4), color.other(), PieceKind::Rook);
-        place_piece(game.board.squares, (3, 4), color, PieceKind::King);
+        game.board.squares[idx((7, 4))] = Some(Piece::new(PieceKind::Rook,(7, 4), color.other()));
+        game.board.squares[idx((3, 4))] = Some(Piece::new(PieceKind::King,(3, 4), color));
 
         // The queen should now have 4 moves: to (4, 4), (5, 4), (6,4).
         queen_scenario(&mut game, queen_pos, 4, color);

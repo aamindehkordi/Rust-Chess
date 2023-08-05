@@ -1,3 +1,4 @@
+use crate::board::{Board, update_board};
 use crate::game::player::{Color, Player};
 use crate::rules::r#move::Move;
 

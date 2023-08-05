@@ -1,14 +1,11 @@
 pub mod game_state;
 pub mod player;
 
-use crate::board::piece::{Piece, PieceKind};
-use crate::board::{display_board, Board, Position};
+use crate::board::{Board, display_board, piece, Position, update_board};
+use crate::board::piece::get_moves;
 use crate::game::game_state::GameState;
-use crate::game::player::{user_mv_idx, Color};
+use crate::game::player::{Color, from_idx, user_mv_idx};
 use crate::rules::r#move::Move;
-use crate::rules::{
-    generate_king_moves, generate_knight_moves, generate_pawn_moves, generate_sliding_move,
-};
 
 #[derive(Clone)]
 pub struct Game {
@@ -36,6 +33,8 @@ impl Game {
             game_state: GameState::new(),
         }
     }
+
+
 }
 pub fn play(mut game: Game) {
     loop {
@@ -81,7 +80,7 @@ pub fn is_attacked_not_bb(game: Game, pos: Position, color: Color) -> bool {
 
 pub fn get_current_moves(game: &Game) -> Vec<Move> {
     let mut moves: Vec<Move> = Vec::new();
-    let color = crate::player::from_idx(game.game_state.turn);
+    let color = from_idx(game.game_state.turn);
 
     for piece in game.board.squares.iter().flatten() {
         if piece.color == color {
