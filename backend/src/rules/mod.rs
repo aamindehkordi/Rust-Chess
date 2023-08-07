@@ -33,7 +33,6 @@ pub fn generate_pawn_moves(game: Game, piece: Piece) -> Vec<Move> {
 
     // Double move forward
     let double_forward_pos = (x, (y as i8 + 2 * direction) as u8);
-    let _double_forward_square = game.board.get(double_forward_pos);
     if (y == 1 || y == 6)
         && in_bounds(double_forward_pos)
         && game.board.get(forward_pos).is_none()
@@ -323,13 +322,6 @@ pub fn capture_or_normal(
     if in_bounds(to_pos) {
         let nmv = Move::new(piece, to_pos, MoveType::Normal, piece.color);
         let cmv = Move::new(piece, to_pos, MoveType::Capture, piece.color);
-
-        if game.game_state.is_in_check(color)
-            && (!will_block_check(game.clone(), nmv.clone())
-                || !will_block_check(game.clone(), cmv.clone()))
-        {
-            return true;
-        }
 
         let to_square = game.board.get(to_pos);
         match to_square {

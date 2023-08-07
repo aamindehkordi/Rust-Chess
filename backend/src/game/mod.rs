@@ -92,16 +92,19 @@ pub fn is_attacked_not_bb(game: Game, pos: Position, color: Color) -> bool {
     attacked
 }
 
-pub fn get_current_moves(game: &Game) -> Vec<Move> {
+pub fn get_color_moves(game: &Game, color: Color) -> Vec<Move> {
     let mut moves: Vec<Move> = Vec::new();
-    let color = from_idx(game.game_state.turn);
-
     for piece in game.board.squares.iter().flatten() {
         if piece.color == color {
             moves.append(&mut get_moves(game, piece));
         }
     }
     moves
+}
+
+pub fn get_current_moves(game: &Game) -> Vec<Move> {
+    let color = from_idx(game.game_state.turn);
+    get_color_moves(game, color)
 }
 
 pub fn get_all_moves(game: &Game) -> Vec<Move> {
