@@ -43,6 +43,38 @@ pub struct Piece {
 }
 
 impl Piece {
+    pub fn custom(kind: PieceKind, position: Position, color: Color, moved: bool, en_passant: Option<bool>, can_castle: Option<bool>) -> Self {
+        match kind {
+            PieceKind::Pawn => Self {
+                kind,
+                position,
+                color,
+                has_moved: moved,
+                first_move: !moved,
+                en_passant,
+                can_castle,
+            },
+            PieceKind::King => Self {
+                kind,
+                position,
+                color,
+                has_moved: moved,
+                first_move: !moved,
+                en_passant,
+                can_castle,
+            },
+            _ => Self {
+                kind,
+                position,
+                color,
+                has_moved: moved,
+                first_move: !moved,
+                en_passant,
+                can_castle,
+            },
+        }
+    }
+    
     pub fn new(kind: PieceKind, position: Position, color: Color) -> Self {
         match kind {
             PieceKind::Pawn => Self {
