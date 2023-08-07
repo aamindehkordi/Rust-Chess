@@ -300,21 +300,21 @@ mod tests {
     fn test_move_generation_3() {
         let mut game = Game::new_standard();
         let num_positions = recursive_mvgen_test(&mut game, 3);
-        assert_eq!(num_positions, 8902);
+        assert_eq!(num_positions, 8902);// 8000 62ms
     }
 
     #[test]
     fn test_move_generation_4() {
         let mut game = Game::new_standard();
         let num_positions = recursive_mvgen_test(&mut game, 4);
-        assert_eq!(num_positions, 197281); // actual: 197742 17s
+        assert_eq!(num_positions, 197281); // actual: 160000 989ms
     }
 
     #[test]
     fn test_move_generation_5() {
         let mut game = Game::new_standard();
         let num_positions = recursive_mvgen_test(&mut game, 5);
-        assert_eq!(num_positions, 4865609);
+        assert_eq!(num_positions, 4865609); // actual: 3200000 14 sec
     }
 
     #[test]

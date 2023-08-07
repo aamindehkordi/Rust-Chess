@@ -142,6 +142,7 @@ pub fn update_bitboards(game: &Game) -> BoardInfo {
 
 pub fn update_board(game: &Game) -> Board {
     let mut board = game.board.clone();
+    board.move_history = game.game_state.move_history.clone();
     board.board_info = update_bitboards(game);
 
     board

@@ -39,11 +39,14 @@ pub fn update(game: Game, mv: Move) -> Game {
     let mut game = game;
     let mut gs = &mut game.game_state;
     gs.fen = game.board.to_fen();
-    game.board.make_move(mv);
+    game.board.make_move(mv.clone());
+    gs.move_history.push(mv.clone());
     gs.white_in_check = game.board.is_in_check(Color::White);
     gs.black_in_check = game.board.is_in_check(Color::Black);
     gs.next_turn();
+    game.game_state = gs.clone();
     game.board = update_board(&game);
+    game.game_state.move_history = game.board.move_history.clone();
     game
 }
 
