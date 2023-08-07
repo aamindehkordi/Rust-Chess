@@ -6,6 +6,7 @@ use crate::board::{display_board, update_board, Board, Position};
 use crate::game::game_state::GameState;
 use crate::game::player::{from_idx, user_mv_idx, Color};
 use crate::rules::r#move::Move;
+use crate::rules::will_block_check;
 
 #[derive(Clone)]
 pub struct Game {
@@ -39,28 +40,32 @@ pub fn update(game: Game, mv: Move) -> Game {
     let mut gs = &mut game.game_state;
     gs.fen = game.board.to_fen();
     game.board.make_move(mv);
-    gs.white_in_check = game.board.in_check(Color::White);
-    gs.black_in_check = game.board.in_check(Color::Black);
+    gs.white_in_check = game.board.is_in_check(Color::White);
+    gs.black_in_check = game.board.is_in_check(Color::Black);
     gs.next_turn();
     game.board = update_board(&game);
     game
 }
 
 pub fn play(mut game: Game) {
+    game.board.valid_moves = get_current_moves(&game);
     loop {
         display_board(&game.board);
         let mv_idx = user_mv_idx();
         let from: Position = (mv_idx.0, mv_idx.1);
         let to: Position = (mv_idx.2, mv_idx.3);
         game = apply_move(game, from, to);
+        game.board.valid_moves = get_current_moves(&game);
     }
 }
+
+
 
 pub fn apply_move(game: Game, from: Position, to: Position) -> Game {
     let mut game = game;
     let from_square = game.board.get(from);
-    if let Some(piece) = from_square {
-        let moves = get_moves(&game, &piece);
+    let mut moves = game.board.valid_moves.clone();
+    if let Some(_) = from_square {
         for mv in moves {
             if mv.to == to {
                 game = update(game, mv);

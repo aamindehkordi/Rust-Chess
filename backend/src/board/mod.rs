@@ -2,8 +2,9 @@ use crate::board::board_info::{bb_color_idx, bb_piece_idx, BoardInfo};
 use crate::board::piece::{get_moves, to_char, Piece};
 
 use crate::game::player::Color;
-use crate::game::{player, Game};
+use crate::game::{player, Game, get_all_moves, get_current_moves};
 use crate::rules::r#move::Move;
+use crate::rules::will_block_check;
 
 mod board_info;
 pub mod piece;
@@ -18,6 +19,7 @@ pub struct Board {
     pub board_info: BoardInfo,
     pub move_history: Vec<Move>,
     pub captured_pieces: Vec<Piece>,
+    pub valid_moves: Vec<Move>,
 }
 
 impl Default for Board {
@@ -36,6 +38,7 @@ impl Board {
 
             move_history: Vec::new(),
             captured_pieces: Vec::new(),
+            valid_moves: Vec::new(),
         }
     }
 
@@ -60,7 +63,7 @@ impl Board {
         fen_from_squares(&self.squares)
     }
 
-    pub fn in_check(&self, color: Color) -> bool {
+    pub fn is_in_check(&self, color: Color) -> bool {
         let enemy_color = color.other();
         let king = self.board_info.king(color);
         let enemy_moves = self.board_info.color_move_bitboards[bb_color_idx(enemy_color)];
@@ -81,6 +84,7 @@ impl Board {
         }
         self.squares[idx(pos)] = None;
         self.squares[idx(m.to)] = Some(piece);
+
     }
 
     pub fn undo_move(&mut self) {
@@ -118,7 +122,7 @@ pub fn update_bitboards(game: &Game) -> BoardInfo {
             bi.piece_bitboards[bb_piece_idx(piece.kind, piece.color)] |= piece_bitboard;
             bi.player_bitboards[bb_color_idx(piece.color)] |= player_bitboard;
             bi.all_pieces_bitboard |= piece_bitboard;
-            let moves = get_moves(game, piece);
+            let moves = get_moves(game, piece);// overflow occurs here
             for mv in moves {
                 let bit_index = idx(mv.to);
                 if mv.is_capture() {
@@ -298,7 +302,7 @@ pub fn fen_from_squares(squares: &[Square; 64]) -> String {
 pub fn is_fen_in_check(fen: &str, color: Color) -> bool {
     let mut board = Board::new();
     board.squares = squares_from_fen(fen);
-    board.in_check(color)
+    board.is_in_check(color)
 }
 
 pub fn display_board(board: &Board) {
