@@ -110,11 +110,13 @@ impl Move {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::board::piece::{get_moves, Piece, PieceKind};
     use crate::board::{display_board, idx, in_bounds, Square};
     use crate::game::player::Color;
-    use crate::game::{apply_move, get_current_moves, Game};
+    use crate::game::{apply_move, get_current_moves, Game, get_color_moves};
     use crate::rules::r#move::Move;
+    use crate::rules::will_block_check;
 
     fn display_moves(game: &mut Game, moves: &[Move]) {
         for mv in moves.iter() {
@@ -146,10 +148,10 @@ mod tests {
 
         num_positions
     }
-    fn queen_scenario(game: &mut Game, pos: (u8, u8), expected: usize, _color: Color) {
+    fn queen_scenario(game: &mut Game, pos: (u8, u8), expected: usize, color: Color) {
         let queen = game.board.get(pos).unwrap();
-        let mut moves = get_moves(game, &queen);
-        moves.retain(|m| m.from == pos);
+        game.board.valid_moves = get_color_moves(game, color);
+        let moves = get_moves(game, &queen);
 
         if moves.len() != expected {
             display_moves(game, &moves);
@@ -161,6 +163,9 @@ mod tests {
         let mut game = Game::new();
         game.game_state.turn = color.to_idx();
         game.board.squares[idx(pos)] = Some(Piece::new(kind, pos, color));
+        let mut moves = get_color_moves(&game, color);
+        moves.retain(|m| will_block_check(game.clone(), m.clone()));
+        game.board.valid_moves = moves;
         game
     }
 
@@ -172,13 +177,7 @@ mod tests {
         sq[idx(pos)] = Some(Piece::new(kind, pos, color));
     }
 
-    fn scattered_surround_by(
-        gs: &mut Game,
-        pos: (u8, u8),
-        color: Color,
-        kind: PieceKind,
-        distance: i8,
-    ) {
+    fn scattered_surround_by( gs: &mut Game, pos: (u8, u8), color: Color, kind: PieceKind, distance: i8, ) {
         let directions = [
             (-distance, -distance),
             (-distance, 0),
@@ -195,7 +194,7 @@ mod tests {
             .collect::<Vec<(u8, u8)>>();
         for pos in positions {
             if in_bounds(pos) {
-                gs.board.squares[idx(pos)] = Some(Piece::new(kind, pos, color));
+                gs.board.squares[idx(pos)] = Some(Piece::custom(kind, pos, color, true, None, None));
             }
         }
     }
@@ -206,6 +205,7 @@ mod tests {
         let color = Color::White;
         let mut game = game_with_queen_at(queen_pos, color);
         queen_scenario(&mut game, queen_pos, 27, color);
+        println!("Passed queen test 1");
 
         // Now, add a white rook at (3, 5) and a black rook at (5, 3).
         game.board.squares[idx((3, 5))] = Some(Piece::new(PieceKind::Rook, (3, 5), color));
@@ -213,6 +213,7 @@ mod tests {
 
         // The queen should now have 22 moves: 5 on the rank, 4 on the file, 7 on one diagonal, and 6 on the other diagonal.
         queen_scenario(&mut game, queen_pos, 22, color);
+        println!("Passed queen test 2");
 
         // Test for edge cases
         // Place the queen at the edge of the board
@@ -221,6 +222,7 @@ mod tests {
 
         // The queen should now have 21 moves: 7 on each rank, file, and diagonal.
         queen_scenario(&mut game, queen_pos, 21, color);
+        println!("Passed queen test 3");
 
         // Place the queen at the corner of the board
         queen_pos = (0, 0);
@@ -228,6 +230,7 @@ mod tests {
 
         // The queen should now have 21 moves: 7 on each rank, file, and diagonal.
         queen_scenario(&mut game, queen_pos, 21, color);
+        println!("Passed queen test 4");
 
         // Test for moves blocked by friendly pieces
         // Place the queen at the center of the board
@@ -238,6 +241,7 @@ mod tests {
 
         // The queen should now have 8 moves: 2 on the rank, 2 on the file, 4 on diagonals.
         queen_scenario(&mut game, queen_pos, 8, color);
+        println!("Passed queen test 5");
 
         // Test for moves blocked by enemy pieces
         game = game_with_queen_at(queen_pos, color);
@@ -247,6 +251,7 @@ mod tests {
 
         // The queen should now have 16 moves: 4 on the rank, 4 on the file, 4 on diagonals
         queen_scenario(&mut game, queen_pos, 16, color);
+        println!("Passed queen test 6");
 
         // Test Queen pinned
         queen_pos = (6, 4);
@@ -256,8 +261,12 @@ mod tests {
         game.board.squares[idx((7, 4))] = Some(Piece::new(PieceKind::Rook, (7, 4), color.other()));
         game.board.squares[idx((5, 4))] = Some(Piece::new(PieceKind::King, (5, 4), color));
 
+        let mut moves = get_color_moves(&game, color);
+        moves.retain(|m| will_block_check(game.clone(), m.clone()));
+        game.board.valid_moves = moves;
         // The queen should now have 1 moves: (7, 4).
         queen_scenario(&mut game, queen_pos, 2, color);
+        println!("Passed queen test 7");
 
         // Test Queen between king and enemy
         let mut game = game_with_queen_at(queen_pos, color);
@@ -268,6 +277,7 @@ mod tests {
 
         // The queen should now have 4 moves: to (4, 4), (5, 4), (6,4).
         queen_scenario(&mut game, queen_pos, 4, color);
+        println!("Passed queen test 8");
     }
 
     #[test]
