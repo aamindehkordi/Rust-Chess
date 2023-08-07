@@ -6,7 +6,7 @@ use crate::board::{display_board, update_board, Board, Position};
 use crate::game::game_state::GameState;
 use crate::game::player::{from_idx, user_mv_idx, Color};
 use crate::rules::r#move::Move;
-use crate::rules::will_block_check;
+
 
 #[derive(Clone)]
 pub struct Game {
@@ -59,13 +59,11 @@ pub fn play(mut game: Game) {
     }
 }
 
-
-
 pub fn apply_move(game: Game, from: Position, to: Position) -> Game {
     let mut game = game;
     let from_square = game.board.get(from);
-    let mut moves = game.board.valid_moves.clone();
-    if let Some(_) = from_square {
+    let moves = game.board.valid_moves.clone();
+    if from_square.is_some() {
         for mv in moves {
             if mv.to == to {
                 game = update(game, mv);

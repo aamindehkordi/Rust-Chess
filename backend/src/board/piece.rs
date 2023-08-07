@@ -43,7 +43,14 @@ pub struct Piece {
 }
 
 impl Piece {
-    pub fn custom(kind: PieceKind, position: Position, color: Color, moved: bool, en_passant: Option<bool>, can_castle: Option<bool>) -> Self {
+    pub fn custom(
+        kind: PieceKind,
+        position: Position,
+        color: Color,
+        moved: bool,
+        en_passant: Option<bool>,
+        can_castle: Option<bool>,
+    ) -> Self {
         match kind {
             PieceKind::Pawn => Self {
                 kind,
@@ -74,7 +81,7 @@ impl Piece {
             },
         }
     }
-    
+
     pub fn new(kind: PieceKind, position: Position, color: Color) -> Self {
         match kind {
             PieceKind::Pawn => Self {

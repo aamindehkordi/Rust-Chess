@@ -110,11 +110,11 @@ impl Move {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::board::piece::{get_moves, Piece, PieceKind};
     use crate::board::{display_board, idx, in_bounds, Square};
     use crate::game::player::Color;
-    use crate::game::{apply_move, get_current_moves, Game, get_color_moves};
+    use crate::game::{apply_move, get_color_moves, get_current_moves, Game};
     use crate::rules::r#move::Move;
     use crate::rules::will_block_check;
 
@@ -177,7 +177,13 @@ mod tests {
         sq[idx(pos)] = Some(Piece::new(kind, pos, color));
     }
 
-    fn scattered_surround_by( gs: &mut Game, pos: (u8, u8), color: Color, kind: PieceKind, distance: i8, ) {
+    fn scattered_surround_by(
+        gs: &mut Game,
+        pos: (u8, u8),
+        color: Color,
+        kind: PieceKind,
+        distance: i8,
+    ) {
         let directions = [
             (-distance, -distance),
             (-distance, 0),
@@ -194,7 +200,8 @@ mod tests {
             .collect::<Vec<(u8, u8)>>();
         for pos in positions {
             if in_bounds(pos) {
-                gs.board.squares[idx(pos)] = Some(Piece::custom(kind, pos, color, true, None, None));
+                gs.board.squares[idx(pos)] =
+                    Some(Piece::custom(kind, pos, color, true, None, None));
             }
         }
     }

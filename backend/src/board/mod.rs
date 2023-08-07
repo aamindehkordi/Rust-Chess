@@ -2,9 +2,9 @@ use crate::board::board_info::{bb_color_idx, bb_piece_idx, BoardInfo};
 use crate::board::piece::{get_moves, to_char, Piece};
 
 use crate::game::player::Color;
-use crate::game::{player, Game, get_all_moves, get_current_moves};
+use crate::game::{player, Game};
 use crate::rules::r#move::Move;
-use crate::rules::will_block_check;
+
 
 mod board_info;
 pub mod piece;
@@ -84,7 +84,6 @@ impl Board {
         }
         self.squares[idx(pos)] = None;
         self.squares[idx(m.to)] = Some(piece);
-
     }
 
     pub fn undo_move(&mut self) {
@@ -122,7 +121,7 @@ pub fn update_bitboards(game: &Game) -> BoardInfo {
             bi.piece_bitboards[bb_piece_idx(piece.kind, piece.color)] |= piece_bitboard;
             bi.player_bitboards[bb_color_idx(piece.color)] |= player_bitboard;
             bi.all_pieces_bitboard |= piece_bitboard;
-            let moves = get_moves(game, piece);// overflow occurs here
+            let moves = get_moves(game, piece); // overflow occurs here
             for mv in moves {
                 let bit_index = idx(mv.to);
                 if mv.is_capture() {
