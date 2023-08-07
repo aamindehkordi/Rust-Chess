@@ -305,13 +305,6 @@ pub fn promotion_attack_move(game: Game, _color: Color, fmv: (u8, u8), pmv: (u8,
     moves
 }
 
-pub fn will_block_check(game: Game, mv: Move) -> bool {
-    let mut temp = game;
-    temp = apply_move(temp, mv.from, mv.to);
-    let gs = temp.game_state;
-    gs.is_in_check(mv.color)
-}
-
 pub fn capture_or_normal(
     game: Game,
     color: Color,
