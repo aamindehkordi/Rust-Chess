@@ -149,8 +149,8 @@ mod tests {
     }
     fn queen_scenario(game: &mut Game, pos: (u8, u8), expected: usize, color: Color) {
         let queen = game.board.get(pos).unwrap();
-        game.board.valid_moves = get_color_moves(game, color);
-        let moves = get_moves(game, &queen);
+        game.board.board_info.valid_moves = get_color_moves(&game.board, color);
+        let moves = get_moves(&game.board.board_info, &queen);
 
         if moves.len() != expected {
             display_moves(game, &moves);
@@ -162,8 +162,8 @@ mod tests {
         let mut game = Game::new();
         game.game_state.turn = color.to_idx();
         game.board.squares[idx(pos)] = Some(Piece::new(kind, pos, color));
-        let mut moves = get_color_moves(&game, color);
-        game.board.valid_moves = moves;
+        let mut moves = get_color_moves(&game.board, color);
+        game.board.board_info.valid_moves = moves;
         game
     }
 

@@ -2,7 +2,7 @@ pub mod game_state;
 pub mod player;
 
 use crate::board::piece::get_moves;
-use crate::board::{display_board, update_board, Board, Position};
+use crate::board::{display_board, Board, Position};
 use crate::game::game_state::GameState;
 use crate::game::player::{from_idx, user_mv_idx, Color};
 use crate::rules::r#move::Move;
@@ -41,31 +41,31 @@ pub fn update(game: Game, mv: Move) -> Game {
     gs.fen = game.board.to_fen();
     game.board.make_move(mv.clone());
     gs.move_history.push(mv.clone());
-    gs.white_in_check = game.board.is_in_check(Color::White);
-    gs.black_in_check = game.board.is_in_check(Color::Black);
+    gs.white_in_check = game.board.board_info.is_in_check(Color::White);
+    gs.black_in_check = game.board.board_info.is_in_check(Color::Black);
     gs.next_turn();
     game.game_state = gs.clone();
-    game.board = update_board(&game);
-    game.game_state.move_history = game.board.move_history.clone();
+    game.board.update();
+    game.game_state.move_history = game.board.board_info.move_history.clone();
     game
 }
 
 pub fn play(mut game: Game) {
-    game.board.valid_moves = get_current_moves(&game);
+    game.board.board_info.valid_moves = get_current_moves(&game);
     loop {
         display_board(&game.board);
         let mv_idx = user_mv_idx();
         let from: Position = (mv_idx.0, mv_idx.1);
         let to: Position = (mv_idx.2, mv_idx.3);
         game = apply_move(game, from, to);
-        game.board.valid_moves = get_current_moves(&game);
+        game.board.board_info.valid_moves = get_current_moves(&game);
     }
 }
 
 pub fn apply_move(game: Game, from: Position, to: Position) -> Game {
     let mut game = game;
     let from_square = game.board.get(from);
-    let moves = game.board.valid_moves.clone();
+    let moves = game.board.board_info.valid_moves.clone();
     if from_square.is_some() {
         for mv in moves {
             if mv.to == to {
@@ -95,9 +95,9 @@ pub fn is_attacked_not_bb(game: Game, pos: Position, color: Color) -> bool {
 
 pub fn get_color_moves(game: &Game, color: Color) -> Vec<Move> {
     let mut moves: Vec<Move> = Vec::new();
-    for piece in game.board.squares.iter().flatten() {
+    for piece in board.squares.iter().flatten() {
         if piece.color == color {
-            moves.append(&mut get_moves(game, piece));
+            moves.append(&mut get_moves(&board.board_info, piece));
         }
     }
     moves
@@ -105,13 +105,13 @@ pub fn get_color_moves(game: &Game, color: Color) -> Vec<Move> {
 
 pub fn get_current_moves(game: &Game) -> Vec<Move> {
     let color = from_idx(game.game_state.turn);
-    get_color_moves(game, color)
+    get_color_moves(&game.board, color)
 }
 
-pub fn get_all_moves(game: &Game) -> Vec<Move> {
+pub fn get_all_moves(board: &Board) -> Vec<Move> {
     let mut moves: Vec<Move> = Vec::new();
-    for piece in game.board.squares.iter().flatten() {
-        moves.append(&mut get_moves(game, piece));
+    for piece in board.squares.iter().flatten() {
+        moves.append(&mut get_moves(&board.board_info, piece));
     }
     moves
 }

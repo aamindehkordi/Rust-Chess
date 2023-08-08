@@ -1,6 +1,7 @@
 use crate::board::piece::PieceKind;
 use crate::board::Square;
 use crate::game::player::Color;
+use crate::rules::r#move::Move;
 
 pub type Bitboard = u64;
 pub type Position = (u8, u8);
@@ -25,6 +26,12 @@ pub struct BoardInfo {
     pub white_can_castle_queenside: bool,
     pub black_can_castle_kingside: bool,
     pub black_can_castle_queenside: bool,
+
+    pub move_history: Vec<Move>,
+    pub captured_pieces: Vec<Piece>,
+    pub white_psuedo_moves: Vec<Move>,
+    pub black_psuedo_moves: Vec<Move>,
+    pub valid_moves: Vec<Move>,
 }
 
 impl BoardInfo {
@@ -44,10 +51,17 @@ impl BoardInfo {
             white_king_pos: (0, 0),
             black_king_pos: (0, 0),
 
-            white_can_castle_kingside: true,
-            white_can_castle_queenside: true,
-            black_can_castle_kingside: true,
-            black_can_castle_queenside: true,
+            white_can_castle_kingside: false,
+            white_can_castle_queenside: false,
+            black_can_castle_kingside: false,
+            black_can_castle_queenside: false,
+
+            move_history: Vec::new(),
+            captured_pieces: Vec::new(),
+            white_psuedo_moves: Vec::new(),
+            black_psuedo_moves: Vec::new(),
+            valid_moves: Vec::new(),
+
         }
     }
 
@@ -94,6 +108,29 @@ impl BoardInfo {
             self.black_king_pos
         }
     }
+
+    pub fn is_in_check(&self, color: Color) -> bool {
+        let enemy_color = color.other();
+        let king = self.king(color);
+        let enemy_moves = self.color_move_bitboards[bb_color_idx(enemy_color)];
+        (king & enemy_moves) != 0
+    }
+
+    pub fn is_attacked(&self, pos: Position, color: Color) -> bool {
+        let enemy_color = color.other();
+        let enemy_moves = self.color_move_bitboards[bb_color_idx(enemy_color)];
+        (pos_to_bb(pos) & enemy_moves) != 0
+    }
+
+    pub fn is_valid(&self, mv: &Move) -> bool {
+        let from = mv.from;
+        let to = mv.to;
+        let (from_x, from_y) = from;
+        let (to_x, to_y) = to;
+        from_x < 8 && from_y < 8 && to_x < 8 && to_y < 8
+        // todo check for check / pins
+    }
+
 }
 
 pub fn bb_color_idx(color: Color) -> usize {
@@ -118,4 +155,45 @@ pub fn bb_piece_idx(kind: PieceKind, color: Color) -> usize {
         idx += 6;
     }
     idx
+}
+pub fn bb(idx: usize) -> Bitboard {
+    1 << idx
+}
+
+pub fn pos_to_bb(pos: Position) -> Bitboard {
+    let (x, y) = pos;
+    1 << (x + y * 8)
+}
+
+pub fn update_board_info(board_info: BoardInfo, squares: [Option<Piece>; 64]) -> BoardInfo {
+    let mut board_info = board_info;
+    let mut white_psuedo_moves: Vec<Move> = Vec::new();
+    let mut black_psuedo_moves: Vec<Move> = Vec::new();
+
+    for (i, square) in squares.iter().enumerate() {
+        if let Some(piece) = square {
+            update_bitboards(&mut board_info, piece, i);
+
+            let moves = get_moves(&board_info, piece);
+            if piece.color == Color::White {
+                white_psuedo_moves.extend(moves);
+            } else {
+                black_psuedo_moves.extend(moves);
+            }
+        }
+    }
+
+    board_info.white_psuedo_moves = white_psuedo_moves;
+    board_info.black_psuedo_moves = black_psuedo_moves;
+    board_info
+}
+
+pub fn update_bitboards(board_info: &mut BoardInfo, piece: &Piece, position: usize) {
+    let kind = piece.kind;
+    let color = piece.color;
+
+    let bitboard = pos_to_bb(((position % 8) as u8, (position / 8) as u8));
+    board_info.piece_bitboards[bb_piece_idx(kind, color)] |= bitboard;
+    board_info.player_bitboards[bb_color_idx(color)] |= bitboard;
+    board_info.all_pieces_bitboard |= bitboard;
 }

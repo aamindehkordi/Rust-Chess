@@ -1,4 +1,4 @@
-use crate::board::Position;
+use crate::board::{Board, Position};
 use crate::game::player::Color;
 
 use crate::game::Game;
@@ -7,6 +7,7 @@ use crate::rules::{
     generate_king_moves, generate_knight_moves, generate_pawn_moves, generate_sliding_move,
 };
 use std::fmt::Display;
+use crate::board::board_info::BoardInfo;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum PieceKind {
@@ -159,14 +160,14 @@ impl Display for Piece {
     }
 }
 
-pub fn get_moves(game: &Game, p: &Piece) -> Vec<Move> {
+pub fn get_moves(board_info: &BoardInfo, p: &Piece) -> Vec<Move> {
     let piece = *p;
     match piece.kind {
-        PieceKind::Pawn => generate_pawn_moves(game.clone(), piece),
-        PieceKind::Rook => generate_sliding_move(game.clone(), piece),
-        PieceKind::Knight => generate_knight_moves(game.clone(), piece),
-        PieceKind::Bishop => generate_sliding_move(game.clone(), piece),
-        PieceKind::Queen => generate_sliding_move(game.clone(), piece),
-        PieceKind::King => generate_king_moves(game.clone(), piece),
+        PieceKind::Pawn => generate_pawn_moves(board_info.clone(), piece),
+        PieceKind::Rook => generate_sliding_move(board_info.clone(), piece),
+        PieceKind::Knight => generate_knight_moves(board_info.clone(), piece),
+        PieceKind::Bishop => generate_sliding_move(board_info.clone(), piece),
+        PieceKind::Queen => generate_sliding_move(board_info.clone(), piece),
+        PieceKind::King => generate_king_moves(board_info.clone(), piece),
     }
 }
