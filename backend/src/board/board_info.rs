@@ -566,6 +566,18 @@ pub fn pos_to_bb(pos: Position) -> Bitboard {
     1 << (x + y * 8)
 }
 
+
+/**
+ * Updates the board information for the current board state.
+ *
+ * This function updates the board information for the current board state. It updates the bitboards
+ * for the current player's pieces, the enemy player's pieces, and the current player's king position.
+ * It also updates the current player's psuedo moves.
+ *
+ * @param board_info - The board information to be updated.
+ * @param squares - The squares of the chessboard.
+ * @return The updated board information.
+ */
 pub fn update_board_info(board_info: BoardInfo, squares: [Option<Piece>; 64]) -> BoardInfo {
     let mut board_info = board_info;
     let mut white_psuedo_moves: Vec<Move> = Vec::new();
