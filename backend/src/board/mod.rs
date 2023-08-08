@@ -709,9 +709,74 @@ mod tests {
         test_move(&mut board, from, to, Black);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, piece::PieceKind::Knight);
+        assert_eq!(board.get(to).unwrap().kind, PieceKind::Knight);
 
-        // continue to castle once implemented.
+        // Test King Castling
+        let from = (4, 0); // e1
+        let to = (6, 0); // g1
+        test_kingside_castle(&mut board, from, to, White);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, King);
+
+        let from = (4, 7); // e8
+        let to = (2, 7); // c8
+        test_queenside_castle(&mut board, from, to, Black);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, King);
+
+        // Test Pawn En Passant
+        let from = (7, 1); // h2
+        let to = (7, 4); // h5 illegal move for testing
+        test_move(&mut board, from, to, White);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, Pawn);
+
+        let from = (6, 6); // g7
+        let to = (6, 4); // g5
+        test_move(&mut board, from, to, Black);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, Pawn);
+
+        let from = (7, 4); // h5
+        let to = (6, 5); // g6
+        test_en_passant(&mut board, from, to, White);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, Pawn);
+
+        // Test Pawn Promotion
+        let from = (2, 6); // c7
+        let to = (0, 0); // a1 illegal move for testing
+        test_promotion_capture(&mut board, from, to, Black);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, Queen);
+
+        let from = (6, 5); // g6
+        let to = (3, 7); // d8
+        test_promotion(&mut board, from, to, White);
+        display_board(&board);
+
+        assert_eq!(board.get(to).unwrap().kind, Queen);
+
+        // Test Undo
+        test_undo(&mut board);
+        display_board(&board);
+
+        assert!(board.get(to).is_none());
+
+        test_undo(&mut board);
+        display_board(&board);
+
+        assert!(board.get((0,0)).is_none());
+
+
+
+
     }
 
     #[test]
@@ -725,7 +790,6 @@ mod tests {
      * Note: The `display_board` and `test_undo` functions are assumed to be implemented elsewhere in the code.
      * This function serves as a test/demo for undoing moves.
      *
-     * @todo Implement the missing `display_board` and `test_undo` functions.
      */
     pub fn undo_moves() {
         let mut board = Board::new_standard();
