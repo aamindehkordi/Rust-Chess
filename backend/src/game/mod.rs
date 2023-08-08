@@ -77,23 +77,7 @@ pub fn apply_move(game: Game, from: Position, to: Position) -> Game {
     game.clone()
 }
 
-pub fn is_attacked_not_bb(game: Game, pos: Position, color: Color) -> bool {
-    let mut attacked = false;
-    for square in game.board.squares.iter().flatten() {
-        let piece = square;
-        if piece.color == color {
-            let moves = get_moves(&game, piece);
-            for mv in moves {
-                if mv.to == pos {
-                    attacked = true;
-                }
-            }
-        }
-    }
-    attacked
-}
-
-pub fn get_color_moves(game: &Game, color: Color) -> Vec<Move> {
+pub fn get_color_moves(board: &Board, color: Color) -> Vec<Move> {
     let mut moves: Vec<Move> = Vec::new();
     for piece in board.squares.iter().flatten() {
         if piece.color == color {
