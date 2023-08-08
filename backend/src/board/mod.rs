@@ -742,7 +742,6 @@ mod tests {
 
         assert!(board.get(to).is_none());
 
-        let _captured_pieces = board.board_info.captured_pieces.clone();
         test_undo(&mut board);
         display_board(&board);
 
