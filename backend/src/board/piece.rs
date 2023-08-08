@@ -1,4 +1,4 @@
-use crate::board::{Position};
+use crate::board::Position;
 use crate::game::player::Color;
 
 use crate::board::board_info::BoardInfo;
@@ -20,6 +20,15 @@ pub enum PieceKind {
 }
 
 impl Display for PieceKind {
+    /**
+     * Formats the PieceKind enum variant as a string.
+     *
+     * This function formats the PieceKind enum variant as a string representation using the standard fmt::Formatter.
+     *
+     * @param f - A mutable reference to the fmt::Formatter used for formatting the output.
+     *
+     * @returns Result - Ok if formatting was successful, Err if an error occurred during formatting.
+     */
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             PieceKind::Pawn => write!(f, "Pawn"),
@@ -116,6 +125,15 @@ impl Piece {
     }
 }
 
+/**
+ * Converts the given piece to a character representation.
+ *
+ * This function takes a piece and returns its corresponding character representation. The character
+ * representation is a single uppercase letter for white pieces and a single lowercase letter for black pieces.
+ *
+ * @param piece - The piece to convert to a character representation.
+ * @return The character representation of the piece.
+ */
 pub fn to_char(piece: Piece) -> char {
     let mut char: String = String::new();
     char = match piece.kind {
@@ -135,12 +153,29 @@ pub fn to_char(piece: Piece) -> char {
 }
 
 impl PartialEq for Piece {
+    /**
+     * Checks if this Piece is equal to another Piece.
+     *
+     * This function compares the kind and color properties of this Piece with another Piece
+     * to determine if they are equal.
+     *
+     * @param other - The other Piece to compare with.
+     * @return true if the pieces are equal, false otherwise.
+     */
     fn eq(&self, other: &Self) -> bool {
         self.kind == other.kind && self.color == other.color
     }
 }
 
 impl Display for Piece {
+    /**
+     * Formats the chess piece for display.
+     *
+     * This function formats the chess piece based on its kind and color. It returns a formatted string representation of the piece.
+     *
+     * @param f - The formatter to write the formatted string.
+     * @return Result - Ok if the formatting is successful, Err otherwise.
+     */
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut char: String = String::new();
         char = match self.kind {
@@ -160,6 +195,17 @@ impl Display for Piece {
     }
 }
 
+/**
+ * Returns a list of possible moves for the given piece on the chessboard.
+ *
+ * This function takes a reference to the chessboard information and a reference to the piece
+ * and returns a vector of possible moves that the piece can make. The possible moves are generated
+ * based on the kind of the piece: pawn, rook, knight, bishop, queen, or king.
+ *
+ * @param board_info - A reference to the chessboard information.
+ * @param p - A reference to the piece for which moves are to be generated.
+ * @return A vector of possible moves for the given piece.
+ */
 pub fn get_moves(board_info: &BoardInfo, p: &Piece) -> Vec<Move> {
     let piece = *p;
     match piece.kind {

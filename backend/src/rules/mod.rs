@@ -173,6 +173,16 @@ pub fn generate_king_moves(board_info: BoardInfo, piece: Piece) -> Vec<Move> {
 }
 
 // Function to generate all legal moves for a knight at a given position
+/**
+ * Generates a list of possible moves for a knight on the given chessboard.
+ *
+ * This function calculates and returns a vector of Move objects representing the possible moves that a knight can make.
+ *
+ * @param board_info - The board information containing the current state of the chessboard.
+ * @param piece - The knight piece for which the moves are to be generated.
+ *
+ * @return A vector of Move objects representing the possible moves for the knight.
+ */
 pub fn generate_knight_moves(board_info: BoardInfo, piece: Piece) -> Vec<Move> {
     let mut moves = Vec::new();
     let color = piece.color;
@@ -239,6 +249,18 @@ pub fn generate_sliding_move(board_info: BoardInfo, piece: Piece) -> Vec<Move> {
 }
 
 // Pushes all promotion piece types moves to the list of moves
+/**
+ * Generates a list of promotion moves.
+ *
+ * This function takes in the board information, the color of the player, the from and to positions of the move,
+ * and generates a list of possible promotion moves for the given piece.
+ *
+ * @param board_info - The board information containing the current state of the game board.
+ * @param _color - The color of the player.
+ * @param fmv - The from position of the move.
+ * @param pmv - The to position of the move.
+ * @return A vector of Move objects representing the possible promotion moves.
+ */
 pub fn promotion_move(
     board_info: BoardInfo,
     _color: Color,
@@ -276,6 +298,18 @@ pub fn promotion_move(
 }
 
 // Pushes all promotion piece types attack moves to the list of moves
+/**
+ * Generates promotion attack moves for a piece on the specified board.
+ *
+ * This function takes in the board information, piece color, from position, and to position.
+ * It generates a vector of moves representing all possible promotion attack moves for the piece.
+ *
+ * @param board_info - The board information containing the piece positions.
+ * @param color - The color of the piece.
+ * @param fmv - The from position of the piece.
+ * @param pmv - The to position for the piece.
+ * @return A vector of Move objects representing the promotion attack moves.
+ */
 pub fn promotion_attack_move(
     board_info: BoardInfo,
     _color: Color,

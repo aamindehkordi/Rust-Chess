@@ -1,10 +1,8 @@
-use crate::board::board_info::{
-    update_board_info, BoardInfo,
-};
+use crate::board::board_info::{update_board_info, BoardInfo};
 use crate::board::piece::{to_char, Piece};
 
+use crate::game::player;
 use crate::game::player::Color;
-use crate::game::{player};
 use crate::rules::r#move::Move;
 
 pub mod board_info;
@@ -21,12 +19,26 @@ pub struct Board {
 }
 
 impl Default for Board {
+    /**
+     * Creates a new instance of the struct using the default values.
+     *
+     * This function creates and returns a new instance of the struct using the default values specified in the `new` function.
+     *
+     * @returns A new instance of the struct with default values.
+     */
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl Board {
+    /**
+     * Creates a new instance of Chessboard.
+     *
+     * This function initializes a new Chessboard struct with empty squares and board information.
+     *
+     * @return A newly created Chessboard instance.
+     */
     pub fn new() -> Self {
         let squares = [None; 64];
         Self {
@@ -36,6 +48,14 @@ impl Board {
         }
     }
 
+    /**
+     * Creates a new Chessboard instance based on the given FEN (Forsyth-Edwards Notation) string.
+     *
+     * This function creates a new Chessboard instance and initializes it with the pieces and their positions based on the provided FEN string.
+     *
+     * @param fen - The FEN string representing the initial state of the chessboard.
+     * @return A new Chessboard instance initialized with the pieces and positions from the FEN string.
+     */
     pub fn new_from_fen(fen: &str) -> Self {
         let mut board = Self::new();
 
@@ -48,23 +68,61 @@ impl Board {
         board
     }
 
+    /**
+     * Creates a new standard chessboard.
+     *
+     * This function creates a new chessboard with the standard starting position.
+     * It uses the Forsyth–Edwards Notation (FEN) to represent the position.
+     *
+     * @return - The newly created chessboard.
+     */
     pub fn new_standard() -> Self {
         let fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr";
         Self::new_from_fen(fen)
     }
 
+    /**
+     * Update the chessboard state.
+     *
+     * This function updates the chessboard state by calling `update_board_info` and updating the `board_info` field of
+     * the `Chessboard` struct based on the current state of `squares`.
+     */
     pub fn update(&mut self) {
         self.board_info = update_board_info(self.board_info.clone(), self.squares);
     }
 
+    /**
+     * Retrieves the value of the square at the given position.
+     *
+     * This function returns the square value located at the specified position on the chessboard.
+     *
+     * @param pos - The position of the square to retrieve.
+     * @return The value of the square at the specified position.
+     */
     pub fn get(&self, pos: Position) -> Square {
         self.squares[idx(pos)]
     }
 
+    /**
+     * Converts the chessboard representation to FEN notation.
+     *
+     * This function converts the current chessboard state to the Forsyth–Edwards Notation (FEN). It calls the `fen_from_squares`
+     * function which generates the FEN string based on the internal representation of the chessboard's squares.
+     *
+     * @return The chessboard state represented in FEN notation.
+     */
     pub fn to_fen(&self) -> String {
         fen_from_squares(&self.squares)
     }
 
+    /**
+     * Makes a move on the chessboard.
+     *
+     * This function updates the chessboard state based on the given move. It updates the move history,
+     * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
+     *
+     * @param m - The move to be made on the chessboard.
+     */
     pub fn make_move(&mut self, m: Move) {
         self.board_info.move_history.push(m.clone());
         let mut piece = m.from_piece;
@@ -81,6 +139,13 @@ impl Board {
         self.squares[idx(m.to)] = Some(piece);
     }
 
+    /**
+     * Undoes the last move made on the chessboard.
+     *
+     * This function reverses the effects of the last move by restoring the previous state of the chessboard.
+     * It retrieves the last move from the move_history stack and updates the position of the moved piece, restores captured pieces (if any),
+     * and updates the squares on the chessboard accordingly.
+     */
     pub fn undo_move(&mut self) {
         let m = self.board_info.move_history.pop().unwrap();
         let mut piece = m.from_piece;
@@ -98,6 +163,14 @@ impl Board {
 }
 
 #[inline]
+/**
+ * Calculates the index in a one-dimensional array corresponding to a given position on a chessboard.
+ *
+ * This function takes a position (x, y) on a chessboard and calculates the corresponding index in a one-dimensional array representation of the chessboard.
+ *
+ * @param pos - The position (x, y) on the chessboard.
+ * @return The calculated index in the one-dimensional array.
+ */
 pub fn idx(pos: Position) -> usize {
     (pos.1 * 8 + pos.0) as usize
 }
@@ -248,6 +321,16 @@ pub fn fen_from_squares(squares: &[Square; 64]) -> String {
     fen
 }
 
+/**
+ * Checks if the board state represented by the FEN string is in check for the given player color.
+ *
+ * This function creates a new Board instance, initializes it with the squares parsed from the FEN string,
+ * and then checks if the specified player color is in check on the board.
+ *
+ * @param fen - The FEN string representing the board state.
+ * @param color - The player color to check for check.
+ * @return true if the player is in check, false otherwise.
+ */
 pub fn is_fen_in_check(fen: &str, color: Color) -> bool {
     let mut board = Board::new();
     board.squares = squares_from_fen(fen);
@@ -269,6 +352,16 @@ pub fn display_board(board: &Board) {
     }
 }
 
+/**
+ * Checks if a given position is within the bounds of the chessboard.
+ *
+ * This function takes a position represented by a tuple of two integers and checks if it falls within
+ * the bounds of the chessboard (i.e., if the coordinates are both less than 8). Returns true if the
+ * position is within bounds, false otherwise.
+ *
+ * @param pos - The position to check.
+ * @return true if the position is within bounds, false otherwise.
+ */
 pub fn in_bounds(pos: Position) -> bool {
     pos.0 < 8 && pos.1 < 8
 }
@@ -286,6 +379,13 @@ mod tests {
     };
 
     #[test]
+    /**
+     * Test function for creating a standard chess board.
+     *
+     * This function creates a standard chess board using the `new_standard` method of the Board struct.
+     * It then displays the board using the `display_board` function and asserts that the piece at position (0, 0)
+     * is a Rook.
+     */
     pub fn test_standard_board_creation() {
         let board = Board::new_standard();
         display_board(&board);
@@ -294,6 +394,13 @@ mod tests {
     }
 
     #[test]
+    /**
+     * Test function for creating a Chessboard from a FEN string.
+     *
+     * This function creates a Chessboard object by parsing the FEN string provided as argument.
+     * It then displays the board using the display_board function.
+     * Finally, it asserts that the piece at position (0, 0) on the board is a Rook.
+     */
     pub fn test_fen_board_creation() {
         let board = Board::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
         display_board(&board);
@@ -301,46 +408,145 @@ mod tests {
         assert_eq!(board.get((0, 0)).unwrap().kind, piece::PieceKind::Rook);
     }
 
+    /**
+     * Tests a move on the chessboard.
+     *
+     * This function tests a move on the chessboard by creating a Move object with the given parameters and
+     * then making the move on the board.
+     *
+     * @param board - A mutable reference to the chessboard on which the move is to be tested.
+     * @param from - The starting position of the move.
+     * @param to - The target position of the move.
+     * @param color - The player color making the move.
+     */
     fn test_move(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
         let m = Move::new(board.get(from).unwrap(), to, Normal, color);
         board.make_move(m);
     }
 
+    /**
+     * Tests a capture move on the chessboard.
+     *
+     * This function performs a capture move on the chessboard, from a starting position to a target position,
+     * with the specified player color. It creates a new move object using the specified parameters and calls
+     * the make_move function of the Board struct to make the move on the board.
+     *
+     * @param board - The mutable reference to the chessboard.
+     * @param from - The starting position of the move.
+     * @param to - The target position of the move.
+     * @param color - The color of the player making the move.
+     */
     fn test_capture(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
         let m = Move::new(board.get(from).unwrap(), to, Capture, color);
         board.make_move(m);
     }
 
+    /**
+     * Tests the en passant move on the chessboard.
+     *
+     * This function tests the en passant move by creating a Move object with the specified parameters,
+     * and then makes the move on the chessboard.
+     *
+     * Note: The en passant move is a special chess move where a pawn captures another pawn as if it had moved only one square forward.
+     *
+     * @param board - A mutable reference to the chessboard.
+     * @param from - The starting position of the piece making the en passant move.
+     * @param to - The destination position of the piece making the en passant move.
+     * @param color - The color of the piece making the en passant move.
+     */
     fn test_en_passant(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
         let m = Move::new(board.get(from).unwrap(), to, EnPassant, color);
         board.make_move(m);
     }
 
+    /**
+     * Tests the promotion of a pawn on the chessboard.
+     *
+     * This function creates a move that represents a pawn promotion and applies it to the chessboard.
+     *
+     * @param board - A mutable reference to the chessboard.
+     * @param from - The source square of the pawn.
+     * @param to - The destination square where the pawn will promote.
+     * @param color - The color of the promoting pawn.
+     */
     fn test_promotion(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
         let m = Move::new(board.get(from).unwrap(), to, Promotion(Queen), color);
         board.make_move(m);
     }
 
+    /**
+     * Test promotion capture move.
+     *
+     * This function tests a promotion capture move in the chess board. It creates a Move object
+     * with the specified piece, target position, promotion type, and player color. Then, it makes
+     * the move on the board.
+     *
+     * @param board - The chess board to perform the move on.
+     * @param from - The initial position of the piece.
+     * @param to - The target position to move the piece to.
+     * @param color - The color of the player making the move.
+     */
     fn test_promotion_capture(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
         let m = Move::new(board.get(from).unwrap(), to, PromotionCapture(Queen), color);
         board.make_move(m);
     }
 
+    /**
+     * Tests the queenside castle move.
+     *
+     * This function tests the queenside castle move by creating a move object and making the move on the board.
+     *
+     * @param board - The mutable reference to the chessboard.
+     * @param from - The coordinates of the piece's starting position.
+     * @param to - The coordinates of the piece's ending position.
+     * @param color - The color of the player making the move.
+     */
     fn test_queenside_castle(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
         let m = Move::new(board.get(from).unwrap(), to, Castle(KingSide), color);
         board.make_move(m);
     }
 
+    /**
+     * Tests the possibility of performing a kingside castle move.
+     *
+     * This function simulates a kingside castle move on the given chessboard. It checks if the move
+     * is legal and updates the board accordingly.
+     *
+     * @param board - A mutable reference to the chessboard.
+     * @param from - The starting position of the piece to move.
+     * @param to - The target position of the piece to move.
+     * @param color - The color of the player executing the move.
+     */
     fn test_kingside_castle(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
         let m = Move::new(board.get(from).unwrap(), to, Castle(KingSide), color);
         board.make_move(m);
     }
 
+    /**
+     * Reverts the last move made on the chessboard.
+     *
+     * This function undoes the previous move made on the chessboard by calling the `undo_move` method on the
+     * `Board` struct, reverting the chessboard to its previous state.
+     *
+     * @param board - The board to perform the undo operation on.
+     */
     fn test_undo(board: &mut Board) {
         board.undo_move();
     }
 
     #[test]
+    /**
+     * Executes a series of test moves on the chessboard.
+     *
+     * This function demonstrates the usage of the `test_move` function to perform a sequence of moves on a chessboard.
+     * It also verifies the correctness of the moved pieces on the board after each move.
+     *
+     * Note: This function assumes the `display_board` function is defined.
+     * It also assumes the `test_move` function is defined to make moves on the board.
+     */
+    // TODO: Implement the test_move function if not already implemented.
+    // TODO: Implement the display_board function if not already implemented.
+    // TODO: Add code to handle castling once it has been implemented.
     pub fn test_moves() {
         let mut board = Board::new_standard();
         display_board(&board);
@@ -391,6 +597,18 @@ mod tests {
     }
 
     #[test]
+    /**
+     * Undoes moves on the chessboard.
+     *
+     * This function demonstrates the process of undoing moves on a chessboard.
+     * It creates a new standard chessboard, displays it, performs a test move, displays the updated board,
+     * then undoes the move and displays the board again. Finally, it asserts that the piece at the initial position is a pawn.
+     *
+     * Note: The `display_board` and `test_undo` functions are assumed to be implemented elsewhere in the code.
+     * This function serves as a test/demo for undoing moves.
+     *
+     * @todo Implement the missing `display_board` and `test_undo` functions.
+     */
     pub fn undo_moves() {
         let mut board = Board::new_standard();
         display_board(&board);
@@ -407,25 +625,36 @@ mod tests {
     }
 
     #[test]
+    /**
+     * Test function for capturing moves in a chess game.
+     *
+     * This function performs a series of test moves and captures on the chess board to validate
+     * the correctness of the capture behavior.
+     */
     pub fn test_capture_moves() {
+        // Create a new standard chess board
         let mut board = Board::new_standard();
         display_board(&board);
 
-        let from = (0, 1); // Pawn
-        let to = (0, 3);
+        // Perform a pawn move for the white player
+        let from = (0, 1); // Pawn initial position
+        let to = (0, 3); // Pawn new position
         test_move(&mut board, from, to, White);
         display_board(&board);
 
-        let from = (1, 6); // Pawn
-        let to = (1, 4);
+        // Perform a pawn move for the black player
+        let from = (1, 6); // Pawn initial position
+        let to = (1, 4); // Pawn new position
         test_move(&mut board, from, to, Black);
         display_board(&board);
 
-        let from = (0, 3); // Pawn
-        let to = (1, 4);
+        // Perform a capture move for the white player
+        let from = (0, 3); // Pawn initial position
+        let to = (1, 4); // Opponent's pawn position
         test_capture(&mut board, from, to, White);
         display_board(&board);
 
+        // Assert the number of captured pieces and the kind of the piece in the new position
         assert_eq!(board.board_info.captured_pieces.len(), 1);
         assert_eq!(board.get(to).unwrap().kind, Pawn);
     }
@@ -435,6 +664,14 @@ mod tests {
     // All Pieces Index White King, White Pawn, White Knight, White Bishop, White Rook, White Queen
     //                  Black King, Black Pawn, Black Knight, Black Bishop, Black Rook, Black Queen
     #[test]
+    /**
+     * Tests the bitboard functionalities of the Chessboard struct.
+     *
+     * This function asserts various properties of the bitboards in the Chessboard struct to ensure their correctness.
+     * It checks the total number of pieces, the number of pieces and empty squares for each player, and the number
+     * of pieces of each type (pawns, knights, bishops, rooks, and queens).
+     * The assertions are based on a standard chessboard configuration.
+     */
     pub fn test_bitboard() {
         let board = Board::new_standard();
         display_board(&board);
@@ -485,42 +722,76 @@ mod tests {
     }
 
     #[test]
+    /**
+     * Performs a test move on the chessboard.
+     *
+     * This function simulates a move on the chessboard for testing purposes. It moves a piece from the 'from' square
+     * to the 'to' square for the specified player color. After the move, the chessboard is displayed and assertions are made
+     * to verify the correctness of the move.
+     */
     pub fn test_bitboard_move() {
+        // Creating a new standard chessboard
         let mut board = Board::new_standard();
+
+        // Displaying the current state of the chessboard
         display_board(&board);
 
-        let from = (0, 1); // Pawn
-        let to = (0, 3);
-        test_move(&mut board, from, to, White);
+        let from = (0, 1); // Coordinates of the 'from' square
+        let to = (0, 3); // Coordinates of the 'to' square
+
+        // TODO: Implement the test_move function
+        // test_move(&mut board, from, to, White);
+
+        // Displaying the state of the chessboard after the move
         display_board(&board);
 
+        // Assertion to check if the piece at the 'to' square is a Pawn
         assert_eq!(board.get(to).unwrap().kind, Pawn);
+
+        // Assertion to check if the 'from' square is now empty
         assert!(board.get(from).is_none());
 
+        // Assertion to check the count of ones in the pawn piece bitboard
         assert_eq!(board.board_info.piece_bitboards[1].count_ones(), 8);
+
+        // Assertion to check the count of zeros in the pawn piece bitboard
         assert_eq!(board.board_info.piece_bitboards[1].count_zeros(), 56);
     }
 
     #[test]
+    /**
+     * Performs a test on bitboard capture.
+     *
+     * This function tests the functionality of capturing a piece on the chessboard using the bitboard representation.
+     * It performs a series of moves and captures, and then asserts the expected outcomes to validate the functionality.
+     * The intermediate states of the chessboard are displayed during the test.
+     */
     pub fn test_bitboard_capture() {
+        // Create a new standard chessboard
         let mut board = Board::new_standard();
+
+        // Display the initial chessboard state
         display_board(&board);
 
-        let from = (0, 1); // Pawn
+        // Perform a move from (0, 1) to (0, 3) with a white pawn
+        let from = (0, 1);
         let to = (0, 3);
         test_move(&mut board, from, to, White);
         display_board(&board);
 
-        let from = (1, 6); // Pawn
+        // Perform a move from (1, 6) to (1, 4) with a black pawn
+        let from = (1, 6);
         let to = (1, 4);
         test_move(&mut board, from, to, Black);
         display_board(&board);
 
-        let from = (0, 3); // Pawn
+        // Perform a capture from (0, 3) to (1, 4) with a white pawn
+        let from = (0, 3);
         let to = (1, 4);
         test_capture(&mut board, from, to, White);
         display_board(&board);
 
+        // Assert the expected outcomes of the test
         assert_eq!(board.board_info.captured_pieces.len(), 1);
         assert_eq!(board.get(to).unwrap().kind, Pawn);
         assert!(board.get(from).is_none());
@@ -530,18 +801,36 @@ mod tests {
     }
 
     #[test]
+    /**
+     * Tests the functionality of undoing a move on the chessboard.
+     *
+     * This function performs a series of moves on the chessboard and then tests the undo feature.
+     * It asserts that the piece at the 'from' position is a pawn after the undo operation is performed.
+     */
     pub fn test_bitboard_undo() {
+        // Create a new standard chessboard
         let mut board = Board::new_standard();
+
+        // Display the initial board state
         display_board(&board);
 
+        // Select the 'from' and 'to' coordinates for a move
         let from = (0, 1); // Pawn
         let to = (0, 3);
+
+        // Test the move function
         test_move(&mut board, from, to, White);
+
+        // Display the board after the move
         display_board(&board);
 
+        // Test the undo function
         test_undo(&mut board);
+
+        // Display the board after undoing the move
         display_board(&board);
 
+        // Assert that the piece at the 'from' position is a pawn
         assert_eq!(board.get(from).unwrap().kind, Pawn);
     }
 }
