@@ -145,7 +145,7 @@ impl Move {
     pub fn is_capture(&self) -> bool {
         matches!(
             self.move_type,
-            MoveType::Capture | MoveType::PromotionCapture(_)
+            MoveType::Capture | MoveType::PromotionCapture(_) | MoveType::EnPassant
         )
     }
 }
@@ -409,7 +409,6 @@ mod tests {
      * to generate all possible moves up to a depth of 2. It then asserts that the total number
      * of positions generated is equal to 400.
      *
-     * TODO: Implement the recursive_mvgen_test function to recursively generate moves.
      */
     fn test_move_generation_2() {
         let mut game = Game::new_standard();
@@ -427,8 +426,6 @@ mod tests {
      *
      * @see recursive_mvgen_test
      */
-
-    // TODO: Implement recursive_mvgen_test function to generate moves up to the specified depth limit.
     fn test_move_generation_3() {
         let mut game = Game::new_standard();
         let num_positions = recursive_mvgen_test(&mut game, 3);
@@ -445,7 +442,6 @@ mod tests {
      *
      * Note: This function assumes the recursive_mvgen_test function is implemented.
      *
-     * TODO: Implement the recursive_mvgen_test function.
      */
     fn test_move_generation_4() {
         let mut game = Game::new_standard();
@@ -477,8 +473,6 @@ mod tests {
      * This function generates and counts all possible positions up to the specified depth using a recursive move generation strategy. It initializes a new standard game and calls the recursive_mvgen_test function.
      * The number of generated positions is then compared with the expected number.
      */
-
-    // TODO: Implement the recursive_mvgen_test function to perform the recursive move generation.
     fn test_move_generation_6() {
         let mut game = Game::new_standard();
         let num_positions = recursive_mvgen_test(&mut game, 6);
@@ -493,7 +487,6 @@ mod tests {
      * with a maximum recursion depth of 7, and verifies that the number of generated positions
      * matches the expected value.
      */
-    // TODO: Implement the recursive_mvgen_test function to generate positions recursively.
     fn test_move_generation_7() {
         let mut game = Game::new_standard();
         let num_positions = recursive_mvgen_test(&mut game, 7);
@@ -510,7 +503,6 @@ mod tests {
      *
      * @param depth - The depth to test move generation for.
      */
-    // TODO: Implement the recursive_mvgen_test function to generate moves recursively up to the specified depth. Then, compare the number of positions generated with the expected value.
     fn test_move_generation_8() {
         let mut game = Game::new_standard();
         let num_positions = recursive_mvgen_test(&mut game, 8);

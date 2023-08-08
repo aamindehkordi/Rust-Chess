@@ -41,7 +41,7 @@ impl Display for PieceKind {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Piece {
     pub kind: PieceKind,
     pub position: Position,

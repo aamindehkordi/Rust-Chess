@@ -2,7 +2,7 @@ use crate::board::piece::PieceKind;
 use crate::board::Board;
 use std::time::Duration;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Color {
     White,
     Black,
