@@ -92,7 +92,11 @@ pub fn generate_king_moves(board_info: BoardInfo, piece: Piece) -> Vec<Move> {
     let pos = piece.position;
     let color = piece.color;
     let (x, y) = pos;
-    let piece = board_info.get_square(pos).unwrap();
+    let piece = board_info.get_square(pos);
+    if piece.is_none() {
+        return moves;
+    }
+    let piece = piece.unwrap();
 
     // The king can move in 8 directions: up, down, left, right, and the 4 diagonals.
     let directions = [
