@@ -61,9 +61,6 @@ impl Board {
         // Generate squares from fen
         board.squares = squares_from_fen(fen);
 
-        // Update board
-        board.update();
-
         board
     }
 
@@ -77,7 +74,9 @@ impl Board {
      */
     pub fn new_standard() -> Self {
         let fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbqkbnr";
-        Self::new_from_fen(fen)
+        let mut board = Self::new_from_fen(fen);
+        board.update();
+        board
     }
 
     /**
@@ -127,7 +126,6 @@ impl Board {
         let mut piece = m.from_piece;
         //piece.first_move = true;
         let pos = piece.position;
-        piece.position = m.from;
         if m.is_capture() {
             let captured_piece = self.board_info.captured_pieces.pop().unwrap();
             self.squares[idx(m.to)] = Some(captured_piece);
@@ -152,8 +150,31 @@ impl Board {
             MoveType::Castle(castle_type) => self.make_castle_move(m, castle_type),
             MoveType::EnPassant => self.make_en_passant_move(m),
             MoveType::Promotion(piece_kind) => self.make_promotion_move(m, piece_kind),
+            MoveType::PromotionCapture(piece_kind) => self.make_promotion_capture_move(m, piece_kind),
             _ => self.make_normal_move(m),
         }
+    }
+
+    /**
+        * Makes a promotion capture move on the chessboard.
+        *
+        * This function updates the chessboard state based on the given move. It updates the move history,
+        * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
+        *
+        * @param m - The move to be made on the chessboard.
+        * @param piece_kind - The kind of piece to promote to.
+    */
+    fn make_promotion_capture_move(&mut self, m: Move, piece_kind: PieceKind) {
+        let mut piece = m.from_piece;
+        piece.kind = piece_kind;
+        piece.has_moved = true;
+        piece.en_passant = None;
+        let pos = piece.position;
+        piece.position = m.to;
+        let captured_piece = self.squares[idx(m.to)];
+        self.squares[idx(pos)] = None;
+        self.squares[idx(m.to)] = Some(piece);
+        self.board_info.captured_pieces.push(captured_piece.unwrap());
     }
 
 
@@ -455,6 +476,7 @@ pub fn is_fen_in_check(fen: &str, color: Color) -> bool {
 }
 
 pub fn display_board(board: &Board) {
+    println!();
     for y in 0..8 {
         for x in 0..8 {
             let pos = (x, y);
@@ -486,12 +508,12 @@ pub fn in_bounds(pos: Position) -> bool {
 #[cfg(test)]
 mod tests {
     use crate::board::PieceKind::{Bishop, Pawn, Queen};
-    use crate::board::{display_board, Board};
+    use crate::board::{display_board, Board, Position};
     use crate::board::piece::PieceKind;
     use crate::board::piece::PieceKind::King;
     use crate::game::player::Color;
     use crate::game::player::Color::{Black, White};
-    use crate::rules::r#move::CastleType::KingSide;
+    use crate::rules::r#move::CastleType::{KingSide, QueenSide};
     use crate::rules::r#move::Move;
     use crate::rules::r#move::MoveType::{
         Capture, Castle, EnPassant, Normal, Promotion, PromotionCapture,
@@ -621,7 +643,7 @@ mod tests {
      * @param color - The color of the player making the move.
      */
     fn test_queenside_castle(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
-        let m = Move::new(board.get(from).unwrap(), to, Castle(KingSide), color);
+        let m = Move::new(board.get(from).unwrap(), to, Castle(QueenSide), color);
         board.make_move(m);
     }
 
@@ -750,14 +772,14 @@ mod tests {
 
         // Test Pawn Promotion
         let from = (2, 6); // c7
-        let to = (0, 0); // a1 illegal move for testing
+        let to = (2, 0); // e1 illegal move for testing
         test_promotion_capture(&mut board, from, to, Black);
         display_board(&board);
 
         assert_eq!(board.get(to).unwrap().kind, Queen);
 
         let from = (6, 5); // g6
-        let to = (3, 7); // d8
+        let to = (6, 7); // g8 illegal move for testing
         test_promotion(&mut board, from, to, White);
         display_board(&board);
 
@@ -769,13 +791,12 @@ mod tests {
 
         assert!(board.get(to).is_none());
 
+        let captured_pieces = board.board_info.captured_pieces.clone();
         test_undo(&mut board);
         display_board(&board);
 
-        assert!(board.get((0,0)).is_none());
-
-
-
+        let to = (2,0);
+        assert_eq!(board.get(to).unwrap().kind, Bishop);
 
     }
 
@@ -913,16 +934,15 @@ mod tests {
      */
     pub fn test_bitboard_move() {
         // Creating a new standard chessboard
-        let board = Board::new_standard();
+        let mut board = Board::new_standard();
 
         // Displaying the current state of the chessboard
         display_board(&board);
 
-        let from = (0, 1); // Coordinates of the 'from' square
-        let to = (0, 3); // Coordinates of the 'to' square
+        let from = (1, 1); // Coordinates of the 'from' square
+        let to = (1, 3); // Coordinates of the 'to' square
 
-        // TODO: Implement the test_move function
-        // test_move(&mut board, from, to, White);
+        test_move(&mut board, from, to, White);
 
         // Displaying the state of the chessboard after the move
         display_board(&board);
