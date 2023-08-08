@@ -1,11 +1,11 @@
 pub mod r#move;
 
+use crate::board::board_info::BoardInfo;
+use crate::board::in_bounds;
 use crate::board::piece::{Piece, PieceKind};
 use crate::game::player::Color;
 use crate::rules::r#move::{CastleType, Move, MoveType};
 use std::cmp::{max, min};
-use crate::board::board_info::BoardInfo;
-use crate::board::in_bounds;
 
 pub fn generate_pawn_moves(board_info: BoardInfo, piece: Piece) -> Vec<Move> {
     let mut moves = Vec::new(); // Vector to store moves
@@ -239,7 +239,12 @@ pub fn generate_sliding_move(board_info: BoardInfo, piece: Piece) -> Vec<Move> {
 }
 
 // Pushes all promotion piece types moves to the list of moves
-pub fn promotion_move(board_info: BoardInfo, _color: Color, fmv: (u8, u8), pmv: (u8, u8)) -> Vec<Move> {
+pub fn promotion_move(
+    board_info: BoardInfo,
+    _color: Color,
+    fmv: (u8, u8),
+    pmv: (u8, u8),
+) -> Vec<Move> {
     let mut moves = vec![];
     let piece = board_info.get_square(fmv).unwrap();
     let to_pos = pmv;
@@ -271,7 +276,12 @@ pub fn promotion_move(board_info: BoardInfo, _color: Color, fmv: (u8, u8), pmv: 
 }
 
 // Pushes all promotion piece types attack moves to the list of moves
-pub fn promotion_attack_move(board_info: BoardInfo, _color: Color, fmv: (u8, u8), pmv: (u8, u8)) -> Vec<Move> {
+pub fn promotion_attack_move(
+    board_info: BoardInfo,
+    _color: Color,
+    fmv: (u8, u8),
+    pmv: (u8, u8),
+) -> Vec<Move> {
     let mut moves = vec![];
     let piece = board_info.get_square(fmv).unwrap();
     let to_pos = pmv;

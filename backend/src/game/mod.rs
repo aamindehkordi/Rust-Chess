@@ -7,7 +7,6 @@ use crate::game::game_state::GameState;
 use crate::game::player::{from_idx, user_mv_idx, Color};
 use crate::rules::r#move::Move;
 
-
 #[derive(Clone)]
 pub struct Game {
     pub board: Board, // Board struct
@@ -40,7 +39,7 @@ pub fn update(game: Game, mv: Move) -> Game {
     let mut gs = &mut game.game_state;
     gs.fen = game.board.to_fen();
     game.board.make_move(mv.clone());
-    gs.move_history.push(mv.clone());
+    gs.move_history.push(mv);
     gs.white_in_check = game.board.board_info.is_in_check(Color::White);
     gs.black_in_check = game.board.board_info.is_in_check(Color::Black);
     gs.next_turn();

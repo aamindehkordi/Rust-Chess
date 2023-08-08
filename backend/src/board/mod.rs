@@ -1,10 +1,11 @@
-use crate::board::board_info::{bb_color_idx, bb_piece_idx, BoardInfo, pos_to_bb, update_bitboards, update_board_info};
-use crate::board::piece::{get_moves, to_char, Piece};
+use crate::board::board_info::{
+    update_board_info, BoardInfo,
+};
+use crate::board::piece::{to_char, Piece};
 
 use crate::game::player::Color;
-use crate::game::{player, Game};
+use crate::game::{player};
 use crate::rules::r#move::Move;
-
 
 pub mod board_info;
 pub mod piece;
@@ -32,7 +33,6 @@ impl Board {
             squares,
 
             board_info: BoardInfo::new(squares),
-
         }
     }
 
@@ -64,7 +64,6 @@ impl Board {
     pub fn to_fen(&self) -> String {
         fen_from_squares(&self.squares)
     }
-
 
     pub fn make_move(&mut self, m: Move) {
         self.board_info.move_history.push(m.clone());

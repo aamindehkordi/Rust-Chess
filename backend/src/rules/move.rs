@@ -110,11 +110,11 @@ impl Move {
 
 #[cfg(test)]
 mod tests {
-    
+
     use crate::board::piece::{get_moves, Piece, PieceKind};
     use crate::board::{display_board, idx, in_bounds, Square};
     use crate::game::player::Color;
-    use crate::game::{apply_move, Game, get_color_moves, get_current_moves};
+    use crate::game::{apply_move, get_color_moves, get_current_moves, Game};
     use crate::rules::r#move::Move;
 
     fn display_moves(game: &mut Game, moves: &[Move]) {
@@ -162,7 +162,7 @@ mod tests {
         let mut game = Game::new();
         game.game_state.turn = color.to_idx();
         game.board.squares[idx(pos)] = Some(Piece::new(kind, pos, color));
-        let mut moves = get_color_moves(&game.board, color);
+        let moves = get_color_moves(&game.board, color);
         game.board.board_info.valid_moves = moves;
         game
     }
@@ -300,7 +300,7 @@ mod tests {
     fn test_move_generation_3() {
         let mut game = Game::new_standard();
         let num_positions = recursive_mvgen_test(&mut game, 3);
-        assert_eq!(num_positions, 8902);// 8000 62ms
+        assert_eq!(num_positions, 8902); // 8000 62ms
     }
 
     #[test]

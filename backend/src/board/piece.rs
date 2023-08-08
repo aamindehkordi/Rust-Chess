@@ -1,13 +1,13 @@
-use crate::board::{Board, Position};
+use crate::board::{Position};
 use crate::game::player::Color;
 
-use crate::game::Game;
+use crate::board::board_info::BoardInfo;
+
 use crate::rules::r#move::Move;
 use crate::rules::{
     generate_king_moves, generate_knight_moves, generate_pawn_moves, generate_sliding_move,
 };
 use std::fmt::Display;
-use crate::board::board_info::BoardInfo;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum PieceKind {
