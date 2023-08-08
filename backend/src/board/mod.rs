@@ -1,8 +1,7 @@
 use crate::board::board_info::{update_board_info, BoardInfo};
-use crate::board::piece::{to_char, Piece, PieceKind};
-
-use crate::game::player;
+use crate::board::piece::{Piece, PieceKind, to_char};
 use crate::game::player::Color;
+
 use crate::rules::r#move::{CastleType, Move, MoveType};
 
 pub mod board_info;
@@ -303,97 +302,97 @@ pub fn squares_from_fen(fen: &str) -> [Square; 64] {
             }
             'p' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::Pawn,
+                    PieceKind::Pawn,
                     pos,
-                    player::Color::Black,
+                    Color::Black,
                 ));
                 pos.0 += 1;
             }
             'r' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::Rook,
+                    PieceKind::Rook,
                     pos,
-                    player::Color::Black,
+                    Color::Black,
                 ));
                 pos.0 += 1;
             }
             'n' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::Knight,
+                    PieceKind::Knight,
                     pos,
-                    player::Color::Black,
+                    Color::Black,
                 ));
                 pos.0 += 1;
             }
             'b' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::Bishop,
+                    PieceKind::Bishop,
                     pos,
-                    player::Color::Black,
+                    Color::Black,
                 ));
                 pos.0 += 1;
             }
             'q' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::Queen,
+                    PieceKind::Queen,
                     pos,
-                    player::Color::Black,
+                    Color::Black,
                 ));
                 pos.0 += 1;
             }
             'k' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::King,
+                    PieceKind::King,
                     pos,
-                    player::Color::Black,
+                    Color::Black,
                 ));
                 pos.0 += 1;
             }
             'P' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::Pawn,
+                    PieceKind::Pawn,
                     pos,
-                    player::Color::White,
+                    Color::White,
                 ));
                 pos.0 += 1;
             }
             'R' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::Rook,
+                    PieceKind::Rook,
                     pos,
-                    player::Color::White,
+                    Color::White,
                 ));
                 pos.0 += 1;
             }
             'N' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::Knight,
+                    PieceKind::Knight,
                     pos,
-                    player::Color::White,
+                    Color::White,
                 ));
                 pos.0 += 1;
             }
             'B' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::Bishop,
+                    PieceKind::Bishop,
                     pos,
-                    player::Color::White,
+                    Color::White,
                 ));
                 pos.0 += 1;
             }
             'Q' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::Queen,
+                    PieceKind::Queen,
                     pos,
-                    player::Color::White,
+                    Color::White,
                 ));
                 pos.0 += 1;
             }
             'K' => {
                 squares[idx(pos)] = Some(Piece::new(
-                    piece::PieceKind::King,
+                    PieceKind::King,
                     pos,
-                    player::Color::White,
+                    Color::White,
                 ));
                 pos.0 += 1;
             }
@@ -486,8 +485,10 @@ pub fn in_bounds(pos: Position) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::piece::PieceKind::{Bishop, Pawn, Queen};
-    use crate::board::{display_board, piece, Board};
+    use crate::board::PieceKind::{Bishop, Pawn, Queen};
+    use crate::board::{display_board, Board};
+    use crate::board::piece::PieceKind;
+    use crate::board::piece::PieceKind::King;
     use crate::game::player::Color;
     use crate::game::player::Color::{Black, White};
     use crate::rules::r#move::CastleType::KingSide;
@@ -508,7 +509,7 @@ mod tests {
         let board = Board::new_standard();
         display_board(&board);
 
-        assert_eq!(board.get((0, 0)).unwrap().kind, piece::PieceKind::Rook);
+        assert_eq!(board.get((0, 0)).unwrap().kind, PieceKind::Rook);
     }
 
     #[test]
@@ -523,7 +524,7 @@ mod tests {
         let board = Board::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
         display_board(&board);
 
-        assert_eq!(board.get((0, 0)).unwrap().kind, piece::PieceKind::Rook);
+        assert_eq!(board.get((0, 0)).unwrap().kind, PieceKind::Rook);
     }
 
     /**
@@ -666,6 +667,7 @@ mod tests {
         let mut board = Board::new_standard();
         display_board(&board);
 
+        // Test pawn moves
         let from = (4, 1); // e2
         let to = (4, 3); // e4
         test_move(&mut board, from, to, White);
@@ -685,6 +687,7 @@ mod tests {
         test_move(&mut board, from, to, White);
         display_board(&board);
 
+        // Test Other Pieces
         assert_eq!(board.get(to).unwrap().kind, Queen);
 
         let from = (5, 7); // f8
@@ -699,7 +702,7 @@ mod tests {
         test_move(&mut board, from, to, White);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, piece::PieceKind::Knight);
+        assert_eq!(board.get(to).unwrap().kind, PieceKind::Knight);
 
         let from = (6, 7); // g8
         let to = (5, 5); // f6

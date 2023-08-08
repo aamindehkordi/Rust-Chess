@@ -188,7 +188,6 @@ pub fn generate_knight_moves(board_info: BoardInfo, piece: Piece) -> Vec<Move> {
     let color = piece.color;
     let from_pos = piece.position;
     let (x, y) = from_pos;
-    let _piece = board_info.get_square(from_pos).unwrap();
 
     // The knight can move in 8 directions: up up left/right, down down left/right, left left up/down, right right up/down
     let directions = [
