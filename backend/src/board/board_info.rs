@@ -1,5 +1,5 @@
-use crate::board::piece::PieceKind;
-use crate::board::Square;
+use crate::board::piece::{get_moves, Piece, PieceKind};
+use crate::board::{Board, idx, Square};
 use crate::game::player::Color;
 use crate::rules::r#move::Move;
 
@@ -65,6 +65,12 @@ impl BoardInfo {
         }
     }
 
+    // Getters and setters
+    // {
+        pub fn set_square(&mut self, position: Position, square: Square) { self.squares[idx(position)] = square; } pub fn get_square(&self, position: Position) -> Square { self.squares[idx(position)] } pub fn set_piece(&mut self, position: Position, piece: Piece) { self.set_square(position, Some(piece)); } pub fn get_piece(&self, position: Position) -> Option<Piece> { self.get_square(position) } pub fn remove_piece(&mut self, position: Position) { self.set_square(position, None); } pub fn get_piece_bitboard(&self, piece: PieceKind, color: Color) -> Bitboard { self.piece_bitboards[bb_piece_idx(piece, color)] } pub fn set_piece_bitboard(&mut self, piece: PieceKind, color: Color, bitboard: Bitboard) { self.piece_bitboards[bb_piece_idx(piece, color)] = bitboard; } pub fn get_player_bitboard(&self, color: Color) -> Bitboard { self.player_bitboards[bb_color_idx(color)] } pub fn set_player_bitboard(&mut self, color: Color, bitboard: Bitboard) { self.player_bitboards[bb_color_idx(color)] = bitboard; } pub fn get_all_pieces_bitboard(&self) -> Bitboard { self.all_pieces_bitboard } pub fn set_all_pieces_bitboard(&mut self, bitboard: Bitboard) { self.all_pieces_bitboard = bitboard; } pub fn get_piece_capture_bitboard(&self, piece: PieceKind, color: Color) -> Bitboard { self.piece_capture_bitboards[bb_piece_idx(piece, color)] } pub fn set_piece_capture_bitboard(&mut self, piece: PieceKind, color: Color, bitboard: Bitboard) { self.piece_capture_bitboards[bb_piece_idx(piece, color)] = bitboard; } pub fn get_color_capture_bitboard(&self, color: Color) -> Bitboard { self.color_capture_bitboards[bb_color_idx(color)] } pub fn set_color_capture_bitboard(&mut self, color: Color, bitboard: Bitboard) { self.color_capture_bitboards[bb_color_idx(color)] = bitboard; } pub fn get_piece_move_bitboard(&self, piece: PieceKind, color: Color) -> Bitboard { self.piece_move_bitboards[bb_piece_idx(piece, color)] } pub fn set_piece_move_bitboard(&mut self, piece: PieceKind, color: Color, bitboard: Bitboard) { self.piece_move_bitboards[bb_piece_idx(piece, color)] = bitboard; } pub fn get_color_move_bitboard(&self, color: Color) -> Bitboard { self.color_move_bitboards[bb_color_idx(color)] } pub fn set_color_move_bitboard(&mut self, color: Color, bitboard: Bitboard) { self.color_move_bitboards[bb_color_idx(color)] = bitboard; }
+        pub fn king(&self, color: Color) -> Bitboard { self.piece_bitboards[bb_piece_idx(PieceKind::King, color)] } pub fn queen(&self, color: Color) -> Bitboard { self.piece_bitboards[bb_piece_idx(PieceKind::Queen, color)] } pub fn rook(&self, color: Color) -> Bitboard { self.piece_bitboards[bb_piece_idx(PieceKind::Rook, color)] } pub fn bishop(&self, color: Color) -> Bitboard { self.piece_bitboards[bb_piece_idx(PieceKind::Bishop, color)] } pub fn knight(&self, color: Color) -> Bitboard { self.piece_bitboards[bb_piece_idx(PieceKind::Knight, color)] } pub fn pawn(&self, color: Color) -> Bitboard { self.piece_bitboards[bb_piece_idx(PieceKind::Pawn, color)] }
+    //}
+
     pub fn reset_bitboards(&mut self) {
         self.piece_bitboards = [0; 12];
         self.player_bitboards = [0; 2];
@@ -77,29 +83,6 @@ impl BoardInfo {
         self.color_move_bitboards = [0; 2];
     }
 
-    pub fn king(&self, color: Color) -> Bitboard {
-        self.piece_bitboards[bb_piece_idx(PieceKind::King, color)]
-    }
-
-    pub fn queen(&self, color: Color) -> Bitboard {
-        self.piece_bitboards[bb_piece_idx(PieceKind::Queen, color)]
-    }
-
-    pub fn rook(&self, color: Color) -> Bitboard {
-        self.piece_bitboards[bb_piece_idx(PieceKind::Rook, color)]
-    }
-
-    pub fn bishop(&self, color: Color) -> Bitboard {
-        self.piece_bitboards[bb_piece_idx(PieceKind::Bishop, color)]
-    }
-
-    pub fn knight(&self, color: Color) -> Bitboard {
-        self.piece_bitboards[bb_piece_idx(PieceKind::Knight, color)]
-    }
-
-    pub fn pawn(&self, color: Color) -> Bitboard {
-        self.piece_bitboards[bb_piece_idx(PieceKind::Pawn, color)]
-    }
 
     pub fn king_pos(&self, color: Color) -> Position {
         if color == Color::White {
