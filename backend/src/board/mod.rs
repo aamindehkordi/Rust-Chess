@@ -1,5 +1,5 @@
 use crate::board::board_info::{update_board_info, BoardInfo};
-use crate::board::piece::{Piece, PieceKind, to_char};
+use crate::board::piece::{to_char, Piece, PieceKind};
 use crate::game::player::Color;
 
 use crate::rules::r#move::{CastleType, Move, MoveType};
@@ -113,7 +113,6 @@ impl Board {
         fen_from_squares(&self.squares)
     }
 
-
     /**
      * Undoes the last move made on the chessboard.
      *
@@ -123,7 +122,7 @@ impl Board {
      */
     pub fn undo_move(&mut self) {
         let m = self.board_info.move_history.pop().unwrap();
-        let mut piece = m.from_piece;
+        let piece = m.from_piece;
         //piece.first_move = true;
         let pos = piece.position;
         if m.is_capture() {
@@ -134,7 +133,6 @@ impl Board {
         }
         self.squares[idx(pos)] = Some(piece);
     }
-
 
     /**
      * Makes a move on the chessboard.
@@ -150,20 +148,22 @@ impl Board {
             MoveType::Castle(castle_type) => self.make_castle_move(m, castle_type),
             MoveType::EnPassant => self.make_en_passant_move(m),
             MoveType::Promotion(piece_kind) => self.make_promotion_move(m, piece_kind),
-            MoveType::PromotionCapture(piece_kind) => self.make_promotion_capture_move(m, piece_kind),
+            MoveType::PromotionCapture(piece_kind) => {
+                self.make_promotion_capture_move(m, piece_kind)
+            }
             _ => self.make_normal_move(m),
         }
     }
 
     /**
-        * Makes a promotion capture move on the chessboard.
-        *
-        * This function updates the chessboard state based on the given move. It updates the move history,
-        * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
-        *
-        * @param m - The move to be made on the chessboard.
-        * @param piece_kind - The kind of piece to promote to.
-    */
+     * Makes a promotion capture move on the chessboard.
+     *
+     * This function updates the chessboard state based on the given move. It updates the move history,
+     * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
+     *
+     * @param m - The move to be made on the chessboard.
+     * @param piece_kind - The kind of piece to promote to.
+     */
     fn make_promotion_capture_move(&mut self, m: Move, piece_kind: PieceKind) {
         let mut piece = m.from_piece;
         piece.kind = piece_kind;
@@ -174,10 +174,10 @@ impl Board {
         let captured_piece = self.squares[idx(m.to)];
         self.squares[idx(pos)] = None;
         self.squares[idx(m.to)] = Some(piece);
-        self.board_info.captured_pieces.push(captured_piece.unwrap());
+        self.board_info
+            .captured_pieces
+            .push(captured_piece.unwrap());
     }
-
-
 
     /**
      * Makes a Promotion move on the chessboard.
@@ -187,7 +187,7 @@ impl Board {
      *
      * @param m - The move to be made on the chessboard.
      * @param piece_kind - The kind of piece to promote to.
-    */
+     */
     fn make_promotion_move(&mut self, m: Move, piece_kind: PieceKind) {
         let mut piece = m.from_piece;
         piece.kind = piece_kind;
@@ -203,13 +203,13 @@ impl Board {
     }
 
     /**
-    * Makes an en passant move on the chessboard.
-    *
-    * This function updates the chessboard state based on the given move. It updates the move history,
-    * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
-    *
-    * @param m - The move to be made on the chessboard.
-    */
+     * Makes an en passant move on the chessboard.
+     *
+     * This function updates the chessboard state based on the given move. It updates the move history,
+     * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
+     *
+     * @param m - The move to be made on the chessboard.
+     */
     fn make_en_passant_move(&mut self, m: Move) {
         let mut piece = m.from_piece;
         if piece.first_move {
@@ -246,14 +246,14 @@ impl Board {
         self.squares[idx(pos)] = None;
         self.squares[idx(m.to)] = Some(piece);
         let rook_pos = match castle_type {
-            CastleType::KingSide => (7u8, pos.1)as Position,
-            CastleType::QueenSide => (0u8, pos.1)as Position,
+            CastleType::KingSide => (7u8, pos.1) as Position,
+            CastleType::QueenSide => (0u8, pos.1) as Position,
         };
         let mut rook = self.squares[idx(rook_pos)].unwrap();
         rook.has_moved = true;
         rook.position = match castle_type {
-            CastleType::KingSide => (5u8, pos.1)as Position,
-            CastleType::QueenSide => (3u8, pos.1)as Position,
+            CastleType::KingSide => (5u8, pos.1) as Position,
+            CastleType::QueenSide => (3u8, pos.1) as Position,
         };
         self.squares[idx(rook_pos)] = None;
         self.squares[idx(rook.position)] = Some(rook);
@@ -282,7 +282,6 @@ impl Board {
         self.squares[idx(m.to)] = Some(piece);
     }
 }
-
 
 #[inline]
 /**
@@ -322,99 +321,51 @@ pub fn squares_from_fen(fen: &str) -> [Square; 64] {
                 }
             }
             'p' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::Pawn,
-                    pos,
-                    Color::Black,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::Pawn, pos, Color::Black));
                 pos.0 += 1;
             }
             'r' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::Rook,
-                    pos,
-                    Color::Black,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::Rook, pos, Color::Black));
                 pos.0 += 1;
             }
             'n' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::Knight,
-                    pos,
-                    Color::Black,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::Knight, pos, Color::Black));
                 pos.0 += 1;
             }
             'b' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::Bishop,
-                    pos,
-                    Color::Black,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::Bishop, pos, Color::Black));
                 pos.0 += 1;
             }
             'q' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::Queen,
-                    pos,
-                    Color::Black,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::Queen, pos, Color::Black));
                 pos.0 += 1;
             }
             'k' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::King,
-                    pos,
-                    Color::Black,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::King, pos, Color::Black));
                 pos.0 += 1;
             }
             'P' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::Pawn,
-                    pos,
-                    Color::White,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::Pawn, pos, Color::White));
                 pos.0 += 1;
             }
             'R' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::Rook,
-                    pos,
-                    Color::White,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::Rook, pos, Color::White));
                 pos.0 += 1;
             }
             'N' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::Knight,
-                    pos,
-                    Color::White,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::Knight, pos, Color::White));
                 pos.0 += 1;
             }
             'B' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::Bishop,
-                    pos,
-                    Color::White,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::Bishop, pos, Color::White));
                 pos.0 += 1;
             }
             'Q' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::Queen,
-                    pos,
-                    Color::White,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::Queen, pos, Color::White));
                 pos.0 += 1;
             }
             'K' => {
-                squares[idx(pos)] = Some(Piece::new(
-                    PieceKind::King,
-                    pos,
-                    Color::White,
-                ));
+                squares[idx(pos)] = Some(Piece::new(PieceKind::King, pos, Color::White));
                 pos.0 += 1;
             }
             _ => (),
@@ -507,10 +458,10 @@ pub fn in_bounds(pos: Position) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::PieceKind::{Bishop, Pawn, Queen};
-    use crate::board::{display_board, Board, Position};
     use crate::board::piece::PieceKind;
     use crate::board::piece::PieceKind::King;
+    use crate::board::PieceKind::{Bishop, Pawn, Queen};
+    use crate::board::{display_board, Board};
     use crate::game::player::Color;
     use crate::game::player::Color::{Black, White};
     use crate::rules::r#move::CastleType::{KingSide, QueenSide};
@@ -791,13 +742,12 @@ mod tests {
 
         assert!(board.get(to).is_none());
 
-        let captured_pieces = board.board_info.captured_pieces.clone();
+        let _captured_pieces = board.board_info.captured_pieces.clone();
         test_undo(&mut board);
         display_board(&board);
 
-        let to = (2,0);
+        let to = (2, 0);
         assert_eq!(board.get(to).unwrap().kind, Bishop);
-
     }
 
     #[test]

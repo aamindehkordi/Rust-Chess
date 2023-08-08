@@ -566,7 +566,6 @@ pub fn pos_to_bb(pos: Position) -> Bitboard {
     1 << (x + y * 8)
 }
 
-
 /**
  * Updates the board information for the current board state.
  *
