@@ -1,9 +1,9 @@
 use crate::board::board_info::{update_board_info, BoardInfo};
-use crate::board::piece::{to_char, Piece};
+use crate::board::piece::{to_char, Piece, PieceKind};
 
 use crate::game::player;
 use crate::game::player::Color;
-use crate::rules::r#move::Move;
+use crate::rules::r#move::{CastleType, Move, MoveType};
 
 pub mod board_info;
 pub mod piece;
@@ -115,29 +115,6 @@ impl Board {
         fen_from_squares(&self.squares)
     }
 
-    /**
-     * Makes a move on the chessboard.
-     *
-     * This function updates the chessboard state based on the given move. It updates the move history,
-     * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
-     *
-     * @param m - The move to be made on the chessboard.
-     */
-    pub fn make_move(&mut self, m: Move) {
-        self.board_info.move_history.push(m.clone());
-        let mut piece = m.from_piece;
-        if piece.first_move {
-            piece.first_move = false;
-        }
-        piece.has_moved = true;
-        let pos = piece.position;
-        piece.position = m.to;
-        if let Some(captured_piece) = self.squares[idx(m.to)] {
-            self.board_info.captured_pieces.push(captured_piece);
-        }
-        self.squares[idx(pos)] = None;
-        self.squares[idx(m.to)] = Some(piece);
-    }
 
     /**
      * Undoes the last move made on the chessboard.
@@ -160,7 +137,132 @@ impl Board {
         }
         self.squares[idx(pos)] = Some(piece);
     }
+
+
+    /**
+     * Makes a move on the chessboard.
+     *
+     * This function updates the chessboard state based on the given move. It updates the move history,
+     * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
+     *
+     * @param m - The move to be made on the chessboard.
+     */
+    pub fn make_move(&mut self, m: Move) {
+        self.board_info.move_history.push(m.clone());
+        match m.move_type {
+            MoveType::Castle(castle_type) => self.make_castle_move(m, castle_type),
+            MoveType::EnPassant => self.make_en_passant_move(m),
+            MoveType::Promotion(piece_kind) => self.make_promotion_move(m, piece_kind),
+            _ => self.make_normal_move(m),
+        }
+    }
+
+
+
+    /**
+     * Makes a Promotion move on the chessboard.
+     *
+     * This function updates the chessboard state based on the given move. It updates the move history,
+     * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
+     *
+     * @param m - The move to be made on the chessboard.
+     * @param piece_kind - The kind of piece to promote to.
+    */
+    fn make_promotion_move(&mut self, m: Move, piece_kind: PieceKind) {
+        let mut piece = m.from_piece;
+        piece.kind = piece_kind;
+        if piece.first_move {
+            piece.first_move = false;
+        }
+        piece.has_moved = true;
+        piece.en_passant = None;
+        let pos = piece.position;
+        piece.position = m.to;
+        self.squares[idx(pos)] = None;
+        self.squares[idx(m.to)] = Some(piece);
+    }
+
+    /**
+    * Makes an en passant move on the chessboard.
+    *
+    * This function updates the chessboard state based on the given move. It updates the move history,
+    * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
+    *
+    * @param m - The move to be made on the chessboard.
+    */
+    fn make_en_passant_move(&mut self, m: Move) {
+        let mut piece = m.from_piece;
+        if piece.first_move {
+            piece.first_move = false;
+        }
+        piece.has_moved = true;
+        piece.en_passant = None;
+        let pos = piece.position;
+        piece.position = m.to;
+        self.squares[idx(pos)] = None;
+        self.squares[idx(m.to)] = Some(piece);
+        let captured_piece = self.squares[idx((m.to.0, m.from.1))].unwrap();
+        self.squares[idx((m.to.0, m.from.1))] = None;
+        self.board_info.captured_pieces.push(captured_piece);
+    }
+
+    /**
+     * Makes a castle move on the chessboard.
+     *
+     * This function updates the chessboard state based on the given move. It updates the move history,
+     * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
+     *
+     * @param m - The move to be made on the chessboard.
+     * @param castle_type - The type of castle move to be made.
+     */
+    fn make_castle_move(&mut self, m: Move, castle_type: CastleType) {
+        let mut piece = m.from_piece;
+        if piece.first_move {
+            piece.first_move = false;
+        }
+        piece.has_moved = true;
+        let pos = piece.position;
+        piece.position = m.to;
+        self.squares[idx(pos)] = None;
+        self.squares[idx(m.to)] = Some(piece);
+        let rook_pos = match castle_type {
+            CastleType::KingSide => (7u8, pos.1)as Position,
+            CastleType::QueenSide => (0u8, pos.1)as Position,
+        };
+        let mut rook = self.squares[idx(rook_pos)].unwrap();
+        rook.has_moved = true;
+        rook.position = match castle_type {
+            CastleType::KingSide => (5u8, pos.1)as Position,
+            CastleType::QueenSide => (3u8, pos.1)as Position,
+        };
+        self.squares[idx(rook_pos)] = None;
+        self.squares[idx(rook.position)] = Some(rook);
+    }
+
+    /**
+     * Makes a normal move on the chessboard.
+     *
+     * This function updates the chessboard state based on the given move. It updates the move history,
+     * modifies the relevant pieces, captures pieces if necessary, and updates the position of the moved piece.
+     *
+     * @param m - The move to be made on the chessboard.
+     */
+    fn make_normal_move(&mut self, m: Move) {
+        let mut piece = m.from_piece;
+        if piece.first_move {
+            piece.first_move = false;
+        }
+        piece.has_moved = true;
+        let pos = piece.position;
+        piece.position = m.to;
+        if let Some(captured_piece) = self.squares[idx(m.to)] {
+            self.board_info.captured_pieces.push(captured_piece);
+        }
+        self.squares[idx(pos)] = None;
+        self.squares[idx(m.to)] = Some(piece);
+    }
 }
+
 
 #[inline]
 /**
@@ -175,6 +277,14 @@ pub fn idx(pos: Position) -> usize {
     (pos.1 * 8 + pos.0) as usize
 }
 
+/**
+ * Generates the FEN string from the given squares.
+ *
+ * This function generates the Forsyth–Edwards Notation (FEN) string from the given squares.
+ *
+ * @param squares - The squares to generate the FEN string from.
+ * @return The FEN string representing the given squares.
+ */
 pub fn squares_from_fen(fen: &str) -> [Square; 64] {
     let mut squares = [None; 64];
     let mut pos: Position = (0, 0);
@@ -293,6 +403,14 @@ pub fn squares_from_fen(fen: &str) -> [Square; 64] {
     squares
 }
 
+/**
+ * Generates the FEN string from the given squares.
+ *
+ * This function generates the Forsyth–Edwards Notation (FEN) string from the given squares.
+ *
+ * @param squares - The squares to generate the FEN string from.
+ * @return The FEN string representing the given squares.
+ */
 pub fn fen_from_squares(squares: &[Square; 64]) -> String {
     let mut fen = String::new();
     let mut empty_squares = 0;
@@ -544,9 +662,6 @@ mod tests {
      * Note: This function assumes the `display_board` function is defined.
      * It also assumes the `test_move` function is defined to make moves on the board.
      */
-    // TODO: Implement the test_move function if not already implemented.
-    // TODO: Implement the display_board function if not already implemented.
-    // TODO: Add code to handle castling once it has been implemented.
     pub fn test_moves() {
         let mut board = Board::new_standard();
         display_board(&board);
@@ -731,7 +846,7 @@ mod tests {
      */
     pub fn test_bitboard_move() {
         // Creating a new standard chessboard
-        let mut board = Board::new_standard();
+        let board = Board::new_standard();
 
         // Displaying the current state of the chessboard
         display_board(&board);
