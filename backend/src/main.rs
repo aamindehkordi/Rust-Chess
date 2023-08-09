@@ -10,6 +10,12 @@ use crate::game::*;
  *
  * This function initializes a standard game and starts playing.
  */
+/// The main function that initializes and runs the game.
+///
+/// # Example
+/// ```rs
+///     main();
+/// ```
 fn main() {
     let mut game = Game::new();
     game.play();

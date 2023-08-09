@@ -60,6 +60,16 @@ impl Square {
         }
     }
 
+    /// Sets the piece of the square.
+    ///
+    /// # Arguments
+    /// * `piece` - The piece as a byte.
+    ///
+    /// # Example
+    /// ```rs
+    ///     let mut square = Square::new(4, Color::Black, PieceKind::King);
+    ///     square.set_piece(27);
+    /// ```
     pub fn set_piece(&mut self, piece: PieceAsByte) {
         self.color = Color::from(piece);
         self.type_ = PieceKind::from(piece);
@@ -87,12 +97,30 @@ impl Display for Board {
     }
 }
 impl Default for Board {
+    /// Returns the default value for the given type.
+    ///
+    /// # Returns
+    /// The default value.
+    ///
+    /// # Example
+    /// ```rs
+    ///     let default = Square::default();
+    /// ```
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl Board {
+    /// Creates a new board.
+    ///
+    /// # Returns
+    /// A new board with the squares initialized.
+    ///
+    /// # Example
+    /// ```rs
+    ///    let board = Board::new();
+    /// ```
     pub fn new() -> Board {
         let mut squares: [Square; 64] = [Square::new(0, Color::White, PieceKind::None); 64];
         for (i, square) in squares.iter_mut().enumerate() {
@@ -107,15 +135,49 @@ impl Board {
         }
     }
 
+    /// Creates a new standard chess board.
+    ///
+    /// # Returns
+    /// A new standard chess board.
+    ///
+    /// # Example
+    /// ```rs
+    ///     let board = Board::new_standard();
+    /// ```
     pub fn new_standard() -> Board {
         let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         new_from_fen(fen)
     }
 
+    /// Sets a piece on the square at the given position.
+    ///
+    /// # Arguments
+    /// * `position` - The position of the square.
+    /// * `piece` - The piece to set on the square.
+    ///
+    /// # Example
+    /// ```rs
+    ///     let mut board = Board::new();
+    ///     board.set_piece(4, PieceAsByte::King);
+    /// ```
     pub fn set_piece(&mut self, position: Position, piece: PieceAsByte) {
         self.squares[position].set_piece(piece);
     }
 }
+
+/// Creates a new board from a fen string.
+///
+/// # Arguments
+/// * `fen` - The fen string.
+///
+/// # Returns
+/// A new board.
+///
+/// # Example
+/// ```rs
+///    let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+///    let board = Board::new_from_fen(fen);
+/// ```
 pub fn new_from_fen(fen: &str) -> Board {
     let mut board = Board::new();
 

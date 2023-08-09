@@ -13,6 +13,21 @@ pub enum Color {
     Black = 16,
 }
 impl Color {
+    /// Converts a piece to its corresponding color.
+    ///
+    /// # Arguments
+    /// * `piece` - The piece value.
+    ///
+    /// # Returns
+    /// The color of the corresponding piece.
+    ///
+    /// # Panics
+    /// Panics if the piece does not have a valid color.
+    ///
+    /// # Example
+    /// ```rs
+    ///     let color = Square::from(16);
+    /// ```
     pub fn from(piece: PieceAsByte) -> Color {
         match piece & 24 {
             8 => Color::White,
@@ -36,6 +51,21 @@ pub enum PieceKind {
     Queen = 6,
 }
 impl PieceKind {
+    /// Converts a piece represented as a byte to a PieceKind.
+    ///
+    /// # Arguments
+    /// * `piece` - The piece to convert.
+    ///
+    /// # Returns
+    /// The corresponding PieceKind.
+    ///
+    /// # Panics
+    /// Panics if the piece kind is invalid.
+    ///
+    /// # Example
+    /// ```rs
+    ///     let piece_kind = Square::from(2);
+    /// ```
     pub fn from(piece: PieceAsByte) -> PieceKind {
         match piece & 7 {
             0 => PieceKind::None,
