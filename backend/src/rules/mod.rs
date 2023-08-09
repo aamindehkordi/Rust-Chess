@@ -208,3 +208,15 @@ pub fn capture_or_normal(
     }
     true
 }
+
+
+#[cfg(test)]
+mod tests {
+    use crate::board::Board;
+    use crate::board::board_info::BoardInfo;
+    use crate::board::piece::{Piece, PieceKind};
+    use crate::game::player::Color;
+    use crate::rules::generate_pawn_moves;
+    use crate::rules::r#move::{Move, MoveType};
+
+}
