@@ -82,6 +82,7 @@ pub struct Board {
     pub squares: [Square; 64],
     pub move_history: Moves,
     pub precomputed_move_data: PrecomputedMoveData,
+    pub turn: Color,
 }
 
 impl Display for Board {
@@ -133,6 +134,7 @@ impl Board {
             squares,
             move_history: Moves::new(),
             precomputed_move_data: precomputed_move_data(),
+            turn: White,
         }
     }
 
