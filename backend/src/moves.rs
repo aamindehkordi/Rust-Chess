@@ -1,5 +1,5 @@
 use crate::board::*;
-
+pub const DIRECTION_OFFSETS: [i8; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
 pub type Moves = Vec<Move>;
 
 #[derive(Debug, Copy, Clone)]
