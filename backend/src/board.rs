@@ -1,7 +1,7 @@
 use crate::moves::*;
+use crate::piece::Color::White;
 use crate::piece::*;
 use std::fmt::Display;
-use crate::piece::Color::White;
 
 /// The position is a number from 0 to 63.
 pub type Position = usize;

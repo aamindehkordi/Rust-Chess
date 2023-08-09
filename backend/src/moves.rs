@@ -60,13 +60,11 @@ pub fn generate_moves(board: &Board) -> Moves {
                 //PieceKind::King => generate_king_moves(board, start_square, &mut moves),
                 _ => (),
             }
-
         }
     }
 
     moves
 }
-
 
 /// Generates all possible moves for a sliding piece on a given board.
 ///
@@ -77,7 +75,11 @@ pub fn generate_moves(board: &Board) -> Moves {
 pub fn generate_sliding_moves(board: &Board, start_square: usize, moves: &mut Moves) {
     let piece = board.squares[start_square].piece;
 
-    let start_dir_idx = if piece.type_ == PieceKind::Bishop { 4 } else { 0 };
+    let start_dir_idx = if piece.type_ == PieceKind::Bishop {
+        4
+    } else {
+        0
+    };
     let end_dir_idx = if piece.type_ == PieceKind::Rook { 4 } else { 8 };
 
     let num_squares_to_edge = board.precomputed_move_data[start_square];
@@ -86,7 +88,9 @@ pub fn generate_sliding_moves(board: &Board, start_square: usize, moves: &mut Mo
             continue;
         }
         for num_squares in 1..num_squares_to_edge[direction_idx] {
-            let end_square = (start_square as i8 + DIRECTION_OFFSETS[direction_idx] * (num_squares) as i8) as usize;
+            let end_square = (start_square as i8
+                + DIRECTION_OFFSETS[direction_idx] * (num_squares) as i8)
+                as usize;
             let piece = board.squares[end_square].piece;
             if is_color(piece, board.turn) {
                 break;
