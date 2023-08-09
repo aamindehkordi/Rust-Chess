@@ -1,6 +1,7 @@
 pub mod board;
 pub mod game;
-pub mod rules;
+pub mod moves;
+pub mod piece;
 
 use crate::game::*;
 
@@ -10,6 +11,6 @@ use crate::game::*;
  * This function initializes a standard game and starts playing.
  */
 fn main() {
-    let game = Game::new_standard();
-    play(game);
+    let mut game = Game::new();
+    game.play();
 }
