@@ -1,6 +1,7 @@
 use crate::moves::*;
 use crate::piece::*;
 use std::fmt::Display;
+use crate::piece::Color::White;
 
 /// The position is a number from 0 to 63.
 pub type Position = usize;
@@ -12,13 +13,12 @@ pub type PrecomputedMoveData = [[usize; 8]; 64];
 pub struct Square {
     pub position: Position,
     pub color: Color,
-    pub type_: PieceKind,
-    pub piece: PieceAsByte,
+    pub piece: Piece,
 }
 
 impl Display for Square {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let piece = match self.type_ {
+        let piece = match self.piece.type_ {
             PieceKind::None => "_",
             PieceKind::King => "K",
             PieceKind::Pawn => "P",
@@ -52,12 +52,11 @@ impl Square {
     ///
     /// let square = Square::new(0, Color::White, PieceKind::King);
     /// ```
-    pub fn new(position: Position, color: Color, type_: PieceKind) -> Square {
+    pub fn new(position: Position, color: Color, piece_as_byte: PieceAsByte) -> Square {
         Square {
             position,
             color,
-            type_,
-            piece: color as PieceAsByte + type_ as PieceAsByte,
+            piece: Piece::new(piece_as_byte),
         }
     }
 
@@ -72,8 +71,7 @@ impl Square {
     ///     square.set_piece(27);
     /// ```
     pub fn set_piece(&mut self, piece: PieceAsByte) {
-        self.color = Color::from(piece);
-        self.type_ = PieceKind::from(piece);
+        self.piece = Piece::new(piece);
     }
 }
 
@@ -124,7 +122,7 @@ impl Board {
     ///    let board = Board::new();
     /// ```
     pub fn new() -> Board {
-        let mut squares: [Square; 64] = [Square::new(0, Color::White, PieceKind::None); 64];
+        let mut squares: [Square; 64] = [Square::new(0, Color::White, 0); 64];
         for (i, square) in squares.iter_mut().enumerate() {
             if i % 2 == 0 {
                 square.color = Color::Black;
