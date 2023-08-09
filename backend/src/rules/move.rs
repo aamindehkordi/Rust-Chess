@@ -4,14 +4,14 @@ use crate::game::player::Color;
 use std::fmt::Display;
 
 // Enum to represent different types of castle moves
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum CastleType {
     KingSide,
     QueenSide,
 }
 
 // Enum to represent different types of moves
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum MoveType {
     Normal,
     DoublePawnPush,
@@ -23,7 +23,7 @@ pub enum MoveType {
 }
 
 // Struct to represent a move
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Move {
     pub from_piece: Piece,
     pub from: Position,
@@ -155,16 +155,19 @@ mod tests {
     use crate::board::piece::{get_moves, Piece, PieceKind};
     use crate::board::{display_board, idx, in_bounds, Square};
     use crate::game::player::Color;
-    use crate::game::{apply_move, get_color_moves, get_current_moves, Game};
+    use crate::game::{apply_move, get_color_moves, Game, undo_move};
     use crate::rules::r#move::Move;
 
-    fn display_moves(game: &mut Game, moves: &[Move]) {
+    fn display_moves(game: &Game, moves: &[Move]) {
         for mv in moves.iter() {
             let mut gs = game.clone();
-            gs = apply_move(gs, mv.from, mv.to);
-            display_board(&gs.board);
-            println!("Move: {:}", mv);
-            println!("----------------------------------")
+            let result= apply_move(gs, mv.from, mv.to);
+            if let Ok(gs) = result {
+                println!("----------------------------------");
+                println!("Move: {:}", mv);
+                println!("----------------------------------");
+                display_board(&gs.board);
+            }
         }
     }
 
@@ -179,22 +182,26 @@ mod tests {
      *
      * @return The number of positions evaluated during the test.
      */
-    fn recursive_mvgen_test(game: &Game, depth: usize) -> usize {
+    fn recursive_mvgen_test(game: &Game, depth: usize, expected: usize) -> usize {
         if depth == 0 {
             return 1;
         }
 
         let mut num_positions = 0usize;
-        let moves = get_current_moves(game);
+        let moves = game.board.get_current_moves();
         let mut new_game = game.clone();
 
-        for mv in moves {
-            // apply the move
-            new_game = apply_move(new_game.clone(), mv.from, mv.to);
-            // switch color
-            num_positions += recursive_mvgen_test(&new_game, depth - 1);
-            // undo the move
-            new_game = apply_move(new_game.clone(), mv.to, mv.from);
+        for mv in moves.iter() {
+            let result = apply_move(new_game.clone(), mv.from, mv.to);
+            if result.is_ok() {
+                let mut new_game = result.unwrap();
+                num_positions += recursive_mvgen_test(&mut new_game, depth - 1, expected);
+            }
+        }
+
+        if num_positions != expected {
+            println!("Expected: {}, Actual: {}", expected, num_positions);
+            display_moves(&mut new_game, &moves);
         }
 
         num_positions
@@ -212,7 +219,7 @@ mod tests {
      * @param color - The color of the player owning the queen.
      */
     fn queen_scenario(game: &mut Game, pos: (u8, u8), expected: usize, color: Color) {
-        let queen = game.board.get(pos).unwrap();
+        let queen = game.board.get_piece(pos).unwrap();
         game.board.board_info.valid_moves = get_color_moves(&game.board, color);
         let moves = get_moves(&game.board.board_info, &queen);
 
@@ -396,9 +403,10 @@ mod tests {
      * with a maximum depth of 1. It then asserts that the number of generated positions is equal to 20.
      */
     fn test_move_generation_1() {
-        let mut game = Game::new_standard();
-        let num_positions = recursive_mvgen_test(&mut game, 1);
-        assert_eq!(num_positions, 20);
+        let game = Game::new_standard();
+        let expected = 20;
+        let num_positions = recursive_mvgen_test(&game, 1, expected);
+        assert_eq!(num_positions, expected);
     }
 
     #[test]
@@ -411,9 +419,10 @@ mod tests {
      *
      */
     fn test_move_generation_2() {
-        let mut game = Game::new_standard();
-        let num_positions = recursive_mvgen_test(&mut game, 2);
-        assert_eq!(num_positions, 400);
+        let game = Game::new_standard();
+        let expected = 400;
+        let num_positions = recursive_mvgen_test(&game, 2, expected);
+        assert_eq!(num_positions, expected);
     }
 
     #[test]
@@ -427,9 +436,10 @@ mod tests {
      * @see recursive_mvgen_test
      */
     fn test_move_generation_3() {
-        let mut game = Game::new_standard();
-        let num_positions = recursive_mvgen_test(&mut game, 3);
-        assert_eq!(num_positions, 8902); // 8000 62ms
+        let game = Game::new_standard();
+        let expected = 8902;
+        let num_positions = recursive_mvgen_test(&game, 3, expected);
+        assert_eq!(num_positions, expected); // 8000 62ms
     }
 
     #[test]
@@ -444,9 +454,10 @@ mod tests {
      *
      */
     fn test_move_generation_4() {
-        let mut game = Game::new_standard();
-        let num_positions = recursive_mvgen_test(&mut game, 4);
-        assert_eq!(num_positions, 197281); // actual: 160000 989ms
+        let game = Game::new_standard();
+        let expected = 197281;
+        let num_positions = recursive_mvgen_test(&game, 4, expected);
+        assert_eq!(num_positions, expected); // actual: 160000 989ms
     }
 
     #[test]
@@ -461,9 +472,10 @@ mod tests {
      * @expected_result - The total number of generated positions matches the expected value.
      */
     fn test_move_generation_5() {
-        let mut game = Game::new_standard();
-        let num_positions = recursive_mvgen_test(&mut game, 5);
-        assert_eq!(num_positions, 4865609); // actual: 3200000 14 sec
+        let game = Game::new_standard();
+        let expected = 4865609;
+        let num_positions = recursive_mvgen_test(&game, 5, expected);
+        assert_eq!(num_positions, expected); // actual: 3200000 14 sec
     }
 
     #[test]
@@ -474,9 +486,10 @@ mod tests {
      * The number of generated positions is then compared with the expected number.
      */
     fn test_move_generation_6() {
-        let mut game = Game::new_standard();
-        let num_positions = recursive_mvgen_test(&mut game, 6);
-        assert_eq!(num_positions, 119060324);
+        let game = Game::new_standard();
+        let expected = 119060324;
+        let num_positions = recursive_mvgen_test(&game, 6, expected);
+        assert_eq!(num_positions, expected);
     }
 
     #[test]
@@ -488,9 +501,10 @@ mod tests {
      * matches the expected value.
      */
     fn test_move_generation_7() {
-        let mut game = Game::new_standard();
-        let num_positions = recursive_mvgen_test(&mut game, 7);
-        assert_eq!(num_positions, 3195901860);
+        let game = Game::new_standard();
+        let expected = 3195901860;
+        let num_positions = recursive_mvgen_test(&game, 7, expected);
+        assert_eq!(num_positions, expected);
     }
 
     #[test]
@@ -504,9 +518,10 @@ mod tests {
      * @param depth - The depth to test move generation for.
      */
     fn test_move_generation_8() {
-        let mut game = Game::new_standard();
-        let num_positions = recursive_mvgen_test(&mut game, 8);
-        assert_eq!(num_positions, 84998978956);
+        let game = Game::new_standard();
+        let expected = 84998978956;
+        let num_positions = recursive_mvgen_test(&game, 8, expected);
+        assert_eq!(num_positions, expected);
     }
 
     #[test]
@@ -520,8 +535,9 @@ mod tests {
      * @note The expected number of positions for depth 9 is 2439530234167.
      */
     fn test_move_generation_9() {
-        let mut game = Game::new_standard();
-        let num_positions = recursive_mvgen_test(&mut game, 9);
-        assert_eq!(num_positions, 2439530234167);
+        let game = Game::new_standard();
+        let expected = 2439530234167;
+        let num_positions = recursive_mvgen_test(&game, 9, expected);
+        assert_eq!(num_positions, expected);
     }
 }
