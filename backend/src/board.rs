@@ -4,6 +4,7 @@ use std::fmt::Display;
 
 /// The position is a number from 0 to 63.
 pub type Position = usize;
+pub type PrecomputedMoveData = [[usize; 8]; 64];
 
 #[derive(Debug, Copy, Clone)]
 /// The position is a number from 0 to 63.
@@ -82,6 +83,7 @@ impl Square {
 pub struct Board {
     pub squares: [Square; 64],
     pub move_history: Moves,
+    pub precomputed_move_data: PrecomputedMoveData,
 }
 
 impl Display for Board {
@@ -132,6 +134,7 @@ impl Board {
         Board {
             squares,
             move_history: Moves::new(),
+            precomputed_move_data: precomputed_move_data(),
         }
     }
 
@@ -146,7 +149,66 @@ impl Board {
     /// ```
     pub fn new_standard() -> Board {
         let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        new_from_fen(fen)
+        Board::new_from_fen(fen)
+    }
+
+    /// Creates a new board from a fen string.
+    ///
+    /// # Arguments
+    /// * `fen` - The fen string.
+    ///
+    /// # Returns
+    /// A new board.
+    ///
+    /// # Example
+    /// ```rs
+    ///    let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+    ///    let board = Board::new_from_fen(fen);
+    /// ```
+    pub fn new_from_fen(fen: &str) -> Board {
+        let mut board = Board::new();
+
+        // Dictionary of piece kinds.
+        let piece_kind_from_symbol = [
+            ('K', PieceKind::King),
+            ('Q', PieceKind::Queen),
+            ('R', PieceKind::Rook),
+            ('B', PieceKind::Bishop),
+            ('N', PieceKind::Knight),
+            ('P', PieceKind::Pawn),
+        ];
+
+        // Split the fen into parts.
+        let fen_board: Vec<&str> = fen.split(' ').collect();
+        let mut file = 0;
+        let mut rank = 7;
+
+        // Parse the board.
+        for symbol in fen_board[0].chars() {
+            if symbol == '/' {
+                file = 0;
+                rank -= 1;
+            } else if symbol.is_ascii_digit() {
+                file += symbol.to_digit(10).unwrap();
+            } else {
+                let mut piece_color = Color::White;
+                if symbol.is_lowercase() {
+                    piece_color = Color::Black;
+                }
+                let mut piece_kind = PieceKind::None;
+                for (piece_symbol, piece_kind_) in piece_kind_from_symbol.iter() {
+                    if symbol.to_ascii_uppercase() == *piece_symbol {
+                        piece_kind = *piece_kind_;
+                    }
+                }
+                let pos: Position = rank * 8usize + file as usize;
+                let piece = piece_color as u8 + piece_kind as u8; // Rook
+                board.set_piece(pos, piece);
+                file += 1;
+            }
+        }
+
+        board
     }
 
     /// Sets a piece on the square at the given position.
@@ -165,61 +227,38 @@ impl Board {
     }
 }
 
-/// Creates a new board from a fen string.
-///
-/// # Arguments
-/// * `fen` - The fen string.
+/// Precomputes the number of squares to the edge of the board.
+/// This is used for move generation.
 ///
 /// # Returns
-/// A new board.
+/// A 2d array of the number of squares to the edge of the board.
 ///
 /// # Example
 /// ```rs
-///    let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-///    let board = Board::new_from_fen(fen);
+///    let precomputed_move_data = Board::precomputed_move_data();
 /// ```
-pub fn new_from_fen(fen: &str) -> Board {
-    let mut board = Board::new();
+fn precomputed_move_data() -> PrecomputedMoveData {
+    let mut num_squares_to_edge: PrecomputedMoveData = [[0; 8]; 64];
+    for file in 0..8 {
+        for rank in 0..8 {
+            let north = 7 - rank;
+            let south = rank;
+            let east = 7 - file;
+            let west = file;
 
-    // Dictionary of piece kinds.
-    let piece_kind_from_symbol = [
-        ('K', PieceKind::King),
-        ('Q', PieceKind::Queen),
-        ('R', PieceKind::Rook),
-        ('B', PieceKind::Bishop),
-        ('N', PieceKind::Knight),
-        ('P', PieceKind::Pawn),
-    ];
+            let square = rank * 8 + file;
 
-    // Split the fen into parts.
-    let fen_board: Vec<&str> = fen.split(' ').collect();
-    let mut file = 0;
-    let mut rank = 7;
-
-    // Parse the board.
-    for symbol in fen_board[0].chars() {
-        if symbol == '/' {
-            file = 0;
-            rank -= 1;
-        } else if symbol.is_ascii_digit() {
-            file += symbol.to_digit(10).unwrap();
-        } else {
-            let mut piece_color = Color::White;
-            if symbol.is_lowercase() {
-                piece_color = Color::Black;
-            }
-            let mut piece_kind = PieceKind::None;
-            for (piece_symbol, piece_kind_) in piece_kind_from_symbol.iter() {
-                if symbol.to_ascii_uppercase() == *piece_symbol {
-                    piece_kind = *piece_kind_;
-                }
-            }
-            let pos: Position = rank * 8usize + file as usize;
-            let piece = piece_color as u8 + piece_kind as u8; // Rook
-            board.set_piece(pos, piece);
-            file += 1;
+            num_squares_to_edge[square] = [
+                north,
+                south,
+                east,
+                west,
+                north.min(east),
+                north.min(west),
+                south.min(east),
+                south.min(west),
+            ];
         }
     }
-
-    board
+    num_squares_to_edge
 }
