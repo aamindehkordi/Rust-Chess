@@ -79,12 +79,10 @@ impl Game {
  * @param mv - The move to be made.
  * @returns The updated game state.
  */
-pub fn update(game: Game, mv: Move) -> Game {
+pub fn update(game: Game) -> Game {
     let mut game = game;
     let mut gs = &mut game.game_state;
     gs.fen = game.board.to_fen();
-    game.board.make_move(mv.clone());
-    gs.move_history.push(mv);
     gs.white_in_check = game.board.board_info.is_in_check(Color::White);
     gs.black_in_check = game.board.board_info.is_in_check(Color::Black);
     gs.next_turn();
@@ -104,54 +102,59 @@ pub fn update(game: Game, mv: Move) -> Game {
  * @param game - The game object representing the current state of the game.
  */
 pub fn play(mut game: Game) {
-    game.board.board_info.valid_moves = get_current_moves(&game);
+    game.board.board_info.valid_moves = game.board.get_current_moves();
     loop {
         display_board(&game.board);
         let mv_idx = user_mv_idx();
         let from: Position = (mv_idx.0, mv_idx.1);
         let to: Position = (mv_idx.2, mv_idx.3);
-        game = apply_move(game, from, to);
-        game.board.board_info.valid_moves = get_current_moves(&game);
+        let result = apply_move(game.clone(), from, to);
+        if let Ok(g) = result {
+            game = g;
+        } else {
+            println!("Invalid move!");
+        }
+        game.board.board_info.valid_moves = game.board.get_current_moves();
     }
 }
 
-pub fn apply_move(game: Game, from: Position, to: Position) -> Game {
+pub fn undo_move(game: Game) -> Game {
     let mut game = game;
-    let from_square = game.board.get(from);
+    let last_move = game.game_state.move_history.pop();
+    if last_move.is_some() {
+        game.game_state.undo(&mut game.board);
+        game.game_state.next_turn();
+        game = update(game);
+    }
+    game
+}
+
+pub fn apply_move(game: Game, from: Position, to: Position) -> Result<Game, ()> {
+    let mut game = game;
+    let from_square = game.board.get_piece(from);
     let moves = game.board.board_info.valid_moves.clone();
     if from_square.is_some() {
         for mv in moves {
             if mv.to == to {
-                game = update(game, mv);
+                game.board.make_move(mv.clone());
+                game.game_state.move_history.push(mv);
+                game = update(game);
+                return Ok(game);
             }
         }
     }
-    game.game_state.next_turn();
-    game.clone()
+    Err(())
 }
 
 pub fn get_color_moves(board: &Board, color: Color) -> Vec<Move> {
     let mut moves: Vec<Move> = Vec::new();
-    for piece in board.squares.iter().flatten() {
+    let pieces = board.squares.iter().flatten();
+    for piece in pieces {
         if piece.color == color {
             moves.append(&mut get_moves(&board.board_info, piece));
         }
     }
     moves
-}
-
-/**
- * Retrieves the available moves for the current player.
- *
- * This function takes a reference to a Game struct and returns a vector containing all the possible moves
- * for the player whose turn it currently is.
- *
- * @param game - A reference to the Game struct that represents the chess game.
- * @return A vector containing all the possible moves for the current player.
- */
-pub fn get_current_moves(game: &Game) -> Vec<Move> {
-    let color = from_idx(game.game_state.turn);
-    get_color_moves(&game.board, color)
 }
 
 /**

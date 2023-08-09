@@ -32,6 +32,8 @@ pub struct BoardInfo {
     pub white_psuedo_moves: Vec<Move>,
     pub black_psuedo_moves: Vec<Move>,
     pub valid_moves: Vec<Move>,
+
+    pub turn: u8,
 }
 
 impl BoardInfo {
@@ -86,6 +88,8 @@ impl BoardInfo {
             white_psuedo_moves: Vec::new(),
             black_psuedo_moves: Vec::new(),
             valid_moves: Vec::new(),
+
+            turn: 0,
         }
     }
 
@@ -475,26 +479,6 @@ impl BoardInfo {
         (pos_to_bb(pos) & enemy_moves) != 0
     }
 
-    /**
-     * Checks whether the given move is valid on the chessboard.
-     *
-     * This function verifies whether the move specified by the `Move` struct is a valid move
-     * on the chessboard. It checks if the starting and ending positions of the move are within
-     * the bounds of the chessboard (8x8 grid).
-     *
-     * @param mv - The move to be checked for validity.
-     * @return A boolean value indicating whether the move is valid or not.
-     *
-     * @todo Implement checking for check/pins in addition to boundary validation.
-     */
-    pub fn is_valid(&self, mv: &Move) -> bool {
-        let from = mv.from;
-        let to = mv.to;
-        let (from_x, from_y) = from;
-        let (to_x, to_y) = to;
-        from_x < 8 && from_y < 8 && to_x < 8 && to_y < 8
-        // todo check for check / pins
-    }
 }
 
 /**
@@ -597,6 +581,8 @@ pub fn update_board_info(board_info: BoardInfo, squares: [Option<Piece>; 64]) ->
 
     board_info.white_psuedo_moves = white_psuedo_moves;
     board_info.black_psuedo_moves = black_psuedo_moves;
+
+    board_info.turn ^= 1;
     board_info
 }
 

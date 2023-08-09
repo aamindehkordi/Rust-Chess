@@ -1,6 +1,8 @@
 use crate::board::board_info::{update_board_info, BoardInfo};
 use crate::board::piece::{to_char, Piece, PieceKind};
 use crate::game::player::Color;
+use crate::game::player::Color::{Black, White};
+use crate::rules::{generate_king_moves, generate_knight_moves, generate_pawn_moves, generate_sliding_move};
 
 use crate::rules::r#move::{CastleType, Move, MoveType};
 
@@ -97,7 +99,7 @@ impl Board {
      * @param pos - The position of the square to retrieve.
      * @return The value of the square at the specified position.
      */
-    pub fn get(&self, pos: Position) -> Square {
+    pub fn get_piece(&self, pos: Position) -> Square {
         self.squares[idx(pos)]
     }
 
@@ -121,7 +123,11 @@ impl Board {
      * and updates the squares on the chessboard accordingly.
      */
     pub fn undo_move(&mut self) {
-        let m = self.board_info.move_history.pop().unwrap();
+        let m = self.board_info.move_history.pop();
+        if m.is_none() {
+            return;
+        }
+        let m = m.unwrap();
         let piece = m.from_piece;
         //piece.first_move = true;
         let pos = piece.position;
@@ -280,6 +286,42 @@ impl Board {
         }
         self.squares[idx(pos)] = None;
         self.squares[idx(m.to)] = Some(piece);
+    }
+
+    pub fn get_current_moves(&self) -> Vec<Move> {
+        let mut moves = Vec::new();
+        let mut piece: Piece;
+        let turn: Color = if self.board_info.turn == 0 {
+            White
+        } else {
+            Black
+        };
+        for p in self.squares.iter().flatten() {
+            piece = p.clone();
+            if piece.color == turn {
+                match piece.kind {
+                    PieceKind::Pawn => {
+                        moves.append(&mut generate_pawn_moves(self.board_info.clone(), piece));
+                    }
+                    PieceKind::Knight => {
+                        moves.append(&mut generate_knight_moves(self.board_info.clone(), piece));
+                    }
+                    PieceKind::Bishop => {
+                        moves.append(&mut generate_sliding_move(self.board_info.clone(), piece));
+                    }
+                    PieceKind::Rook => {
+                        moves.append(&mut generate_sliding_move(self.board_info.clone(), piece));
+                    }
+                    PieceKind::Queen => {
+                        moves.append(&mut generate_sliding_move(self.board_info.clone(), piece));
+                    }
+                    PieceKind::King => {
+                        moves.append(&mut generate_king_moves(self.board_info.clone(), piece));
+                    }
+                }
+            }
+        }
+        moves
     }
 }
 
@@ -482,7 +524,7 @@ mod tests {
         let board = Board::new_standard();
         display_board(&board);
 
-        assert_eq!(board.get((0, 0)).unwrap().kind, PieceKind::Rook);
+        assert_eq!(board.get_piece((0, 0)).unwrap().kind, PieceKind::Rook);
     }
 
     #[test]
@@ -497,7 +539,7 @@ mod tests {
         let board = Board::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
         display_board(&board);
 
-        assert_eq!(board.get((0, 0)).unwrap().kind, PieceKind::Rook);
+        assert_eq!(board.get_piece((0, 0)).unwrap().kind, PieceKind::Rook);
     }
 
     /**
@@ -512,7 +554,7 @@ mod tests {
      * @param color - The player color making the move.
      */
     fn test_move(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
-        let m = Move::new(board.get(from).unwrap(), to, Normal, color);
+        let m = Move::new(board.get_piece(from).unwrap(), to, Normal, color);
         board.make_move(m);
     }
 
@@ -529,7 +571,7 @@ mod tests {
      * @param color - The color of the player making the move.
      */
     fn test_capture(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
-        let m = Move::new(board.get(from).unwrap(), to, Capture, color);
+        let m = Move::new(board.get_piece(from).unwrap(), to, Capture, color);
         board.make_move(m);
     }
 
@@ -547,7 +589,7 @@ mod tests {
      * @param color - The color of the piece making the en passant move.
      */
     fn test_en_passant(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
-        let m = Move::new(board.get(from).unwrap(), to, EnPassant, color);
+        let m = Move::new(board.get_piece(from).unwrap(), to, EnPassant, color);
         board.make_move(m);
     }
 
@@ -562,7 +604,7 @@ mod tests {
      * @param color - The color of the promoting pawn.
      */
     fn test_promotion(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
-        let m = Move::new(board.get(from).unwrap(), to, Promotion(Queen), color);
+        let m = Move::new(board.get_piece(from).unwrap(), to, Promotion(Queen), color);
         board.make_move(m);
     }
 
@@ -579,7 +621,7 @@ mod tests {
      * @param color - The color of the player making the move.
      */
     fn test_promotion_capture(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
-        let m = Move::new(board.get(from).unwrap(), to, PromotionCapture(Queen), color);
+        let m = Move::new(board.get_piece(from).unwrap(), to, PromotionCapture(Queen), color);
         board.make_move(m);
     }
 
@@ -594,7 +636,7 @@ mod tests {
      * @param color - The color of the player making the move.
      */
     fn test_queenside_castle(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
-        let m = Move::new(board.get(from).unwrap(), to, Castle(QueenSide), color);
+        let m = Move::new(board.get_piece(from).unwrap(), to, Castle(QueenSide), color);
         board.make_move(m);
     }
 
@@ -610,7 +652,7 @@ mod tests {
      * @param color - The color of the player executing the move.
      */
     fn test_kingside_castle(board: &mut Board, from: (u8, u8), to: (u8, u8), color: Color) {
-        let m = Move::new(board.get(from).unwrap(), to, Castle(KingSide), color);
+        let m = Move::new(board.get_piece(from).unwrap(), to, Castle(KingSide), color);
         board.make_move(m);
     }
 
@@ -646,14 +688,14 @@ mod tests {
         test_move(&mut board, from, to, White);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, Pawn);
+        assert_eq!(board.get_piece(to).unwrap().kind, Pawn);
 
         let from = (4, 6); // e7
         let to = (4, 4); // e5
         test_move(&mut board, from, to, Black);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, Pawn);
+        assert_eq!(board.get_piece(to).unwrap().kind, Pawn);
 
         let from = (3, 0); // d1
         let to = (7, 4); // h5
@@ -661,28 +703,28 @@ mod tests {
         display_board(&board);
 
         // Test Other Pieces
-        assert_eq!(board.get(to).unwrap().kind, Queen);
+        assert_eq!(board.get_piece(to).unwrap().kind, Queen);
 
         let from = (5, 7); // f8
         let to = (1, 3); // b4
         test_move(&mut board, from, to, Black);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, Bishop);
+        assert_eq!(board.get_piece(to).unwrap().kind, Bishop);
 
         let from = (1, 0); // b1
         let to = (2, 2); // c3
         test_move(&mut board, from, to, White);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, PieceKind::Knight);
+        assert_eq!(board.get_piece(to).unwrap().kind, PieceKind::Knight);
 
         let from = (6, 7); // g8
         let to = (5, 5); // f6
         test_move(&mut board, from, to, Black);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, PieceKind::Knight);
+        assert_eq!(board.get_piece(to).unwrap().kind, PieceKind::Knight);
 
         // Test King Castling
         let from = (4, 0); // e1
@@ -690,14 +732,14 @@ mod tests {
         test_kingside_castle(&mut board, from, to, White);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, King);
+        assert_eq!(board.get_piece(to).unwrap().kind, King);
 
         let from = (4, 7); // e8
         let to = (2, 7); // c8
         test_queenside_castle(&mut board, from, to, Black);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, King);
+        assert_eq!(board.get_piece(to).unwrap().kind, King);
 
         // Test Pawn En Passant
         let from = (7, 1); // h2
@@ -705,21 +747,21 @@ mod tests {
         test_move(&mut board, from, to, White);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, Pawn);
+        assert_eq!(board.get_piece(to).unwrap().kind, Pawn);
 
         let from = (6, 6); // g7
         let to = (6, 4); // g5
         test_move(&mut board, from, to, Black);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, Pawn);
+        assert_eq!(board.get_piece(to).unwrap().kind, Pawn);
 
         let from = (7, 4); // h5
         let to = (6, 5); // g6
         test_en_passant(&mut board, from, to, White);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, Pawn);
+        assert_eq!(board.get_piece(to).unwrap().kind, Pawn);
 
         // Test Pawn Promotion
         let from = (2, 6); // c7
@@ -727,26 +769,26 @@ mod tests {
         test_promotion_capture(&mut board, from, to, Black);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, Queen);
+        assert_eq!(board.get_piece(to).unwrap().kind, Queen);
 
         let from = (6, 5); // g6
         let to = (6, 7); // g8 illegal move for testing
         test_promotion(&mut board, from, to, White);
         display_board(&board);
 
-        assert_eq!(board.get(to).unwrap().kind, Queen);
+        assert_eq!(board.get_piece(to).unwrap().kind, Queen);
 
         // Test Undo
         test_undo(&mut board);
         display_board(&board);
 
-        assert!(board.get(to).is_none());
+        assert!(board.get_piece(to).is_none());
 
         test_undo(&mut board);
         display_board(&board);
 
         let to = (2, 0);
-        assert_eq!(board.get(to).unwrap().kind, Bishop);
+        assert_eq!(board.get_piece(to).unwrap().kind, Bishop);
     }
 
     #[test]
@@ -773,7 +815,7 @@ mod tests {
         test_undo(&mut board);
         display_board(&board);
 
-        assert_eq!(board.get(from).unwrap().kind, Pawn);
+        assert_eq!(board.get_piece(from).unwrap().kind, Pawn);
     }
 
     #[test]
@@ -808,7 +850,7 @@ mod tests {
 
         // Assert the number of captured pieces and the kind of the piece in the new position
         assert_eq!(board.board_info.captured_pieces.len(), 1);
-        assert_eq!(board.get(to).unwrap().kind, Pawn);
+        assert_eq!(board.get_piece(to).unwrap().kind, Pawn);
     }
 
     // Color Index [White, Black]
@@ -897,10 +939,10 @@ mod tests {
         display_board(&board);
 
         // Assertion to check if the piece at the 'to' square is a Pawn
-        assert_eq!(board.get(to).unwrap().kind, Pawn);
+        assert_eq!(board.get_piece(to).unwrap().kind, Pawn);
 
         // Assertion to check if the 'from' square is now empty
-        assert!(board.get(from).is_none());
+        assert!(board.get_piece(from).is_none());
 
         // Assertion to check the count of ones in the pawn piece bitboard
         assert_eq!(board.board_info.piece_bitboards[1].count_ones(), 8);
@@ -944,8 +986,8 @@ mod tests {
 
         // Assert the expected outcomes of the test
         assert_eq!(board.board_info.captured_pieces.len(), 1);
-        assert_eq!(board.get(to).unwrap().kind, Pawn);
-        assert!(board.get(from).is_none());
+        assert_eq!(board.get_piece(to).unwrap().kind, Pawn);
+        assert!(board.get_piece(from).is_none());
 
         assert_eq!(board.board_info.piece_bitboards[1].count_ones(), 8);
         assert_eq!(board.board_info.piece_bitboards[1].count_zeros(), 56);
@@ -982,6 +1024,6 @@ mod tests {
         display_board(&board);
 
         // Assert that the piece at the 'from' position is a pawn
-        assert_eq!(board.get(from).unwrap().kind, Pawn);
+        assert_eq!(board.get_piece(from).unwrap().kind, Pawn);
     }
 }

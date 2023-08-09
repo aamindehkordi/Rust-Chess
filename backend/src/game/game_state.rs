@@ -1,3 +1,4 @@
+use crate::board::Board;
 use crate::game::player::{Color, Player};
 use crate::rules::r#move::Move;
 
@@ -72,5 +73,11 @@ impl GameState {
             Color::White => self.white_in_check,
             Color::Black => self.black_in_check,
         }
+    }
+
+    pub fn undo(&mut self, board: &mut Board) {
+        self.move_history.pop();
+        self.fen = board.to_fen();
+        board.undo_move();
     }
 }
