@@ -35,6 +35,13 @@ impl Color {
             _ => panic!("Invalid color."),
         }
     }
+
+    pub fn other(&self) -> Color {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
