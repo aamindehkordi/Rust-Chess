@@ -130,6 +130,10 @@ pub fn is_color(piece: Piece, color: Color) -> bool {
     piece.color == color
 }
 
+pub fn is_type(piece: Piece, type_: PieceKind) -> bool {
+    piece.type_ == type_
+}
+
 pub fn is_sliding_piece(piece: Piece) -> bool {
     piece.type_ == PieceKind::Bishop
         || piece.type_ == PieceKind::Rook
