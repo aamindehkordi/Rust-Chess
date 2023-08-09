@@ -1,6 +1,7 @@
 use crate::board::*;
 use crate::piece::*;
 
+/// A game is a board and a turn.
 pub struct Game {
     pub board: Board,
     pub turn: Color,
