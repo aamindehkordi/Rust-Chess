@@ -76,34 +76,72 @@ pub fn generate_moves(board: &Board) -> Moves {
 /// # Returns
 /// A list of all possible moves for the given piece.
 pub fn generate_sliding_moves(board: &Board, start_square: usize) -> Moves {
+    // The list of moves to return.
     let mut moves = Moves::new();
+    // The piece on the start square.
     let piece = board.squares[start_square].piece;
 
-    let start_dir_idx = if piece.type_ == PieceKind::Bishop {
-        4
-    } else {
-        0
-    };
+    // The index of the first direction to check.
+    let start_dir_idx = if piece.type_ == PieceKind::Bishop { 4 } else { 0 };
+    // The index of the last direction to check.
     let end_dir_idx = if piece.type_ == PieceKind::Rook { 4 } else { 8 };
 
-    let num_squares_to_edge = board.precomputed_move_data[start_square];
+    // For each direction.
     for direction_idx in start_dir_idx..end_dir_idx {
+        // If the piece is a bishop and the direction is not diagonal.
         if direction_idx < start_dir_idx || direction_idx >= end_dir_idx {
             continue;
         }
-        for num_squares in 1..num_squares_to_edge[direction_idx] {
-            let end_square = (start_square as i8
-                + DIRECTION_OFFSETS[direction_idx] * (num_squares) as i8)
-                as usize;
-            let piece = board.squares[end_square].piece;
-            if is_color(piece, board.turn) {
+        // For each square in the direction.
+        for num_squares in 1..board.num_squares_to_edge[start_square][direction_idx] {
+            // The end square.
+            let end_square = (DIRECTION_OFFSETS[direction_idx] * num_squares as i8
+                + start_square as i8) as usize;
+            // The piece on the end square.
+            let piece_on_end_square = board.squares[end_square].piece;
+
+            // Blocked by a piece of the same color.
+            if is_color(piece_on_end_square, board.turn) {
                 break;
             }
+            // Add the move.
             moves.push(Move::new(start_square, end_square));
-            if is_color(piece, board.turn.other()) {
+
+            // Blocked by a piece of the opposite color.
+            if is_color(piece_on_end_square, board.turn.other()) {
                 break;
             }
         }
     }
+    moves
+}
+
+/// Generates all possible moves for a king on a given board.
+///
+/// # Arguments
+/// * `board` - The board to generate moves for.
+/// * `start_square` - The square the piece is on.
+///
+/// # Returns
+/// A list of all possible moves for the given piece.
+pub fn generate_king_moves(board: &Board, start_square: usize) -> Moves {
+    // The list of moves to return.
+    let mut moves = Moves::new();
+
+    // For each direction.
+    for direction in DIRECTION_OFFSETS.iter() {
+        // The end square.
+        let end_square = (start_square as i8 + direction) as usize;
+        // The piece on the end square.
+        let piece_on_end_square = board.squares[end_square].piece;
+
+        // Blocked by a piece of the same color.
+        if is_color(piece_on_end_square, board.turn) {
+            continue;
+        }
+        // Add the move.
+        moves.push(Move::new(start_square, end_square));
+    }
+
     moves
 }
