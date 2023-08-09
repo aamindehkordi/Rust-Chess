@@ -55,7 +55,8 @@ pub fn generate_moves(board: &Board) -> Moves {
                 //PieceKind::Pawn => generate_pawn_moves(board, start_square, &mut moves),
                 //PieceKind::Knight => generate_knight_moves(board, start_square, &mut moves),
                 PieceKind::Bishop | PieceKind::Rook | PieceKind::Queen => {
-                    generate_sliding_moves(board, start_square, &mut moves)
+                    let sliding_moves = generate_sliding_moves(board, start_square);
+                    moves.extend(sliding_moves);
                 }
                 //PieceKind::King => generate_king_moves(board, start_square, &mut moves),
                 _ => (),
@@ -71,8 +72,11 @@ pub fn generate_moves(board: &Board) -> Moves {
 /// # Arguments
 /// * `board` - The board to generate moves for.
 /// * `start_square` - The square the piece is on.
-/// * `moves` - The list of moves to add to.
-pub fn generate_sliding_moves(board: &Board, start_square: usize, moves: &mut Moves) {
+///
+/// # Returns
+/// A list of all possible moves for the given piece.
+pub fn generate_sliding_moves(board: &Board, start_square: usize) -> Moves {
+    let mut moves = Moves::new();
     let piece = board.squares[start_square].piece;
 
     let start_dir_idx = if piece.type_ == PieceKind::Bishop {
@@ -101,4 +105,5 @@ pub fn generate_sliding_moves(board: &Board, start_square: usize, moves: &mut Mo
             }
         }
     }
+    moves
 }
