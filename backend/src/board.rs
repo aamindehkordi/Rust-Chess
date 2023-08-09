@@ -5,7 +5,7 @@ use std::fmt::Display;
 
 /// The position is a number from 0 to 63.
 pub type Position = usize;
-pub type PrecomputedMoveData = [[usize; 8]; 64];
+pub type NumSquaresToEdge = [[usize; 8]; 64];
 
 #[derive(Debug, Copy, Clone)]
 /// The position is a number from 0 to 63.
@@ -81,7 +81,7 @@ impl Square {
 pub struct Board {
     pub squares: [Square; 64],
     pub move_history: Moves,
-    pub precomputed_move_data: PrecomputedMoveData,
+    pub num_squares_to_edge: NumSquaresToEdge,
     pub turn: Color,
 }
 
@@ -133,7 +133,7 @@ impl Board {
         Board {
             squares,
             move_history: Moves::new(),
-            precomputed_move_data: precomputed_move_data(),
+            num_squares_to_edge: precomputed_move_data(),
             turn: White,
         }
     }
@@ -237,8 +237,8 @@ impl Board {
 /// ```rs
 ///    let precomputed_move_data = Board::precomputed_move_data();
 /// ```
-fn precomputed_move_data() -> PrecomputedMoveData {
-    let mut num_squares_to_edge: PrecomputedMoveData = [[0; 8]; 64];
+fn precomputed_move_data() -> NumSquaresToEdge {
+    let mut num_squares_to_edge: NumSquaresToEdge = [[0; 8]; 64];
     for file in 0..8 {
         for rank in 0..8 {
             let north = 7 - rank;
