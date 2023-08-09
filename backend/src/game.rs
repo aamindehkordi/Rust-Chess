@@ -39,6 +39,13 @@ impl Game {
         }
     }
 
+    pub fn custom(fen: &str) -> Game {
+        Game {
+            board: Board::new_from_fen(fen),
+            turn: Color::White,
+        }
+    }
+
     /// Plays a move on the chess board.
     ///
     /// This function prints the current state of the chess board.
