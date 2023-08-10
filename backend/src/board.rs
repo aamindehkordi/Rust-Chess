@@ -92,7 +92,7 @@ impl Square {
 /// The move history is a list of moves.
 pub struct Board {
     pub squares: [Square; 64],
-    pub move_history: Moves,
+    pub move_history: SimpleMoves,
     pub num_squares_to_edge: NumSquaresToEdge,
     pub turn: Color,
 }
@@ -144,7 +144,7 @@ impl Board {
         }
         Board {
             squares,
-            move_history: Moves::new(),
+            move_history: SimpleMoves::new(),
             num_squares_to_edge: precomputed_move_data(),
             turn: White,
         }

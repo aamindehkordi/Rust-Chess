@@ -1,8 +1,14 @@
 use crate::board::*;
 use crate::piece::*;
 
+/// A list of offsets for each direction.
+/// The directions are in the following order:
+/// North West, North, North East, West, East, South West, South, South East.
 pub const DIRECTION_OFFSETS: [i8; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
-pub type Moves = Vec<SimpleMove>;
+
+/// A list of moves.
+/// Each move is a pair of positions.
+pub type SimpleMoves = Vec<SimpleMove>;
 
 /// A move is a pair of positions.
 /// The first position is the position of the piece to move.
@@ -21,8 +27,8 @@ pub type SimpleMove = (Position, Position);
 /// ```rs
 ///    let moves = generate_moves(&board);
 /// ```
-pub fn generate_moves(board: &Board) -> Moves {
-    let mut moves = Moves::new();
+pub fn generate_moves(board: &Board) -> SimpleMoves {
+    let mut moves = SimpleMoves::new();
 
     for start_square in 0..64 {
         let piece = board.squares[start_square].piece;
@@ -61,8 +67,8 @@ pub fn generate_moves(board: &Board) -> Moves {
 ///
 /// # Returns
 /// A list of all possible moves for the given piece.
-pub fn generate_pawn_moves(board: &Board, from: usize) -> Moves {
-    let mut moves = Moves::new();
+pub fn generate_pawn_moves(board: &Board, from: usize) -> SimpleMoves {
+    let mut moves = SimpleMoves::new();
     let pawn_color = board.squares[from].color;
 
     // Determine the direction in which the pawn moves
@@ -130,9 +136,9 @@ pub fn generate_pawn_moves(board: &Board, from: usize) -> Moves {
 ///
 /// # Returns
 /// A list of all possible moves for the given piece.
-pub fn generate_knight_moves(board: &Board, from: usize) -> Moves {
+pub fn generate_knight_moves(board: &Board, from: usize) -> SimpleMoves {
     // The list of moves to return.
-    let mut moves = Moves::new();
+    let mut moves = SimpleMoves::new();
 
     // Knight's possible movement offsets.
     let knight_offsets = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)];
@@ -171,9 +177,9 @@ pub fn generate_knight_moves(board: &Board, from: usize) -> Moves {
 ///
 /// # Returns
 /// A list of all possible moves for the given piece.
-pub fn generate_sliding_moves(board: &Board, start_square: usize) -> Moves {
+pub fn generate_sliding_moves(board: &Board, start_square: usize) -> SimpleMoves {
     // The list of moves to return.
-    let mut moves = Moves::new();
+    let mut moves = SimpleMoves::new();
     // The piece on the start square.
     let piece = board.squares[start_square].piece;
 
@@ -221,9 +227,9 @@ pub fn generate_sliding_moves(board: &Board, start_square: usize) -> Moves {
 ///
 /// # Returns
 /// A list of all possible moves for the given piece.
-pub fn generate_king_moves(board: &Board, from: usize) -> Moves {
+pub fn generate_king_moves(board: &Board, from: usize) -> SimpleMoves {
     // The list of moves to return.
-    let mut moves = Moves::new();
+    let mut moves = SimpleMoves::new();
 
     // For each direction.
     for direction in DIRECTION_OFFSETS.iter() {
