@@ -40,10 +40,11 @@ impl Color {
     /// ```rs
     ///     let color = Square::from(16);
     /// ```
-    pub fn from(piece: PieceAsByte) -> Color {
+    pub fn from(piece: PieceAsByte) -> Option<Color> {
         match piece & 24 {
-            8 => Color::White,
-            16 => Color::Black,
+            8 => Some(Color::White),
+            16 => Some(Color::Black),
+            0 => None,
             _ => panic!("Invalid color."),
         }
     }
@@ -105,7 +106,7 @@ impl PieceKind {
 /// The first 3 bits are the piece kind. & 7 is 00000111.
 /// The next 5 bits are the color. & 24 is 00011000.
 pub struct Piece {
-    pub color: Color,
+    pub color: Option<Color>,
     pub type_: PieceKind,
 }
 
@@ -120,7 +121,13 @@ impl Display for Piece {
             PieceKind::Queen => "Queen",
             _ => "None",
         };
-        write!(f, "{} {}", self.color, piece)
+
+        let color = match self.color {
+            Some(Color::White) => "White",
+            Some(Color::Black) => "Black",
+            None => "None",
+        };
+        write!(f, "{} {}", color, piece)
     }
 }
 
@@ -136,8 +143,14 @@ impl Piece {
     ///     let piece = Piece::new(Color::White, PieceKind::King);
     /// ```
     pub fn new(piece_as_byte: PieceAsByte) -> Piece {
+        if let Some(color) = Color::from(piece_as_byte) {
+            return Piece {
+                color: Some(color),
+                type_: PieceKind::from(piece_as_byte),
+            };
+        }
         Piece {
-            color: Color::from(piece_as_byte),
+            color: None,
             type_: PieceKind::from(piece_as_byte),
         }
     }
@@ -156,12 +169,20 @@ impl Piece {
     ///     let byte = piece.to_byte();
     /// ```
     pub fn to_byte(&self) -> PieceAsByte {
-        self.color as u8 + self.type_ as u8
+        match self.color {
+            Some(Color::White) => self.type_ as PieceAsByte | 8, // | adds the color to the piece
+            Some(Color::Black) => self.type_ as PieceAsByte | 16, // 8 is 00001000, 16 is 00010000
+            None => self.type_ as PieceAsByte,
+        }
     }
 }
 
 pub fn is_color(piece: Piece, color: Color) -> bool {
-    piece.color == color
+    if let Some(piece_color) = piece.color {
+        piece_color == color
+    } else {
+        false
+    }
 }
 
 pub fn is_type(piece: Piece, type_: PieceKind) -> bool {
