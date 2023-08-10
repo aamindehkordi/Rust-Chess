@@ -327,6 +327,15 @@ pub fn generate_king_moves(board: &Board, from: usize) -> SimpleMoves {
     moves
 }
 
+/// Recursively generates all possible moves for a given board.
+///
+/// # Arguments
+/// * `board` - The board to generate moves for.
+/// * `depth` - The depth to generate moves to.
+/// * `expected` - The expected number of moves.
+///
+/// # Returns
+/// The number of moves generated.
 pub fn recursive_move_gen_test(board: &Board, depth: u8, expected: u64) -> u64 {
     if depth == 0 {
         return 1;
