@@ -8,6 +8,7 @@ pub type Position = usize;
 
 pub type NumSquaresToEdge = [[usize; 8]; 64];
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum CastleSide {
     KingSide,
     QueenSide,
@@ -35,11 +36,10 @@ impl Display for Square {
             PieceKind::Rook => "R",
             PieceKind::Queen => "Q",
         };
-        if self.piece.color == Color::Black {
-            let piece = piece.to_lowercase();
+        if self.piece.color.is_none() || self.piece.color.unwrap() == White {
             write!(f, "{}", piece)
         } else {
-            write!(f, "{}", piece)
+            write!(f, "{}", piece.to_lowercase())
         }
     }
 }
@@ -219,7 +219,7 @@ impl Board {
     ///    let board = Board::new();
     /// ```
     pub fn new() -> Board {
-        let mut squares: [Square; 64] = [Square::new(0, Color::White, 8); 64];
+        let mut squares: [Square; 64] = [Square::new(0, Color::White, 0); 64];
         for (i, square) in squares.iter_mut().enumerate() {
             if i % 2 == 0 {
                 square.color = Color::Black;
@@ -335,11 +335,13 @@ impl Board {
     /// # Returns
     /// True if the player can castle on the given side.
     pub fn can_castle(&self, color: Color, side: CastleSide) -> bool {
-        let cols: [usize; 3];
-        match side {
-            CastleSide::KingSide => cols = [7, 5, 6],
-            CastleSide::QueenSide => cols = [0, 3, 2],
-        }
+        // Get the columns of the rook, and castle squares.
+        let cols: [usize; 3] = match side {
+            CastleSide::KingSide => [7, 5, 6],
+            CastleSide::QueenSide => [0, 3, 2],
+        };
+
+        // Get the rank of the king.
         let rank = if color == White { 0 } else { 7 };
 
         // Get the king and Rook squares.
@@ -361,6 +363,13 @@ impl Board {
             self.get_square(idx(rank, cols[2])),
         ];
         for square in castle_squares.iter() {
+            if square.is_attacked {
+                return false;
+            }
+        }
+        // Last castle square for queen side.
+        if side == CastleSide::QueenSide {
+            let square = self.get_square(idx(rank, 1));
             if square.is_attacked {
                 return false;
             }
