@@ -14,6 +14,8 @@ pub struct Square {
     pub position: Position,
     pub color: Color,
     pub piece: Piece,
+    pub has_moved: bool,
+    pub is_attacked: bool,
 }
 
 impl Display for Square {
@@ -57,6 +59,8 @@ impl Square {
             position,
             color,
             piece: Piece::new(piece_as_byte),
+            has_moved: false,
+            is_attacked: false,
         }
     }
 
@@ -72,6 +76,14 @@ impl Square {
     /// ```
     pub fn set_piece(&mut self, piece: PieceAsByte) {
         self.piece = Piece::new(piece);
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.piece.type_ == PieceKind::None
+    }
+
+    pub fn is_occupied(&self) -> bool {
+        self.piece.type_ != PieceKind::None
     }
 }
 
@@ -152,6 +164,10 @@ impl Board {
         Board::new_from_fen(fen)
     }
 
+    pub fn get_square(&self, position: Position) -> Square {
+        self.squares[position]
+    }
+
     /// Creates a new board from a fen string.
     ///
     /// # Arguments
@@ -191,7 +207,7 @@ impl Board {
             } else if symbol.is_ascii_digit() {
                 file += symbol.to_digit(10).unwrap();
             } else {
-                let mut piece_color = Color::White;
+                let mut piece_color = White;
                 if symbol.is_lowercase() {
                     piece_color = Color::Black;
                 }
@@ -225,6 +241,84 @@ impl Board {
     pub fn set_piece(&mut self, position: Position, piece: PieceAsByte) {
         self.squares[position].set_piece(piece);
     }
+
+    pub fn can_castle_kingside(&self, color: Color) -> bool {
+        let rank = if color == White { 0 } else { 7 };
+
+        // Get the king and Rook squares.
+        let king_square = self.squares[idx(rank, 4)];
+        let rook_square = self.squares[idx(rank, 7)];
+
+        // Check if the king or rook has moved.
+        if king_square.has_moved || rook_square.has_moved
+            || king_square.is_attacked || rook_square.is_attacked
+        {
+            return false;
+        }
+
+        // Check if any of the castle squares are attacked.
+        let castle_squares = [self.get_square(idx(rank, 5)), self.get_square(idx(rank, 6))];
+        for square in castle_squares.iter() {
+            if square.is_attacked {
+                return false;
+            }
+        }
+
+        // Check if any of the castle squares are occupied.
+        for square in castle_squares.iter() {
+            if square.is_occupied() {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    pub fn can_castle_queenside(&self, color: Color) -> bool {
+        let rank = if color == White { 0 } else { 7 };
+
+        // Get the king and Rook squares.
+        let king_square = self.squares[idx(rank, 4)];
+        let rook_square = self.squares[idx(rank, 0)];
+
+        // Check if the king or rook has moved.
+        if king_square.has_moved || rook_square.has_moved
+            || king_square.is_attacked || rook_square.is_attacked
+        {
+            return false;
+        }
+
+        // Check if any of the castle squares are attacked.
+        let castle_squares = [self.get_square(idx(rank, 3)), self.get_square(idx(rank, 2))];
+        for square in castle_squares.iter() {
+            if square.is_attacked {
+                return false;
+            }
+        }
+
+        // Check if any of the castle squares are occupied.
+        for square in castle_squares.iter() {
+            if square.is_occupied() {
+                return false;
+            }
+        }
+
+        true
+    }
+
+
+}
+#[inline]
+/// Returns the index of the square.
+///
+/// # Arguments
+/// * `row` - The row of the square.
+/// * `col` - The column of the square.
+///
+/// # Returns
+/// The index of the square.
+pub fn idx(row: usize, col: usize) -> usize {
+    row * 8 + col
 }
 
 /// Precomputes the number of squares to the edge of the board.
