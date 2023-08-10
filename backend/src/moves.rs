@@ -1,4 +1,5 @@
 use crate::board::*;
+use crate::board::CastleSide::{KingSide, QueenSide};
 use crate::piece::*;
 
 /// A list of offsets for each direction.
@@ -38,7 +39,10 @@ pub fn generate_moves(board: &Board) -> SimpleMoves {
 
         if is_color(piece, board.turn) {
             match piece.type_ {
-                PieceKind::Pawn => { let pawn_moves = generate_pawn_moves(board, start_square); moves.extend(pawn_moves); },
+                PieceKind::Pawn => {
+                    let pawn_moves = generate_pawn_moves(board, start_square);
+                    moves.extend(pawn_moves);
+                }
                 PieceKind::Knight => {
                     let knight_moves = generate_knight_moves(board, start_square);
                     moves.extend(knight_moves);
@@ -50,7 +54,7 @@ pub fn generate_moves(board: &Board) -> SimpleMoves {
                 PieceKind::King => {
                     let king_moves = generate_king_moves(board, start_square);
                     moves.extend(king_moves);
-                },
+                }
                 _ => (),
             }
         }
@@ -95,7 +99,6 @@ pub fn generate_legal_moves(board: &Board) -> SimpleMoves {
 
         // Push the move
         legal_moves.push(mv)
-
     }
 
     legal_moves
@@ -131,11 +134,17 @@ pub fn generate_pawn_moves(board: &Board, from: usize) -> SimpleMoves {
     }
 
     // Potential captures
-    let capture_directions = if pawn_color == Color::White { [-9, -7] } else { [9, 7] };
+    let capture_directions = if pawn_color == Color::White {
+        [-9, -7]
+    } else {
+        [9, 7]
+    };
     for &d in &capture_directions {
         let capture_square = (from as i8 + d) as usize;
-        if capture_square < 64 && board.squares[capture_square].piece.type_ != PieceKind::None
-            && board.squares[capture_square].color != pawn_color {
+        if capture_square < 64
+            && board.squares[capture_square].piece.type_ != PieceKind::None
+            && board.squares[capture_square].color != pawn_color
+        {
             moves.push((from, capture_square));
         }
     }
@@ -146,7 +155,8 @@ pub fn generate_pawn_moves(board: &Board, from: usize) -> SimpleMoves {
         let last_to = last_move.1;
         // Check if the move was a two-square pawn advance
         if board.squares[last_from].piece.type_ == PieceKind::Pawn
-            && (last_to as i8 - last_from as i8).abs() == 16 // 2 * 8 = 2 squares
+            && (last_to as i8 - last_from as i8).abs() == 16
+        // 2 * 8 = 2 squares
         {
             // Determine the en passant target square
             let en_passant_square = (last_to as i8 + direction / 2) as usize;
@@ -161,14 +171,13 @@ pub fn generate_pawn_moves(board: &Board, from: usize) -> SimpleMoves {
     if one_square_ahead / 8 == if pawn_color == Color::White { 7 } else { 0 } {
         //for promo_piece in &[PieceKind::Queen, PieceKind::Rook, PieceKind::Bishop, PieceKind::Knight]
         //{
-            // Create a special move for the promotion, or handle it differently as needed
-            moves.push((from, one_square_ahead));
+        // Create a special move for the promotion, or handle it differently as needed
+        moves.push((from, one_square_ahead));
         //}
     }
 
     moves
 }
-
 
 /// Generates all possible moves for a Knight on a given board.
 ///
@@ -183,7 +192,16 @@ pub fn generate_knight_moves(board: &Board, from: usize) -> SimpleMoves {
     let mut moves = SimpleMoves::new();
 
     // Knight's possible movement offsets.
-    let knight_offsets = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)];
+    let knight_offsets = [
+        (-2, -1),
+        (-2, 1),
+        (-1, -2),
+        (-1, 2),
+        (1, -2),
+        (1, 2),
+        (2, -1),
+        (2, 1),
+    ];
 
     for (dx, dy) in knight_offsets.iter() {
         // Calculate the new position.
@@ -210,7 +228,6 @@ pub fn generate_knight_moves(board: &Board, from: usize) -> SimpleMoves {
     moves
 }
 
-
 /// Generates all possible moves for a sliding piece on a given board.
 ///
 /// # Arguments
@@ -226,7 +243,11 @@ pub fn generate_sliding_moves(board: &Board, start_square: usize) -> SimpleMoves
     let piece = board.squares[start_square].piece;
 
     // The index of the first direction to check.
-    let start_dir_idx = if piece.type_ == PieceKind::Bishop { 4 } else { 0 };
+    let start_dir_idx = if piece.type_ == PieceKind::Bishop {
+        4
+    } else {
+        0
+    };
     // The index of the last direction to check.
     let end_dir_idx = if piece.type_ == PieceKind::Rook { 4 } else { 8 };
 
@@ -289,11 +310,11 @@ pub fn generate_king_moves(board: &Board, from: usize) -> SimpleMoves {
     }
 
     // Check for Kingside castling
-    if board.can_castle_kingside(board.turn) {
+    if board.can_castle(board.turn, KingSide) {
         moves.push((from, from + 2));
     }
     // Check for Queenside castling
-    if board.can_castle_queenside(board.turn) {
+    if board.can_castle(board.turn, QueenSide) {
         moves.push((from, from - 2));
     }
 

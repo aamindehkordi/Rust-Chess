@@ -5,7 +5,13 @@ use std::fmt::Display;
 
 /// The position is a number from 0 to 63.
 pub type Position = usize;
+
 pub type NumSquaresToEdge = [[usize; 8]; 64];
+
+pub enum CastleSide {
+    KingSide,
+    QueenSide,
+}
 
 #[derive(Debug, Copy, Clone)]
 /// The position is a number from 0 to 63.
@@ -29,7 +35,7 @@ impl Display for Square {
             PieceKind::Rook => "R",
             PieceKind::Queen => "Q",
         };
-        if self.color == Color::Black {
+        if self.piece.color == Color::Black {
             let piece = piece.to_lowercase();
             write!(f, "{}", piece)
         } else {
@@ -55,6 +61,84 @@ impl Square {
     /// let square = Square::new(0, Color::White, PieceKind::King);
     /// ```
     pub fn new(position: Position, color: Color, piece_as_byte: PieceAsByte) -> Square {
+        Square {
+            position,
+            color,
+            piece: Piece::new(piece_as_byte),
+            has_moved: false,
+            is_attacked: false,
+        }
+    }
+
+    pub fn from_str(position: &str, color: Color, piece_as_byte: PieceAsByte) -> Square {
+        let position = match position {
+            "a1" => 0,
+            "b1" => 1,
+            "c1" => 2,
+            "d1" => 3,
+            "e1" => 4,
+            "f1" => 5,
+            "g1" => 6,
+            "h1" => 7,
+            "a2" => 8,
+            "b2" => 9,
+            "c2" => 10,
+            "d2" => 11,
+            "e2" => 12,
+            "f2" => 13,
+            "g2" => 14,
+            "h2" => 15,
+            "a3" => 16,
+            "b3" => 17,
+            "c3" => 18,
+            "d3" => 19,
+            "e3" => 20,
+            "f3" => 21,
+            "g3" => 22,
+            "h3" => 23,
+            "a4" => 24,
+            "b4" => 25,
+            "c4" => 26,
+            "d4" => 27,
+            "e4" => 28,
+            "f4" => 29,
+            "g4" => 30,
+            "h4" => 31,
+            "a5" => 32,
+            "b5" => 33,
+            "c5" => 34,
+            "d5" => 35,
+            "e5" => 36,
+            "f5" => 37,
+            "g5" => 38,
+            "h5" => 39,
+            "a6" => 40,
+            "b6" => 41,
+            "c6" => 42,
+            "d6" => 43,
+            "e6" => 44,
+            "f6" => 45,
+            "g6" => 46,
+            "h6" => 47,
+            "a7" => 48,
+            "b7" => 49,
+            "c7" => 50,
+            "d7" => 51,
+            "e7" => 52,
+            "f7" => 53,
+            "g7" => 54,
+            "h7" => 55,
+            "a8" => 56,
+            "b8" => 57,
+            "c8" => 58,
+            "d8" => 59,
+            "e8" => 60,
+            "f8" => 61,
+            "g8" => 62,
+            "h8" => 63,
+            _ => 0,
+        };
+
         Square {
             position,
             color,
@@ -135,7 +219,7 @@ impl Board {
     ///    let board = Board::new();
     /// ```
     pub fn new() -> Board {
-        let mut squares: [Square; 64] = [Square::new(0, Color::White, 0); 64];
+        let mut squares: [Square; 64] = [Square::new(0, Color::White, 8); 64];
         for (i, square) in squares.iter_mut().enumerate() {
             if i % 2 == 0 {
                 square.color = Color::Black;
@@ -238,26 +322,44 @@ impl Board {
     ///     let mut board = Board::new();
     ///     board.set_piece(4, PieceAsByte::King);
     /// ```
-    pub fn set_piece(&mut self, position: Position, piece: PieceAsByte) {
-        self.squares[position].set_piece(piece);
+    pub fn set_piece(&mut self, position: Position, piece_byte: PieceAsByte) {
+        self.squares[position].set_piece(piece_byte);
     }
 
-    pub fn can_castle_kingside(&self, color: Color) -> bool {
+    /// Checks if the color can castle on the given side.
+    ///
+    /// # Arguments
+    /// * `color` - The color of the player.
+    /// * `side` - The side to castle on.
+    ///
+    /// # Returns
+    /// True if the player can castle on the given side.
+    pub fn can_castle(&self, color: Color, side: CastleSide) -> bool {
+        let cols: [usize; 3];
+        match side {
+            CastleSide::KingSide => cols = [7, 5, 6],
+            CastleSide::QueenSide => cols = [0, 3, 2],
+        }
         let rank = if color == White { 0 } else { 7 };
 
         // Get the king and Rook squares.
         let king_square = self.squares[idx(rank, 4)];
-        let rook_square = self.squares[idx(rank, 7)];
+        let rook_square = self.squares[idx(rank, cols[0])];
 
         // Check if the king or rook has moved.
-        if king_square.has_moved || rook_square.has_moved
-            || king_square.is_attacked || rook_square.is_attacked
+        if king_square.has_moved
+            || rook_square.has_moved
+            || king_square.is_attacked
+            || rook_square.is_attacked
         {
             return false;
         }
 
         // Check if any of the castle squares are attacked.
-        let castle_squares = [self.get_square(idx(rank, 5)), self.get_square(idx(rank, 6))];
+        let castle_squares = [
+            self.get_square(idx(rank, cols[1])),
+            self.get_square(idx(rank, cols[2])),
+        ];
         for square in castle_squares.iter() {
             if square.is_attacked {
                 return false;
@@ -274,48 +376,30 @@ impl Board {
         true
     }
 
-    pub fn can_castle_queenside(&self, color: Color) -> bool {
-        let rank = if color == White { 0 } else { 7 };
-
-        // Get the king and Rook squares.
-        let king_square = self.squares[idx(rank, 4)];
-        let rook_square = self.squares[idx(rank, 0)];
-
-        // Check if the king or rook has moved.
-        if king_square.has_moved || rook_square.has_moved
-            || king_square.is_attacked || rook_square.is_attacked
-        {
-            return false;
-        }
-
-        // Check if any of the castle squares are attacked.
-        let castle_squares = [self.get_square(idx(rank, 3)), self.get_square(idx(rank, 2))];
-        for square in castle_squares.iter() {
-            if square.is_attacked {
-                return false;
-            }
-        }
-
-        // Check if any of the castle squares are occupied.
-        for square in castle_squares.iter() {
-            if square.is_occupied() {
-                return false;
-            }
-        }
-
-        true
-    }
-
+    /// Gets the position of the king of the given color.
+    ///
+    /// # Arguments
+    /// * `color` - The color of the king.
+    ///
+    /// # Returns
+    /// The position of the king.
     pub fn get_king_position(&self, color: Color) -> Position {
         let mut king_position = 0;
         for (i, square) in self.squares.iter().enumerate() {
-            if square.is_occupied() && square.piece.type_ == PieceKind::King && square.piece.color == color {
+            if square.is_occupied()
+                && square.piece.type_ == PieceKind::King
+                && square.piece.color == color
+            {
                 king_position = i;
             }
         }
         king_position
     }
 
+    /// Makes a simple move.
+    ///
+    /// # Arguments
+    /// * `mv` - The move to make.
     pub fn make_simple_move(&mut self, mv: SimpleMove) {
         let from = mv.0;
         let to = mv.1;
@@ -324,6 +408,7 @@ impl Board {
         self.squares[to].set_piece(piece.to_byte());
     }
 
+    /// Unmakes a simple move.
     pub fn unmake_simple_move(&mut self) {
         let mv = self.move_history.pop().unwrap();
         let from = mv.0;
@@ -332,7 +417,6 @@ impl Board {
         self.squares[to].set_piece(0);
         self.squares[from].set_piece(piece.to_byte());
     }
-
 }
 #[inline]
 /// Returns the index of the square.

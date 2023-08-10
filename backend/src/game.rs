@@ -1,4 +1,5 @@
 use crate::board::*;
+use crate::moves::*;
 use crate::piece::*;
 
 /// A game is a board and a turn.
