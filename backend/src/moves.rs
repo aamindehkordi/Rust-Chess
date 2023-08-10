@@ -1,5 +1,5 @@
-use crate::board::*;
 use crate::board::CastleSide::{KingSide, QueenSide};
+use crate::board::*;
 use crate::piece::*;
 
 /// A list of offsets for each direction.
@@ -28,7 +28,7 @@ pub type SimpleMove = (Position, Position);
 /// ```rs
 ///    let moves = generate_moves(&board);
 /// ```
-pub fn generate_moves(board: &Board) -> SimpleMoves {
+pub fn generate_all_moves(board: &Board) -> SimpleMoves {
     let mut moves = SimpleMoves::new();
 
     for start_square in 0..64 {
@@ -73,7 +73,7 @@ pub fn generate_moves(board: &Board) -> SimpleMoves {
 /// A list of all legal moves for the given board.
 pub fn generate_legal_moves(board: &Board) -> SimpleMoves {
     // Generate all possible moves
-    let psuedo_legal_moves = generate_moves(board);
+    let psuedo_legal_moves = generate_all_moves(board);
     // Filter out all moves that leave the king in check
     let mut legal_moves = SimpleMoves::new();
 
@@ -87,7 +87,7 @@ pub fn generate_legal_moves(board: &Board) -> SimpleMoves {
         // Make the move temporarily
         board_copy.make_simple_move(mv);
         //Get opponent response moves
-        let response_moves = generate_moves(&board_copy);
+        let response_moves = generate_all_moves(&board_copy);
 
         // If the opponent can take our king, it is not a valid move
         if response_moves.iter().any(|&mv| mv.1 == king_pos) {
@@ -114,36 +114,48 @@ pub fn generate_legal_moves(board: &Board) -> SimpleMoves {
 /// A list of all possible moves for the given piece.
 pub fn generate_pawn_moves(board: &Board, from: usize) -> SimpleMoves {
     let mut moves = SimpleMoves::new();
-    let pawn_color = board.squares[from].color;
+    let pawn_color = board.squares[from].piece.color;
 
     // Determine the direction in which the pawn moves
-    let direction = if pawn_color == Color::White { 8 } else { -8 };
+    let direction = if pawn_color == Some(Color::White) {
+        8
+    } else {
+        -8
+    };
 
-    // Potential single square move
+    // One Square Ahead: Check if the square in front of the pawn is empty
     let one_square_ahead = (from as i8 + direction) as usize;
-    if board.squares[one_square_ahead].piece.type_ == PieceKind::None {
+    if one_square_ahead < 64 && board.squares[one_square_ahead].piece.type_ == PieceKind::None {
         moves.push((from, one_square_ahead));
 
-        // Potential double square move if the pawn is on its starting rank
-        let is_starting_rank = (pawn_color == Color::White && from / 8 == 1)
-            || (pawn_color == Color::Black && from / 8 == 6);
+        // Two Squares Ahead: Check if the pawn is on its starting square
         let two_squares_ahead = (from as i8 + 2 * direction) as usize;
-        if is_starting_rank && board.squares[two_squares_ahead].piece.type_ == PieceKind::None {
+        if two_squares_ahead < 64
+            && board.squares[two_squares_ahead].piece.type_ == PieceKind::None
+            && (from / 8
+                == if pawn_color == Some(Color::White) {
+                    1
+                } else {
+                    6
+                })
+        {
             moves.push((from, two_squares_ahead));
         }
     }
 
-    // Potential captures
-    let capture_directions = if pawn_color == Color::White {
-        [-9, -7]
+    // Capture: Check if the pawn can capture a piece
+    let capture_directions = if pawn_color == Some(Color::White) {
+        [7, 9]
     } else {
-        [9, 7]
+        [-7, -9]
     };
-    for &d in &capture_directions {
-        let capture_square = (from as i8 + d) as usize;
+    for direction in capture_directions.iter() {
+        let capture_square = (from as i8 + direction) as usize;
         if capture_square < 64
-            && board.squares[capture_square].piece.type_ != PieceKind::None
-            && board.squares[capture_square].color != pawn_color
+            && is_color(
+                board.squares[capture_square].piece,
+                pawn_color.expect("Pawn has no color").other(),
+            )
         {
             moves.push((from, capture_square));
         }
@@ -160,15 +172,20 @@ pub fn generate_pawn_moves(board: &Board, from: usize) -> SimpleMoves {
         {
             // Determine the en passant target square
             let en_passant_square = (last_to as i8 + direction / 2) as usize;
-            // If the pawn can capture en passant
-            if en_passant_square == one_square_ahead {
+            if en_passant_square < 64 && en_passant_square == one_square_ahead {
                 moves.push((from, en_passant_square));
             }
         }
     }
 
     // Promotion: If the pawn reaches the opposite side of the board
-    if one_square_ahead / 8 == if pawn_color == Color::White { 7 } else { 0 } {
+    if one_square_ahead / 8
+        == if pawn_color == Some(Color::White) {
+            7
+        } else {
+            0
+        }
+    {
         //for promo_piece in &[PieceKind::Queen, PieceKind::Rook, PieceKind::Bishop, PieceKind::Knight]
         //{
         // Create a special move for the promotion, or handle it differently as needed
@@ -191,38 +208,22 @@ pub fn generate_knight_moves(board: &Board, from: usize) -> SimpleMoves {
     // The list of moves to return.
     let mut moves = SimpleMoves::new();
 
-    // Knight's possible movement offsets.
-    let knight_offsets = [
-        (-2, -1),
-        (-2, 1),
-        (-1, -2),
-        (-1, 2),
-        (1, -2),
-        (1, 2),
-        (2, -1),
-        (2, 1),
-    ];
+    // The piece on the start square.
+    let piece = board.squares[from].piece;
+    // The color of the piece.
+    let color = piece.color;
 
-    for (dx, dy) in knight_offsets.iter() {
-        // Calculate the new position.
-        let x = (from % 8) as isize + dx;
-        let y = (from / 8) as isize + dy;
+    // The directions to check.
+    let directions = [-17, -15, -6, 6, 15, 17];
 
-        // Check if the new position is within the board.
-        if !(0..=7).contains(&x) || !(0..=7).contains(&y) {
-            continue;
+    // For each direction, check if the move is valid.
+    for direction in directions.iter() {
+        // The square to check.
+        let to = (from as i8 + direction) as usize;
+        // If the square is on the board and the piece on the square is not the same color as the piece, the move is valid.
+        if to < 64 && !is_color(board.squares[to].piece, color.expect("Knight has no color")) {
+            moves.push((from, to));
         }
-
-        // Convert the x, y coordinates back to a position.
-        let to = (y * 8 + x) as usize;
-
-        // Check if the target square is occupied by a piece of the same color.
-        if is_color(board.squares[to].piece, board.turn) {
-            continue;
-        }
-
-        // Add the move to the list.
-        moves.push((from, to));
     }
 
     moves
@@ -253,15 +254,16 @@ pub fn generate_sliding_moves(board: &Board, start_square: usize) -> SimpleMoves
 
     // For each direction.
     for direction_idx in start_dir_idx..end_dir_idx {
-        // If the piece is a bishop and the direction is not diagonal.
-        if direction_idx < start_dir_idx || direction_idx >= end_dir_idx {
-            continue;
-        }
         // For each square in the direction.
         for num_squares in 1..board.num_squares_to_edge[start_square][direction_idx] {
+            let direction = DIRECTION_OFFSETS[direction_idx];
+            // The end square offset.
+            let end_square_offset = start_square as i8 + direction * num_squares as i8;
+            if !(0..=63).contains(&end_square_offset) {
+                break;
+            }
             // The end square.
-            let end_square = (DIRECTION_OFFSETS[direction_idx] * num_squares as i8
-                + start_square as i8) as usize;
+            let end_square = end_square_offset as usize;
             // The piece on the end square.
             let piece_on_end_square = board.squares[end_square].piece;
 
@@ -297,7 +299,11 @@ pub fn generate_king_moves(board: &Board, from: usize) -> SimpleMoves {
     // For each direction.
     for direction in DIRECTION_OFFSETS.iter() {
         // The end square.
-        let end_square = (from as i8 + direction) as usize;
+        let end_square_pos = from as i8 + direction;
+        if !(0..=63).contains(&end_square_pos) {
+            continue;
+        }
+        let end_square = end_square_pos as usize;
         // The piece on the end square.
         let piece_on_end_square = board.squares[end_square].piece;
 
@@ -319,4 +325,76 @@ pub fn generate_king_moves(board: &Board, from: usize) -> SimpleMoves {
     }
 
     moves
+}
+
+pub fn recursive_move_gen_test(board: &Board, depth: u8, expected: u64) -> u64 {
+    if depth == 0 {
+        return 1;
+    }
+
+    let mut num_moves = 0;
+
+    for from in 0..64 {
+        if board.squares[from].piece.type_ == PieceKind::None
+            || board.squares[from].piece.color != Some(board.turn)
+        {
+            continue;
+        }
+
+        let piece = board.squares[from].piece;
+        let moves = match piece.type_ {
+            PieceKind::Pawn => generate_pawn_moves(board, from),
+            PieceKind::Knight => generate_knight_moves(board, from),
+            PieceKind::Bishop | PieceKind::Rook | PieceKind::Queen => {
+                generate_sliding_moves(board, from)
+            }
+            PieceKind::King => generate_king_moves(board, from),
+            _ => SimpleMoves::new(),
+        };
+
+        for mv in moves {
+            let mut new_board = board.clone();
+            new_board.make_simple_move(mv);
+            num_moves += recursive_move_gen_test(&new_board, depth - 1, expected);
+            new_board.unmake_simple_move()
+        }
+    }
+
+    if num_moves != expected {
+        displays_moves(board);
+    }
+
+    num_moves
+}
+
+pub fn displays_moves(board: &Board) {
+    let moves = generate_legal_moves(board);
+    for mv in moves {
+        let mut b = board.clone();
+        b.make_simple_move(mv);
+        let sq = b.squares[mv.1];
+        let piece = sq.piece;
+        println!("{} from {} to {}", piece, mv.0, mv.1);
+        b.unmake_simple_move();
+    }
+}
+#[cfg(test)]
+mod tests {
+    use crate::moves::recursive_move_gen_test;
+
+    #[test]
+    fn move_gen_test() {
+        use crate::board::Board;
+
+        let board = Board::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+
+        let num_moves_1 = recursive_move_gen_test(&board, 1, 20);
+        assert_eq!(num_moves_1, 20);
+
+        let num_moves_2 = recursive_move_gen_test(&board, 2, 400);
+        assert_eq!(num_moves_2, 400);
+
+        let num_moves_3 = recursive_move_gen_test(&board, 3, 8902);
+        assert_eq!(num_moves_3, 8902); // 8149
+    }
 }
