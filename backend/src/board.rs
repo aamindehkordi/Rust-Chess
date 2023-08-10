@@ -306,6 +306,32 @@ impl Board {
         true
     }
 
+    pub fn get_king_position(&self, color: Color) -> Position {
+        let mut king_position = 0;
+        for (i, square) in self.squares.iter().enumerate() {
+            if square.is_occupied() && square.piece.type_ == PieceKind::King && square.piece.color == color {
+                king_position = i;
+            }
+        }
+        king_position
+    }
+
+    pub fn make_simple_move(&mut self, mv: SimpleMove) {
+        let from = mv.0;
+        let to = mv.1;
+        let piece = self.squares[from].piece;
+        self.squares[from].set_piece(0);
+        self.squares[to].set_piece(piece.to_byte());
+    }
+
+    pub fn unmake_simple_move(&mut self) {
+        let mv = self.move_history.pop().unwrap();
+        let from = mv.0;
+        let to = mv.1;
+        let piece = self.squares[to].piece;
+        self.squares[to].set_piece(0);
+        self.squares[from].set_piece(piece.to_byte());
+    }
 
 }
 #[inline]
