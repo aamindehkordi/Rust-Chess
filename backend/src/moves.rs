@@ -59,23 +59,42 @@ pub fn generate_moves(board: &Board) -> SimpleMoves {
     moves
 }
 
+/// Filters out all moves that are not legal.
+/// A move is legal if it does not leave the king in check.
+///
+/// # Arguments
+/// * `board` - The board to generate moves for.
+///
+/// # Returns
+/// A list of all legal moves for the given board.
 pub fn generate_legal_moves(board: &Board) -> SimpleMoves {
+    // Generate all possible moves
     let psuedo_legal_moves = generate_moves(board);
+    // Filter out all moves that leave the king in check
     let mut legal_moves = SimpleMoves::new();
 
+    // For each move, make the move on a copy of the board and check if the king is in check
     for mv in psuedo_legal_moves {
+        // Make a copy of the board
         let mut board_copy = board.clone();
+
+        // Get the position of the king
         let king_pos = board_copy.get_king_position(board_copy.turn);
+        // Make the move temporarily
         board_copy.make_simple_move(mv);
+        //Get opponent response moves
         let response_moves = generate_moves(&board_copy);
 
+        // If the opponent can take our king, it is not a valid move
         if response_moves.iter().any(|&mv| mv.1 == king_pos) {
             continue;
-        } else {
-            legal_moves.push(mv);
         }
 
+        // Undo the move
         board_copy.unmake_simple_move();
+
+        // Push the move
+        legal_moves.push(mv)
 
     }
 
