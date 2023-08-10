@@ -55,6 +55,7 @@ impl Game {
     pub fn play(&mut self) {
         println!("{}", self.board);
         loop {
+            println!("{}'s turn. \nEnter a move (eg. e2 e4):\n", self.board.turn);
             let input = get_user_input();
             let parsed_input = parse_user_input(input);
             match parsed_input {
@@ -98,12 +99,23 @@ impl Game {
     }
 }
 
+/// Gets user input from the command line.
+///
+/// # Returns
+/// The user input.
 pub fn get_user_input() -> String {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     input
 }
 
+/// Parses user input into a simple move.
+///
+/// # Arguments
+/// * `input` - The user input.
+///
+/// # Returns
+/// A simple move if the input is valid, None otherwise.
 pub fn parse_user_input(input: String) -> Option<SimpleMove> {
     let mut input = input.trim().split_whitespace(); // a2 a4
     let from = input.next()?; // a2
