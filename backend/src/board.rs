@@ -433,6 +433,15 @@ impl Board {
         self.squares[from].set_piece(piece.to_byte());
         self.turn = self.turn.other();
     }
+
+    pub fn is_check(&self) -> bool {
+        let king_position = self.get_king_position(self.turn);
+        self.squares[king_position].is_attacked
+    }
+
+    pub fn is_checkmate(&self) -> bool {
+        self.is_check() && generate_legal_moves(&self).is_empty()
+    }
 }
 #[inline]
 /// Returns the index of the square.
