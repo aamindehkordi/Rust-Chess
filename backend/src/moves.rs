@@ -59,6 +59,29 @@ pub fn generate_moves(board: &Board) -> SimpleMoves {
     moves
 }
 
+pub fn generate_legal_moves(board: &Board) -> SimpleMoves {
+    let psuedo_legal_moves = generate_moves(board);
+    let mut legal_moves = SimpleMoves::new();
+
+    for mv in psuedo_legal_moves {
+        let mut board_copy = board.clone();
+        let king_pos = board_copy.get_king_position(board_copy.turn);
+        board_copy.make_simple_move(mv);
+        let response_moves = generate_moves(&board_copy);
+
+        if response_moves.iter().any(|&mv| mv.1 == king_pos) {
+            continue;
+        } else {
+            legal_moves.push(mv);
+        }
+
+        board_copy.unmake_simple_move();
+
+    }
+
+    legal_moves
+}
+
 /// Generates all possible moves for a Pawn on a given board.
 ///
 /// # Arguments
