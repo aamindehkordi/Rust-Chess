@@ -6,20 +6,15 @@ use std::fmt::Display;
 /// The position is a number from 0 to 63.
 pub type Position = usize;
 
+/// Precomputed values for the number of squares to the edge of the board from any square.
 pub type NumSquaresToEdge = [[usize; 8]; 64];
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum CastleSide {
-    KingSide,
-    QueenSide,
-}
-
 #[derive(Debug, Copy, Clone)]
-/// The position is a number from 0 to 63.
-/// The piece is a byte representing the piece or the just the color of the empty square.
+/// A square is a position on the board.
+///
+/// It contains a piece, a color, and rays that will be used for checks and pins.
 pub struct Square {
     pub position: Position,
-    pub color: Color,
+    pub tile_color: Color,
     pub piece: Piece,
     pub has_moved: bool,
     pub is_attacked: bool,
@@ -63,85 +58,7 @@ impl Square {
     pub fn new(position: Position, color: Color, piece_as_byte: PieceAsByte) -> Square {
         Square {
             position,
-            color,
-            piece: Piece::new(piece_as_byte),
-            has_moved: false,
-            is_attacked: false,
-        }
-    }
-
-    pub fn from_str(position: &str, color: Color, piece_as_byte: PieceAsByte) -> Square {
-        let position = match position {
-            "a1" => 0,
-            "b1" => 1,
-            "c1" => 2,
-            "d1" => 3,
-            "e1" => 4,
-            "f1" => 5,
-            "g1" => 6,
-            "h1" => 7,
-            "a2" => 8,
-            "b2" => 9,
-            "c2" => 10,
-            "d2" => 11,
-            "e2" => 12,
-            "f2" => 13,
-            "g2" => 14,
-            "h2" => 15,
-            "a3" => 16,
-            "b3" => 17,
-            "c3" => 18,
-            "d3" => 19,
-            "e3" => 20,
-            "f3" => 21,
-            "g3" => 22,
-            "h3" => 23,
-            "a4" => 24,
-            "b4" => 25,
-            "c4" => 26,
-            "d4" => 27,
-            "e4" => 28,
-            "f4" => 29,
-            "g4" => 30,
-            "h4" => 31,
-            "a5" => 32,
-            "b5" => 33,
-            "c5" => 34,
-            "d5" => 35,
-            "e5" => 36,
-            "f5" => 37,
-            "g5" => 38,
-            "h5" => 39,
-            "a6" => 40,
-            "b6" => 41,
-            "c6" => 42,
-            "d6" => 43,
-            "e6" => 44,
-            "f6" => 45,
-            "g6" => 46,
-            "h6" => 47,
-            "a7" => 48,
-            "b7" => 49,
-            "c7" => 50,
-            "d7" => 51,
-            "e7" => 52,
-            "f7" => 53,
-            "g7" => 54,
-            "h7" => 55,
-            "a8" => 56,
-            "b8" => 57,
-            "c8" => 58,
-            "d8" => 59,
-            "e8" => 60,
-            "f8" => 61,
-            "g8" => 62,
-            "h8" => 63,
-            _ => 0,
-        };
-
-        Square {
-            position,
-            color,
+            tile_color: color,
             piece: Piece::new(piece_as_byte),
             has_moved: false,
             is_attacked: false,
@@ -222,7 +139,7 @@ impl Board {
         let mut squares: [Square; 64] = [Square::new(0, Color::White, 0); 64];
         for (i, square) in squares.iter_mut().enumerate() {
             if i % 2 == 0 {
-                square.color = Color::Black;
+                square.tile_color = Color::Black;
             }
             square.position = i;
         }
@@ -246,10 +163,6 @@ impl Board {
     pub fn new_standard() -> Board {
         let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         Board::new_from_fen(fen)
-    }
-
-    pub fn get_square(&self, position: Position) -> Square {
-        self.squares[position]
     }
 
     /// Creates a new board from a fen string.
@@ -309,6 +222,17 @@ impl Board {
         }
 
         board
+    }
+
+    /// Returns the square at the given position.
+    ///
+    /// # Arguments
+    /// * `position` - The position of the square.
+    ///
+    /// # Returns
+    /// The square at the given position.
+    pub fn get_square(&self, position: Position) -> Square {
+        self.squares[position]
     }
 
     /// Sets a piece on the square at the given position.
