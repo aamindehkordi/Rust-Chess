@@ -18,11 +18,22 @@ impl Default for Game {
     ///     let square = Square::default();
     /// ```
     fn default() -> Self {
-        Self::new()
+        Self::new_standard()
     }
 }
 
 impl Game {
+
+    /// Creates a new game.
+    ///
+    /// # Returns
+    /// A new game with an empty initialized board and the starting turn set to white.
+    pub fn new() -> Game {
+        Game {
+            board: Board::new(),
+        }
+    }
+
     /// Creates a new game.
     ///
     /// # Returns
@@ -32,7 +43,7 @@ impl Game {
     /// ```rs
     ///     let game = Game::new();
     /// ```
-    pub fn new() -> Game {
+    pub fn new_standard() -> Game {
         Game {
             board: Board::new_standard(),
         }
