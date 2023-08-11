@@ -1,94 +1,15 @@
 pub mod bb;
+pub mod square;
 
-use crate::moves::*;
+use crate::board::square::{Position, Square};
+use crate::moves::move_gen::*;
+use crate::moves::{CastleSide, SimpleMove, SimpleMoves};
 use crate::piece::Color::White;
 use crate::piece::*;
 use std::fmt::Display;
 
-/// The position is a number from 0 to 63.
-pub type Position = usize;
-
 /// Precomputed values for the number of squares to the edge of the board from any square.
 pub type NumSquaresToEdge = [[usize; 8]; 64];
-#[derive(Debug, Copy, Clone)]
-/// A square is a position on the board.
-///
-/// It contains a piece, a color, and rays that will be used for checks and pins.
-pub struct Square {
-    pub position: Position,
-    pub tile_color: Color,
-    pub piece: Piece,
-    pub has_moved: bool,
-    pub is_attacked: bool,
-}
-
-impl Display for Square {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let piece = match self.piece.type_ {
-            PieceKind::None => "_",
-            PieceKind::King => "K",
-            PieceKind::Pawn => "P",
-            PieceKind::Knight => "N",
-            PieceKind::Bishop => "B",
-            PieceKind::Rook => "R",
-            PieceKind::Queen => "Q",
-        };
-        if self.piece.color.is_none() || self.piece.color.unwrap() == White {
-            write!(f, "{}", piece)
-        } else {
-            write!(f, "{}", piece.to_lowercase())
-        }
-    }
-}
-
-impl Square {
-    /// Creates a new square.
-    ///
-    /// # Arguments
-    ///
-    /// * `position` - The position of the square.
-    /// * `color` - The color of the piece.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use chess::board::*;
-    /// use chess::piece::*;
-    ///
-    /// let square = Square::new(0, Color::White, PieceKind::King);
-    /// ```
-    pub fn new(position: Position, color: Color, piece_as_byte: PieceAsByte) -> Square {
-        Square {
-            position,
-            tile_color: color,
-            piece: Piece::new(piece_as_byte),
-            has_moved: false,
-            is_attacked: false,
-        }
-    }
-
-    /// Sets the piece of the square.
-    ///
-    /// # Arguments
-    /// * `piece` - The piece as a byte.
-    ///
-    /// # Example
-    /// ```rs
-    ///     let mut square = Square::new(4, Color::Black, PieceKind::King);
-    ///     square.set_piece(27);
-    /// ```
-    pub fn set_piece(&mut self, piece: PieceAsByte) {
-        self.piece = Piece::new(piece);
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.piece.type_ == PieceKind::None
-    }
-
-    pub fn is_occupied(&self) -> bool {
-        self.piece.type_ != PieceKind::None
-    }
-}
 
 #[derive(Debug, Clone)]
 /// The board is an array of 64 squares.
@@ -99,34 +20,6 @@ pub struct Board {
     pub num_squares_to_edge: NumSquaresToEdge,
     pub turn: Color,
 }
-
-impl Display for Board {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut board = String::new();
-        for i in 0..64 {
-            board.push_str(&format!("{} ", self.squares[i]));
-            if i % 8 == 7 {
-                board.push('\n');
-            }
-        }
-        write!(f, "{}", board)
-    }
-}
-impl Default for Board {
-    /// Returns the default value for the given type.
-    ///
-    /// # Returns
-    /// The default value.
-    ///
-    /// # Example
-    /// ```rs
-    ///     let default = Square::default();
-    /// ```
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Board {
     /// Creates a new board.
     ///
@@ -369,6 +262,7 @@ impl Board {
         self.is_check() && generate_legal_moves(&self).is_empty()
     }
 }
+
 #[inline]
 /// Returns the index of the square.
 ///

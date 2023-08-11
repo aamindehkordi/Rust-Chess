@@ -1,6 +1,7 @@
 pub mod board;
 pub mod game;
 pub mod moves;
+pub mod other;
 pub mod piece;
 
 use crate::game::*;

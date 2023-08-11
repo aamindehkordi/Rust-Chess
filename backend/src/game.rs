@@ -1,29 +1,12 @@
 use crate::board::*;
-use crate::moves::*;
-use crate::piece::*;
+use crate::moves::move_gen::*;
+use crate::moves::SimpleMove;
 
 /// A game is a board and a turn.
 pub struct Game {
     pub board: Board,
 }
-
-impl Default for Game {
-    /// Returns the default value for a square.
-    ///
-    /// # Returns
-    /// The default square.
-    ///
-    /// # Example
-    /// ```rs
-    ///     let square = Square::default();
-    /// ```
-    fn default() -> Self {
-        Self::new_standard()
-    }
-}
-
 impl Game {
-
     /// Creates a new game.
     ///
     /// # Returns

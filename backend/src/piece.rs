@@ -14,15 +14,6 @@ pub enum Color {
     White = 8,
     Black = 16,
 }
-impl Display for Color {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let color = match self {
-            Color::White => "White",
-            Color::Black => "Black",
-        };
-        write!(f, "{}", color)
-    }
-}
 
 impl Color {
     /// Converts a piece to its corresponding color.
@@ -109,28 +100,6 @@ pub struct Piece {
     pub color: Option<Color>,
     pub type_: PieceKind,
 }
-
-impl Display for Piece {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let piece = match self.type_ {
-            PieceKind::King => "King",
-            PieceKind::Pawn => "Pawn",
-            PieceKind::Knight => "Knight",
-            PieceKind::Bishop => "Bishop",
-            PieceKind::Rook => "Rook",
-            PieceKind::Queen => "Queen",
-            _ => "None",
-        };
-
-        let color = match self.color {
-            Some(Color::White) => "White",
-            Some(Color::Black) => "Black",
-            None => "None",
-        };
-        write!(f, "{} {}", color, piece)
-    }
-}
-
 impl Piece {
     /// Creates a new piece.
     ///

@@ -1,45 +1,7 @@
 use crate::board::*;
-use crate::game::Game;
 use crate::moves::CastleSide::{KingSide, QueenSide};
+use crate::moves::{SimpleMoves, DIRECTION_OFFSETS};
 use crate::piece::*;
-
-/// A list of offsets for each direction.
-/// The directions are in the following order:
-/// North West, North, North East, West, East, South West, South, South East.
-pub const DIRECTION_OFFSETS: [i8; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum CastleSide {
-    KingSide,
-    QueenSide,
-}
-
-
-pub enum MoveType {
-    Quiet,
-    Capture,
-    Castle(CastleSide),
-    EnPassant,
-    Promotion(PieceKind),
-}
-
-pub struct Move {
-    pub simple: SimpleMove,
-    pub move_type: MoveType,
-}
-
-
-
-
-
-/// A list of moves.
-/// Each move is a pair of positions.
-pub type SimpleMoves = Vec<SimpleMove>;
-
-/// A move is a pair of positions.
-/// The first position is the position of the piece to move.
-/// The second position is the position to move the piece to.
-pub type SimpleMove = (Position, Position);
 
 /// Generates all possible moves for a given board.
 ///
@@ -354,9 +316,10 @@ pub fn generate_king_moves(board: &Board, from: usize) -> SimpleMoves {
 
 #[cfg(test)]
 mod tests {
+    use crate::board::square::*;
     use crate::board::*;
     use crate::game::*;
-    use crate::moves::*;
+    use crate::moves::move_gen::*;
     use crate::piece::*;
 
     /// Recursively generates all possible moves for a given board.
@@ -430,8 +393,6 @@ mod tests {
         // The positions to place the piece at.
         let mut positions = Vec::new();
 
-
-
         // Get the positions of the scattered pieces.
         for direction in DIRECTION_OFFSETS.iter() {
             // The position to place the piece at.
@@ -457,7 +418,7 @@ mod tests {
     ///
     /// # Returns
     /// The game with the piece at the given position.
-    pub fn game_with_piece_at(pos: Position, kind:PieceKind, color: Color) -> Game {
+    pub fn game_with_piece_at(pos: Position, kind: PieceKind, color: Color) -> Game {
         let mut game = Game::new();
         let piece = Piece::new(kind as u8 | color as u8);
         place_piece(&mut game.board, piece, pos);
@@ -545,8 +506,6 @@ mod tests {
                 }
             }
         }
-
-
     }
 
     #[test]
