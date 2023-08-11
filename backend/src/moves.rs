@@ -1,5 +1,6 @@
 use crate::board::CastleSide::{KingSide, QueenSide};
 use crate::board::*;
+use crate::game::Game;
 use crate::piece::*;
 
 /// A list of offsets for each direction.
@@ -327,69 +328,202 @@ pub fn generate_king_moves(board: &Board, from: usize) -> SimpleMoves {
     moves
 }
 
-/// Recursively generates all possible moves for a given board.
-///
-/// # Arguments
-/// * `board` - The board to generate moves for.
-/// * `depth` - The depth to generate moves to.
-/// * `expected` - The expected number of moves.
-///
-/// # Returns
-/// The number of moves generated.
-pub fn recursive_move_gen_test(board: &Board, depth: u8, expected: u64) -> u64 {
-    if depth == 0 {
-        return 1;
-    }
-
-    let mut num_moves = 0;
-
-    for from in 0..64 {
-        if board.squares[from].piece.type_ == PieceKind::None
-            || board.squares[from].piece.color != Some(board.turn)
-        {
-            continue;
-        }
-
-        let piece = board.squares[from].piece;
-        let moves = match piece.type_ {
-            PieceKind::Pawn => generate_pawn_moves(board, from),
-            PieceKind::Knight => generate_knight_moves(board, from),
-            PieceKind::Bishop | PieceKind::Rook | PieceKind::Queen => {
-                generate_sliding_moves(board, from)
-            }
-            PieceKind::King => generate_king_moves(board, from),
-            _ => SimpleMoves::new(),
-        };
-
-        for mv in moves {
-            let mut new_board = board.clone();
-            new_board.make_simple_move(mv);
-            num_moves += recursive_move_gen_test(&new_board, depth - 1, expected);
-            new_board.unmake_simple_move()
-        }
-    }
-
-    if num_moves != expected {
-        displays_moves(board);
-    }
-
-    num_moves
-}
-
-pub fn displays_moves(board: &Board) {
-    let moves = generate_legal_moves(board);
-    for mv in moves {
-        let mut b = board.clone();
-        b.make_simple_move(mv);
-        let sq = b.squares[mv.1];
-        let piece = sq.piece;
-        println!("{} from {} to {}", piece, mv.0, mv.1);
-        b.unmake_simple_move();
-    }
-}
 #[cfg(test)]
 mod tests {
-    use crate::moves::recursive_move_gen_test;
+    use crate::board::*;
+    use crate::game::*;
+    use crate::moves::*;
+    use crate::piece::*;
+
+    /// Recursively generates all possible moves for a given board.
+    ///
+    /// # Arguments
+    /// * `board` - The board to generate moves for.
+    /// * `depth` - The depth to generate moves to.
+    /// * `expected` - The expected number of moves.
+    ///
+    /// # Returns
+    /// The number of moves generated.
+    pub fn recursive_move_gen_test(board: &Board, depth: u8, expected: u64) -> u64 {
+        if depth == 0 {
+            return 1;
+        }
+
+        let mut num_moves = 0;
+
+        for from in 0..64 {
+            if board.squares[from].piece.type_ == PieceKind::None
+                || board.squares[from].piece.color != Some(board.turn)
+            {
+                continue;
+            }
+
+            let piece = board.squares[from].piece;
+            let moves = match piece.type_ {
+                PieceKind::Pawn => generate_pawn_moves(board, from),
+                PieceKind::Knight => generate_knight_moves(board, from),
+                PieceKind::Bishop | PieceKind::Rook | PieceKind::Queen => {
+                    generate_sliding_moves(board, from)
+                }
+                PieceKind::King => generate_king_moves(board, from),
+                _ => SimpleMoves::new(),
+            };
+
+            for mv in moves {
+                let mut new_board = board.clone();
+                new_board.make_simple_move(mv);
+                num_moves += recursive_move_gen_test(&new_board, depth - 1, expected);
+                new_board.unmake_simple_move()
+            }
+        }
+
+        if num_moves != expected {
+            displays_moves(board);
+        }
+
+        num_moves
+    }
+
+    /// Places a piece on a given board.
+    ///
+    /// # Arguments
+    /// * `board` - The board to place the piece on.
+    /// * `piece` - The piece to place.
+    /// * `pos` - The position to place the piece at.
+    pub fn place_piece(board: &mut Board, piece: Piece, pos: Position) {
+        board.squares[pos].piece = piece;
+    }
+
+    /// Surrounds a square with a given piece.
+    ///
+    /// # Arguments
+    /// * `board` - The board to place the piece on.
+    /// * `pos` - The position to surround.
+    /// * `piece` - The piece to surround the square with.
+    /// * `radius` - How far from the position to place the pieces.
+    /// * `scattered` - Whether to place the pieces in a scattered pattern. (A space between each piece)
+    pub fn surround_square(board: &mut Board, pos: Position, piece: Piece, radius: usize) {
+        // The positions to place the piece at.
+        let mut positions = Vec::new();
+
+
+
+        // Get the positions of the scattered pieces.
+        for direction in DIRECTION_OFFSETS.iter() {
+            // The position to place the piece at.
+            let position = pos as i8 + direction * radius as i8;
+            // If the position is on the board.
+            if (0..=63).contains(&position) {
+                positions.push(position as usize);
+            }
+        }
+
+        // For each position.
+        for pos in positions {
+            place_piece(board, piece, pos);
+        }
+    }
+
+    /// Creates a game with a piece at a given position.
+    ///
+    /// # Arguments
+    /// * `pos` - The position to place the piece at.
+    /// * `kind` - The kind of piece to place.
+    /// * `color` - The color of the piece to place.
+    ///
+    /// # Returns
+    /// The game with the piece at the given position.
+    pub fn game_with_piece_at(pos: Position, kind:PieceKind, color: Color) -> Game {
+        let mut game = Game::new();
+        let piece = Piece::new(kind as u8 | color as u8);
+        place_piece(&mut game.board, piece, pos);
+        game
+    }
+
+    /// Displays all possible moves for a given board.
+    ///
+    /// # Arguments
+    /// * `board` - The board to display the moves for.
+    pub fn displays_moves(board: &Board) {
+        let moves = generate_legal_moves(board);
+        for mv in moves {
+            let mut b = board.clone();
+            b.make_simple_move(mv);
+            let sq = b.squares[mv.1];
+            let piece = sq.piece;
+            println!("{} from {} to {}", piece, mv.0, mv.1);
+            b.unmake_simple_move();
+        }
+    }
+
+    pub fn get_piece_moves(board: &Board, from: Position, piece: Piece) -> SimpleMoves {
+        let mut moves: SimpleMoves = SimpleMoves::new();
+
+        match piece.type_ {
+            PieceKind::Pawn => moves = generate_pawn_moves(board, from),
+            PieceKind::Knight => moves = generate_knight_moves(board, from),
+            PieceKind::Bishop | PieceKind::Rook | PieceKind::Queen => {
+                moves = generate_sliding_moves(board, from)
+            }
+            PieceKind::King => moves = generate_king_moves(board, from),
+            _ => {}
+        }
+
+        moves
+    }
+
+    #[test]
+    /// A comprehensive test of the move generation for all pieces.
+    ///
+    /// 1. Place a piece on a square.
+    /// 2. Surround the piece with pieces of the same color.
+    /// 3. Generate all possible moves for that piece.
+    /// 4. Compare the number of moves generated to the expected number of moves.
+    /// 5. Scatter the pieces around the piece and make them hostile.
+    /// 6. Generate all possible moves for that piece.
+    /// 7. Compare the number of moves generated to the expected number of moves.
+    /// 8. Repeat for the next square.
+    /// 9. Repeat for the next piece.
+    fn piece_movement_test() {
+        let colors = [Color::White, Color::Black];
+        let kinds = [
+            PieceKind::Pawn,
+            PieceKind::Knight,
+            PieceKind::Bishop,
+            PieceKind::Rook,
+            PieceKind::Queen,
+            PieceKind::King,
+        ];
+        let board_positions = 00..63usize;
+        let radius = 2;
+
+        for color in colors.iter() {
+            for kind in kinds.iter() {
+                for pos in board_positions.clone() {
+                    let mut game = game_with_piece_at(pos, *kind, *color);
+                    let mut board = game.board.clone();
+                    let piece = board.squares[pos].piece;
+                    println!("{}\nTesting {} at {}", board, piece, pos);
+                    surround_square(&mut board, pos, piece, radius);
+                    let moves = get_piece_moves(&board, pos, piece);
+                    let num_moves = moves.len();
+                    print!("{} moves: {}", piece, num_moves);
+
+                    surround_square(&mut board, pos, piece, radius);
+                    for sq in board.squares.iter_mut() {
+                        if sq.piece.color != Some(*color) {
+                            sq.piece.color = Some(*color);
+                        }
+                    }
+                    let moves = generate_legal_moves(&board);
+                    let num_moves = moves.len();
+                    println!(" | {} moves: {}\n{}", piece, num_moves, board);
+                }
+            }
+        }
+
+
+    }
 
     #[test]
     fn move_gen_test() {
