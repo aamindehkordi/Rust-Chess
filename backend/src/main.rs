@@ -17,6 +17,6 @@ use crate::game::*;
 ///     main();
 /// ```
 fn main() {
-    let mut game = Game::new();
+    let mut game = Game::new_standard();
     game.play();
 }
