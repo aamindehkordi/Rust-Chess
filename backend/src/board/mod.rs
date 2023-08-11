@@ -1,6 +1,7 @@
 pub mod bb;
 pub mod square;
 
+use crate::board::bb::Bitboards;
 use crate::board::square::{Position, Square};
 use crate::moves::move_gen::*;
 use crate::moves::{CastleSide, SimpleMove, SimpleMoves};
@@ -14,9 +15,15 @@ pub type NumSquaresToEdge = [[usize; 8]; 64];
 /// The board is an array of 64 squares.
 /// The move history is a list of moves.
 pub struct Board {
+    /// The squares of the board.
     pub squares: [Square; 64],
+    /// The bitboards of the board.
+    pub bb: Bitboards,
+    /// The move history of the board.
     pub move_history: SimpleMoves,
+    /// Precomputed values for the number of squares to the edge of the board from any square.
     pub num_squares_to_edge: NumSquaresToEdge,
+    /// The turn of the board.
     pub turn: Color,
 }
 impl Board {
@@ -39,6 +46,7 @@ impl Board {
         }
         Board {
             squares,
+            bb: Bitboards::new(),
             move_history: SimpleMoves::new(),
             num_squares_to_edge: precomputed_move_data(),
             turn: White,
@@ -74,6 +82,7 @@ impl Board {
     /// ```
     pub fn new_from_fen(fen: &str) -> Board {
         let mut board = Board::new();
+        board.bb.initialize_from_fen(fen);
 
         // Dictionary of piece kinds.
         let piece_kind_from_symbol = [
@@ -153,6 +162,10 @@ impl Board {
     /// # Returns
     /// True if the player can castle on the given side.
     pub fn can_castle(&self, color: Color, side: CastleSide) -> bool {
+        if !self.bb.can_castle(side, color) {
+            return false;
+        }
+
         // Get the columns of the rook, and castle squares.
         let cols: [usize; 3] = match side {
             CastleSide::KingSide => [7, 5, 6],

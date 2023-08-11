@@ -9,7 +9,9 @@ pub type PieceAsByte = u8;
 ///
 /// 8 is white, 16 is black.
 pub enum Color {
+    /// White is represented by 8.
     White = 8,
+    /// Black is represented by 16.
     Black = 16,
 }
 
@@ -51,12 +53,19 @@ impl Color {
 ///
 /// The piece kinds from 0 to 6: None, King, Pawn, Knight, Bishop, Rook, Queen
 pub enum PieceKind {
+    /// None is represented by 0.
     None = 0,
+    /// King is represented by 1.
     King = 1,
+    /// Pawn is represented by 2.
     Pawn = 2,
+    /// Knight is represented by 3.
     Knight = 3,
+    /// Bishop is represented by 4.
     Bishop = 4,
+    /// Rook is represented by 5.
     Rook = 5,
+    /// Queen is represented by 6.
     Queen = 6,
 }
 impl PieceKind {

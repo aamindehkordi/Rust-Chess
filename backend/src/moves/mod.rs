@@ -10,20 +10,31 @@ pub const DIRECTION_OFFSETS: [i8; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum CastleSide {
-    KingSide,
-    QueenSide,
+    /// King side castle.
+    KingSide = 0,
+    /// Queen side castle.
+    QueenSide = 1,
 }
 
 pub enum MoveType {
+    /// A move that does not capture or promote.
     Quiet,
+    /// A move that captures a piece.
     Capture,
-    Castle(CastleSide),
+    /// A move that captures a piece en passant.
     EnPassant,
+    /// A move that castles.
+    Castle(CastleSide),
+    /// A move that promotes.
     Promotion(PieceKind),
+    /// A move that captures a piece and promotes.
+    PromotionCapture(PieceKind),
 }
 
 pub struct Move {
+    /// The position of the piece to move.
     pub simple: SimpleMove,
+    /// The type of move.
     pub move_type: MoveType,
 }
 
