@@ -1,3 +1,5 @@
+pub mod bb;
+
 use crate::moves::*;
 use crate::piece::Color::White;
 use crate::piece::*;
