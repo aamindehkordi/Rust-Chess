@@ -111,7 +111,7 @@ pub fn get_user_input() -> String {
 /// # Returns
 /// A simple move if the input is valid, None otherwise.
 pub fn parse_user_input(input: String) -> Option<SimpleMove> {
-    let mut input = input.trim().split_whitespace(); // a2 a4
+    let mut input = input.split_whitespace(); // a2 a4
     let from = input.next()?; // a2
     let to = input.next()?; // a4
     let from = from.chars().collect::<Vec<char>>(); // a2 -> [a, 2]

@@ -317,10 +317,9 @@ pub fn generate_king_moves(board: &Board, from: usize) -> SimpleMoves {
 #[cfg(test)]
 mod tests {
     use crate::board::square::*;
-    use crate::board::*;
+
     use crate::game::*;
     use crate::moves::move_gen::*;
-    use crate::piece::*;
 
     /// Recursively generates all possible moves for a given board.
     ///
@@ -485,7 +484,7 @@ mod tests {
         for color in colors.iter() {
             for kind in kinds.iter() {
                 for pos in board_positions.clone() {
-                    let mut game = game_with_piece_at(pos, *kind, *color);
+                    let game = game_with_piece_at(pos, *kind, *color);
                     let mut board = game.board.clone();
                     let piece = board.squares[pos].piece;
                     println!("{}\nTesting {} at {}", board, piece, pos);

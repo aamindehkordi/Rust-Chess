@@ -6,7 +6,6 @@ use crate::moves::move_gen::*;
 use crate::moves::{CastleSide, SimpleMove, SimpleMoves};
 use crate::piece::Color::White;
 use crate::piece::*;
-use std::fmt::Display;
 
 /// Precomputed values for the number of squares to the edge of the board from any square.
 pub type NumSquaresToEdge = [[usize; 8]; 64];
@@ -259,7 +258,7 @@ impl Board {
     }
 
     pub fn is_checkmate(&self) -> bool {
-        self.is_check() && generate_legal_moves(&self).is_empty()
+        self.is_check() && generate_legal_moves(self).is_empty()
     }
 }
 

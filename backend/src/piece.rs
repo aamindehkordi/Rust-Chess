@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 /// A piece is represented as a byte: 8 bits.
 ///
 /// The first 3 bits are the piece kind. & 7 is 00000111.

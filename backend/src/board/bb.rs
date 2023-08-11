@@ -50,7 +50,7 @@ impl Bitboards {
         (self.boards[board_type as usize] & (1 << position)) != 0
     }
 
-    pub fn initialize_from_fen(&mut self, fen: &str) {
+    pub fn initialize_from_fen(&mut self, _fen: &str) {
         // You can implement this function to initialize the bitboards from a FEN string
     }
 
