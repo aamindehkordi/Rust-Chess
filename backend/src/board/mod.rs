@@ -1,11 +1,11 @@
 pub mod bb;
 pub mod square;
 
-use crate::board::bb::Bitboards;
-use crate::board::square::{Position, Square};
+use crate::board::bb::BitboardType::AllAttacked;
+use crate::board::bb::*;
+use crate::board::square::*;
 use crate::moves::move_gen::*;
-use crate::moves::{CastleSide, SimpleMove, SimpleMoves};
-use crate::piece::Color::White;
+use crate::moves::*;
 use crate::piece::*;
 
 /// Precomputed values for the number of squares to the edge of the board from any square.
@@ -21,6 +21,8 @@ pub struct Board {
     pub bb: Bitboards,
     /// The move history of the board.
     pub move_history: SimpleMoves,
+    /// The legal moves of the board.
+    pub legal_moves: SimpleMoves,
     /// Precomputed values for the number of squares to the edge of the board from any square.
     pub num_squares_to_edge: NumSquaresToEdge,
     /// The turn of the board.
@@ -47,9 +49,10 @@ impl Board {
         Board {
             squares,
             bb: Bitboards::new(),
+            legal_moves: Vec::new(),
             move_history: SimpleMoves::new(),
             num_squares_to_edge: precomputed_move_data(),
-            turn: White,
+            turn: Color::White,
         }
     }
 
@@ -107,7 +110,7 @@ impl Board {
             } else if symbol.is_ascii_digit() {
                 file += symbol.to_digit(10).unwrap();
             } else {
-                let mut piece_color = White;
+                let mut piece_color = Color::White;
                 if symbol.is_lowercase() {
                     piece_color = Color::Black;
                 }
@@ -123,7 +126,8 @@ impl Board {
                 file += 1;
             }
         }
-
+        board.legal_moves = generate_legal_moves(&board);
+        board.update_attacked_squares();
         board
     }
 
@@ -173,7 +177,7 @@ impl Board {
         };
 
         // Get the rank of the king.
-        let rank = if color == White { 0 } else { 7 };
+        let rank = if color == Color::White { 0 } else { 7 };
 
         // Get the king and Rook squares.
         let king_square = self.squares[idx(rank, 4)];
@@ -236,6 +240,29 @@ impl Board {
         king_position
     }
 
+    /// Updates the attacked squares.
+    pub fn update_attacked_squares(&mut self) {
+        self.bb.reset();
+        let mut position;
+
+        // For each square on the board.
+        for square in self.squares.iter_mut() {
+            square.is_attacked = false;
+            position = square.position;
+            // If the square is occupied.
+            if square.is_occupied() {
+                // Update the attacked squares.
+                for mv in self.legal_moves.iter() {
+                    if mv.1 == position {
+                        square.is_attacked = true;
+                    }
+                }
+            }
+        }
+
+        self.bb.update(&self.squares);
+    }
+
     /// Makes a simple move.
     ///
     /// # Arguments
@@ -248,6 +275,7 @@ impl Board {
         self.squares[to].set_piece(piece.to_byte());
         self.turn = self.turn.other();
         self.move_history.push(mv);
+        self.update_attacked_squares();
     }
 
     /// Unmakes a simple move.
@@ -263,6 +291,7 @@ impl Board {
         self.squares[to].set_piece(0);
         self.squares[from].set_piece(piece.to_byte());
         self.turn = self.turn.other();
+        self.update_attacked_squares();
     }
 
     pub fn is_check(&self) -> bool {
