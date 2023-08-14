@@ -1,7 +1,6 @@
 pub mod bb;
 pub mod square;
 
-use crate::board::bb::BitboardType::AllAttacked;
 use crate::board::bb::*;
 use crate::board::square::*;
 use crate::moves::move_gen::*;
@@ -122,7 +121,7 @@ impl Board {
                 }
                 let pos: Position = rank * 8usize + file as usize;
                 let piece = piece_color as u8 + piece_kind as u8; // Rook
-                board.set_piece(pos, piece);
+                board.squares[pos].set_piece(piece);
                 file += 1;
             }
         }
@@ -142,19 +141,16 @@ impl Board {
         self.squares[position]
     }
 
-    /// Sets a piece on the square at the given position.
+    /// Moves a piece from one square to another.
     ///
     /// # Arguments
-    /// * `position` - The position of the square.
-    /// * `piece` - The piece to set on the square.
-    ///
-    /// # Example
-    /// ```rs
-    ///     let mut board = Board::new();
-    ///     board.set_piece(4, PieceAsByte::King);
-    /// ```
-    pub fn set_piece(&mut self, position: Position, piece_byte: PieceAsByte) {
-        self.squares[position].set_piece(piece_byte);
+    /// * `from` - The position of the square to move from.
+    /// * `to` - The position of the square to move to.
+    pub fn move_piece(&mut self, from: Position, to: Position) {
+        let piece = self.squares[from].piece;
+        self.squares[from].set_piece(0);
+        self.squares[to].set_piece(piece.to_byte());
+        self.squares[to].piece.has_moved = true;
     }
 
     /// Checks if the color can castle on the given side.
@@ -184,8 +180,8 @@ impl Board {
         let rook_square = self.squares[idx(rank, cols[0])];
 
         // Check if the king or rook has moved.
-        if king_square.has_moved
-            || rook_square.has_moved
+        if king_square.piece.has_moved
+            || rook_square.piece.has_moved
             || king_square.is_attacked
             || rook_square.is_attacked
         {
@@ -270,9 +266,7 @@ impl Board {
     pub fn make_simple_move(&mut self, mv: SimpleMove) {
         let from = mv.0;
         let to = mv.1;
-        let piece = self.squares[from].piece;
-        self.squares[from].set_piece(0);
-        self.squares[to].set_piece(piece.to_byte());
+        self.move_piece(from, to);
         self.turn = self.turn.other();
         self.move_history.push(mv);
         self.update_attacked_squares();

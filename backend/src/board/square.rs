@@ -11,7 +11,6 @@ pub struct Square {
     pub position: Position,
     pub tile_color: Color,
     pub piece: Piece,
-    pub has_moved: bool,
     pub is_attacked: bool,
 }
 impl Square {
@@ -35,7 +34,6 @@ impl Square {
             position,
             tile_color: color,
             piece: Piece::new(piece_as_byte),
-            has_moved: false,
             is_attacked: false,
         }
     }

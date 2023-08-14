@@ -106,6 +106,7 @@ impl PieceKind {
 pub struct Piece {
     pub color: Option<Color>,
     pub type_: PieceKind,
+        pub has_moved: bool,
 }
 impl Piece {
     /// Creates a new piece.
@@ -123,11 +124,14 @@ impl Piece {
             return Piece {
                 color: Some(color),
                 type_: PieceKind::from(piece_as_byte),
+                has_moved: false,
             };
         }
+        println!("None");
         Piece {
             color: None,
-            type_: PieceKind::from(piece_as_byte),
+            type_: PieceKind::None,
+            has_moved: false,
         }
     }
 
