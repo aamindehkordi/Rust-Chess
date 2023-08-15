@@ -1,6 +1,6 @@
 use crate::board::*;
 use crate::moves::move_gen::*;
-use crate::moves::SimpleMove;
+use crate::moves::FromTo;
 
 /// A game is a board and a turn.
 pub struct Game {
@@ -110,7 +110,7 @@ pub fn get_user_input() -> String {
 ///
 /// # Returns
 /// A simple move if the input is valid, None otherwise.
-pub fn parse_user_input(input: String) -> Option<SimpleMove> {
+pub fn parse_user_input(input: String) -> Option<FromTo> {
     let mut input = input.split_whitespace(); // a2 a4
     let from = input.next()?; // a2
     let to = input.next()?; // a4

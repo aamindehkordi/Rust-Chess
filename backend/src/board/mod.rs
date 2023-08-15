@@ -262,8 +262,9 @@ impl Board {
     /// Makes a simple move.
     ///
     /// # Arguments
-    /// * `mv` - The move to make.
-    pub fn make_simple_move(&mut self, mv: SimpleMove) {
+    /// * `mv` - The move to make
+    /// .
+    pub fn make_simple_move(&mut self, mv: FromTo) {
         let from = mv.0;
         let to = mv.1;
         self.move_piece(from, to);

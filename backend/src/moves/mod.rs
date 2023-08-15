@@ -33,16 +33,16 @@ pub enum MoveType {
 
 pub struct Move {
     /// The position of the piece to move.
-    pub simple: SimpleMove,
+    pub simple: FromTo,
     /// The type of move.
     pub move_type: MoveType,
 }
 
 /// A list of moves.
 /// Each move is a pair of positions.
-pub type SimpleMoves = Vec<SimpleMove>;
+pub type SimpleMoves = Vec<FromTo>;
 
 /// A move is a pair of positions.
 /// The first position is the position of the piece to move.
 /// The second position is the position to move the piece to.
-pub type SimpleMove = (Position, Position);
+pub type FromTo = (Position, Position);
