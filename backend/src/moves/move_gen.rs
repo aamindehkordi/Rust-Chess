@@ -69,10 +69,10 @@ pub fn generate_legal_moves(board: &Board) -> SimpleMoves {
         // Make a copy of the board
         let mut board_copy = board.clone();
 
-        // Get the position of the king
-        let king_pos = board_copy.get_king_position(board_copy.turn);
         // Make the move temporarily
         board_copy.make_simple_move(mv);
+        // Get the position of the king
+        let king_pos = board_copy.get_king_position(board_copy.turn.other());
         //Get opponent response moves
         let response_moves = generate_all_moves(&board_copy);
 
@@ -80,9 +80,6 @@ pub fn generate_legal_moves(board: &Board) -> SimpleMoves {
         if response_moves.iter().any(|&mv| mv.1 == king_pos) {
             continue;
         }
-
-        // Undo the move
-        board_copy.unmake_simple_move();
 
         // Push the move
         legal_moves.push(mv)
@@ -299,20 +296,24 @@ pub fn generate_king_moves(board: &Board, from: usize) -> SimpleMoves {
     // For each direction.
     for direction in DIRECTION_OFFSETS.iter() {
         // The end square.
-        let end_square_pos = from as i8 + direction;
+        let mut end_square_pos = from as i8 + direction;
         if !(0..=63).contains(&end_square_pos) {
             continue;
         }
-        let end_square = end_square_pos as usize;
+        let end_square_pos = end_square_pos as usize;
+        let end_square = board.squares[end_square_pos];
         // The piece on the end square.
-        let piece_on_end_square = board.squares[end_square].piece;
+        let piece_on_end_square = end_square.piece;
 
         // Blocked by a piece of the same color.
         if is_color(piece_on_end_square, board.turn) {
             continue;
         }
+        if end_square.is_attacked {
+            continue;
+        }
         // Add the move.
-        moves.push((from, end_square));
+        moves.push((from, end_square_pos));
     }
 
     // Check for Kingside castling
@@ -368,8 +369,8 @@ mod tests {
                 _ => SimpleMoves::new(),
             };
 
+            let mut new_board = board.clone();
             for mv in moves {
-                let mut new_board = board.clone();
                 new_board.make_simple_move(mv);
                 num_moves += recursive_move_gen_test(&new_board, depth - 1, expected);
                 new_board.unmake_simple_move()
@@ -470,6 +471,22 @@ mod tests {
     }
 
     #[test]
+    fn move_gen_test() {
+        use crate::board::Board;
+
+        let board = Board::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+
+        let num_moves_1 = recursive_move_gen_test(&board, 1, 20);
+        assert_eq!(num_moves_1, 20);
+
+        let num_moves_2 = recursive_move_gen_test(&board, 2, 400);
+        assert_eq!(num_moves_2, 400);
+
+        let num_moves_3 = recursive_move_gen_test(&board, 3, 8902);
+        assert_eq!(num_moves_3, 8902); // 8009
+    }
+
+    #[test]
     /// A comprehensive test of the move generation for all pieces.
     ///
     /// 1. Place a piece on a square.
@@ -518,21 +535,5 @@ mod tests {
                 }
             }
         }
-    }
-
-    #[test]
-    fn move_gen_test() {
-        use crate::board::Board;
-
-        let board = Board::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-
-        let num_moves_1 = recursive_move_gen_test(&board, 1, 20);
-        assert_eq!(num_moves_1, 20);
-
-        let num_moves_2 = recursive_move_gen_test(&board, 2, 400);
-        assert_eq!(num_moves_2, 400);
-
-        let num_moves_3 = recursive_move_gen_test(&board, 3, 8902);
-        assert_eq!(num_moves_3, 8902); // 8149
     }
 }
