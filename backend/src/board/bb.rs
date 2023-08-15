@@ -157,6 +157,72 @@ impl Bitboards {
         }
     }
 
+    /// Returns the bitboard for a given bitboard type.
+    ///
+    /// # Arguments
+    /// * `bitboard_type` The bitboard type to get the bitboard for.
+    ///
+    /// # Returns
+    /// The bitboard for the given bitboard type.
+    pub fn get_bitboard(&self, bitboard_type: BitboardType) -> Bitboard {
+        match bitboard_type {
+            BitboardType::WhitePawns => {
+                self.piece_bitboards[PieceKind::Pawn as usize]
+                    | self.occupied_bitboards[Color::White as usize / 8]
+            }
+            BitboardType::WhiteKnights => {
+                self.piece_bitboards[PieceKind::Knight as usize]
+                    | self.occupied_bitboards[Color::White as usize / 8]
+            }
+            BitboardType::WhiteBishops => {
+                self.piece_bitboards[PieceKind::Bishop as usize]
+                    | self.occupied_bitboards[Color::White as usize / 8]
+            }
+            BitboardType::WhiteRooks => {
+                self.piece_bitboards[PieceKind::Rook as usize]
+                    | self.occupied_bitboards[Color::White as usize / 8]
+            }
+            BitboardType::WhiteQueens => {
+                self.piece_bitboards[PieceKind::Queen as usize]
+                    | self.occupied_bitboards[Color::White as usize / 8]
+            }
+            BitboardType::WhiteKing => {
+                self.piece_bitboards[PieceKind::King as usize]
+                    | self.occupied_bitboards[Color::White as usize / 8]
+            }
+            BitboardType::BlackPawns => {
+                self.piece_bitboards[PieceKind::Pawn as usize]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
+            }
+            BitboardType::BlackKnights => {
+                self.piece_bitboards[PieceKind::Knight as usize]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
+            }
+            BitboardType::BlackBishops => {
+                self.piece_bitboards[PieceKind::Bishop as usize]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
+            }
+            BitboardType::BlackRooks => {
+                self.piece_bitboards[PieceKind::Rook as usize]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
+            }
+            BitboardType::BlackQueens => {
+                self.piece_bitboards[PieceKind::Queen as usize]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
+            }
+            BitboardType::BlackKing => {
+                self.piece_bitboards[PieceKind::King as usize]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
+            }
+            BitboardType::WhiteOccupied => self.occupied_bitboards[1],
+            BitboardType::BlackOccupied => self.occupied_bitboards[2],
+            BitboardType::AllOccupied => self.occupied_bitboards[0],
+            BitboardType::WhiteAttacking => self.attacked_bitboards[0],
+            BitboardType::BlackAttacking => self.attacked_bitboards[1],
+            BitboardType::AllAttacked => self.attacked_bitboards[0] | self.attacked_bitboards[1],
+        }
+    }
+
     /// Sets the given bitboard to the given bitboard type.
     pub fn set_bitboard(&mut self, bitboard_type: BitboardType, bitboard: Bitboard) {
         match bitboard_type {
@@ -320,72 +386,6 @@ impl Bitboards {
     /// True if the color can castle on the given side, false otherwise.
     pub fn can_castle(&self, side: CastleSide, color: Color) -> bool {
         self.castling_rights[(side as usize) + (color as usize / 8)]
-    }
-
-    /// Returns the bitboard for a given bitboard type.
-    ///
-    /// # Arguments
-    /// * `bitboard_type` The bitboard type to get the bitboard for.
-    ///
-    /// # Returns
-    /// The bitboard for the given bitboard type.
-    pub fn get_bitboard(&self, bitboard_type: BitboardType) -> Bitboard {
-        match bitboard_type {
-            BitboardType::WhitePawns => {
-                self.piece_bitboards[PieceKind::Pawn as usize]
-                    | self.occupied_bitboards[Color::White as usize / 8]
-            }
-            BitboardType::WhiteKnights => {
-                self.piece_bitboards[PieceKind::Knight as usize]
-                    | self.occupied_bitboards[Color::White as usize / 8]
-            }
-            BitboardType::WhiteBishops => {
-                self.piece_bitboards[PieceKind::Bishop as usize]
-                    | self.occupied_bitboards[Color::White as usize / 8]
-            }
-            BitboardType::WhiteRooks => {
-                self.piece_bitboards[PieceKind::Rook as usize]
-                    | self.occupied_bitboards[Color::White as usize / 8]
-            }
-            BitboardType::WhiteQueens => {
-                self.piece_bitboards[PieceKind::Queen as usize]
-                    | self.occupied_bitboards[Color::White as usize / 8]
-            }
-            BitboardType::WhiteKing => {
-                self.piece_bitboards[PieceKind::King as usize]
-                    | self.occupied_bitboards[Color::White as usize / 8]
-            }
-            BitboardType::BlackPawns => {
-                self.piece_bitboards[PieceKind::Pawn as usize]
-                    | self.occupied_bitboards[Color::Black as usize / 8]
-            }
-            BitboardType::BlackKnights => {
-                self.piece_bitboards[PieceKind::Knight as usize]
-                    | self.occupied_bitboards[Color::Black as usize / 8]
-            }
-            BitboardType::BlackBishops => {
-                self.piece_bitboards[PieceKind::Bishop as usize]
-                    | self.occupied_bitboards[Color::Black as usize / 8]
-            }
-            BitboardType::BlackRooks => {
-                self.piece_bitboards[PieceKind::Rook as usize]
-                    | self.occupied_bitboards[Color::Black as usize / 8]
-            }
-            BitboardType::BlackQueens => {
-                self.piece_bitboards[PieceKind::Queen as usize]
-                    | self.occupied_bitboards[Color::Black as usize / 8]
-            }
-            BitboardType::BlackKing => {
-                self.piece_bitboards[PieceKind::King as usize]
-                    | self.occupied_bitboards[Color::Black as usize / 8]
-            }
-            BitboardType::WhiteOccupied => self.occupied_bitboards[1],
-            BitboardType::BlackOccupied => self.occupied_bitboards[2],
-            BitboardType::AllOccupied => self.occupied_bitboards[0],
-            BitboardType::WhiteAttacking => self.attacked_bitboards[0],
-            BitboardType::BlackAttacking => self.attacked_bitboards[1],
-            BitboardType::AllAttacked => self.attacked_bitboards[0] | self.attacked_bitboards[1],
-        }
     }
 
     /// Initializes the bitboards from a FEN string.
