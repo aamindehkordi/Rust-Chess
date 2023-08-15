@@ -127,7 +127,6 @@ impl Piece {
                 has_moved: false,
             };
         }
-        println!("None");
         Piece {
             color: None,
             type_: PieceKind::None,

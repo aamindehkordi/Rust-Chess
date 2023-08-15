@@ -196,19 +196,31 @@ pub fn generate_knight_moves(board: &Board, from: usize) -> SimpleMoves {
     let mut moves = SimpleMoves::new();
 
     // The piece on the start square.
-    let piece = board.squares[from].piece;
+    let from_square = board.squares[from];
+    let piece = from_square.piece;
     // The color of the piece.
     let color = piece.color;
 
     // The directions to check.
-    let directions = [-17, -15, -6, 6, 15, 17];
+    let directions = [-17, -15, -10, -6, 6, 10, 15, 17];
 
     // For each direction, check if the move is valid.
     for direction in directions.iter() {
         // The square to check.
         let to = (from as i8 + direction) as usize;
+
+        if !(0..=63).contains(&to) {
+            continue;
+        }
+
+        let to_square = board.squares[to];
+
+        // Knight moves end up on the opposite tile color as the start square.
+        if to_square.tile_color == from_square.tile_color {
+            continue;
+        }
         // If the square is on the board and the piece on the square is not the same color as the piece, the move is valid.
-        if to < 64 && !is_color(board.squares[to].piece, color.expect("Knight has no color")) {
+        if !is_color(to_square.piece, color.expect("Knight has no color")) {
             moves.push((from, to));
         }
     }
@@ -229,6 +241,7 @@ pub fn generate_sliding_moves(board: &Board, start_square: usize) -> SimpleMoves
     let mut moves = SimpleMoves::new();
     // The piece on the start square.
     let piece = board.squares[start_square].piece;
+    let num_squares_to_edge = board.num_squares_to_edge[start_square];
 
     // The index of the first direction to check.
     let start_dir_idx = if piece.type_ == PieceKind::Bishop {
@@ -241,9 +254,9 @@ pub fn generate_sliding_moves(board: &Board, start_square: usize) -> SimpleMoves
 
     // For each direction.
     for direction_idx in start_dir_idx..end_dir_idx {
+        let direction = DIRECTION_OFFSETS[direction_idx];
         // For each square in the direction.
-        for num_squares in 1..board.num_squares_to_edge[start_square][direction_idx] {
-            let direction = DIRECTION_OFFSETS[direction_idx];
+        for num_squares in 1..num_squares_to_edge[direction_idx] {
             // The end square offset.
             let end_square_offset = start_square as i8 + direction * num_squares as i8;
             if !(0..=63).contains(&end_square_offset) {
