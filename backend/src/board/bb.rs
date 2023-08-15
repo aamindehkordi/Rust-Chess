@@ -1,6 +1,6 @@
 use crate::board::square::{Position, Square};
 use crate::moves::{CastleSide, Move, SimpleMoves};
-use crate::piece::{Color, PieceAsByte, PieceKind};
+use crate::piece::{Color, Piece, PieceAsByte, PieceKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// The type of bitboard.
@@ -374,6 +374,103 @@ impl Bitboards {
     /// The empty attacked squares for the given color.
     pub fn get_empty_attacked_squares(&self, color: Color) -> Bitboard {
         !self.occupied_bitboards[0] & self.get_attacked_by_bitboard(color)
+    }
+
+    pub fn get_piece_moves(&self, piece: &Piece) -> Bitboard {
+        let bb: Bitboard = 0;
+        match piece.type_ {
+            PieceKind::Pawn => {
+                let color = piece.color.unwrap();
+                let color_bitboard_type = BitboardType::from_color(color, false);
+                let color_bitboard = self.get_bitboard(color_bitboard_type);
+                let pawn_bitboard = self.get_bitboard(BitboardType::from_piece(piece.to_byte()));
+                let pawn_moves = match color {
+                    Color::White => {
+                        let pawn_moves = (pawn_bitboard << 8) & !self.occupied_bitboards[0];
+                        let pawn_moves = pawn_moves | ((pawn_bitboard << 16) & !self.occupied_bitboards[0] & !self.occupied_bitboards[1]);
+                        let pawn_moves = pawn_moves | ((pawn_bitboard << 7) & !self.occupied_bitboards[0] & !self.occupied_bitboards[1]);
+                        let pawn_moves = pawn_moves | ((pawn_bitboard << 9) & !self.occupied_bitboards[0] & !self.occupied_bitboards[1]);
+                        pawn_moves
+                    },
+                    Color::Black => {
+                        let pawn_moves = (pawn_bitboard >> 8) & !self.occupied_bitboards[0];
+                        let pawn_moves = pawn_moves | ((pawn_bitboard >> 16) & !self.occupied_bitboards[0] & !self.occupied_bitboards[2]);
+                        let pawn_moves = pawn_moves | ((pawn_bitboard >> 7) & !self.occupied_bitboards[0] & !self.occupied_bitboards[2]);
+                        let pawn_moves = pawn_moves | ((pawn_bitboard >> 9) & !self.occupied_bitboards[0] & !self.occupied_bitboards[2]);
+                        pawn_moves
+                    }
+                };
+                pawn_moves
+            },
+            PieceKind::Knight => {
+                let knight_bitboard = self.get_bitboard(BitboardType::from_piece(piece.to_byte()));
+                let knight_moves = (knight_bitboard << 17) & !self.occupied_bitboards[0];
+                let knight_moves = knight_moves | ((knight_bitboard << 15) & !self.occupied_bitboards[0]);
+                let knight_moves = knight_moves | ((knight_bitboard << 10) & !self.occupied_bitboards[0]);
+                let knight_moves = knight_moves | ((knight_bitboard << 6) & !self.occupied_bitboards[0]);
+                let knight_moves = knight_moves | ((knight_bitboard >> 17) & !self.occupied_bitboards[0]);
+                let knight_moves = knight_moves | ((knight_bitboard >> 15) & !self.occupied_bitboards[0]);
+                let knight_moves = knight_moves | ((knight_bitboard >> 10) & !self.occupied_bitboards[0]);
+                let knight_moves = knight_moves | ((knight_bitboard >> 6) & !self.occupied_bitboards[0]);
+                knight_moves
+            },
+            PieceKind::Rook | PieceKind::Queen | PieceKind::Bishop => {
+                let color = piece.color.unwrap();
+                let color_bitboard_type = BitboardType::from_color(color, false);
+                let color_bitboard = self.get_bitboard(color_bitboard_type);
+                let piece_bitboard = self.get_bitboard(BitboardType::from_piece(piece.to_byte()));
+                let mut piece_moves = 0;
+                if piece.type_ == PieceKind::Rook || piece.type_ == PieceKind::Queen {
+                    let mut piece_moves = piece_bitboard;
+                    let mut piece_moves = piece_moves | (piece_bitboard << 8);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 16);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 24);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 32);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 40);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 48);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 56);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 8);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 16);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 24);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 32);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 40);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 48);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 56);
+                }
+                if piece.type_ == PieceKind::Bishop || piece.type_ == PieceKind::Queen {
+                    let mut piece_moves = piece_bitboard;
+                    let mut piece_moves = piece_moves | (piece_bitboard << 7);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 14);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 21);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 28);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 35);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 42);
+                    let mut piece_moves = piece_moves | (piece_bitboard << 49);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 7);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 14);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 21);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 28);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 35);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 42);
+                    let mut piece_moves = piece_moves | (piece_bitboard >> 49);
+                }
+                piece_moves & !color_bitboard
+            },
+            PieceKind::King => {
+                let king_bitboard = self.get_bitboard(BitboardType::from_piece(piece.to_byte()));
+                let king_moves = (king_bitboard << 8) & !self.occupied_bitboards[0];
+                let king_moves = king_moves | ((king_bitboard << 7) & !self.occupied_bitboards[0]);
+                let king_moves = king_moves | ((king_bitboard << 9) & !self.occupied_bitboards[0]);
+                let king_moves = king_moves | ((king_bitboard >> 8) & !self.occupied_bitboards[0]);
+                let king_moves = king_moves | ((king_bitboard >> 7) & !self.occupied_bitboards[0]);
+                let king_moves = king_moves | ((king_bitboard >> 9) & !self.occupied_bitboards[0]);
+                let king_moves = king_moves | ((king_bitboard << 1) & !self.occupied_bitboards[0]);
+                let king_moves = king_moves | ((king_bitboard >> 1) & !self.occupied_bitboards[0]);
+                king_moves
+            },
+            _ => 0,
+        };
+        bb
     }
 
     /// Checks if the given color can castle on the given side.
