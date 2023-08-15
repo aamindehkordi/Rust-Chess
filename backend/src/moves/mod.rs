@@ -1,3 +1,4 @@
+use crate::board::Board;
 use crate::board::square::Position;
 use crate::piece::PieceKind;
 
