@@ -160,31 +160,59 @@ impl Bitboards {
     /// Sets the given bitboard to the given bitboard type.
     pub fn set_bitboard(&mut self, bitboard_type: BitboardType, bitboard: Bitboard) {
         match bitboard_type {
-            BitboardType::WhitePawns => self.piece_bitboards[PieceKind::Pawn as usize] = bitboard,
+            BitboardType::WhitePawns => {
+                self.piece_bitboards[PieceKind::Pawn as usize] = bitboard;
+                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
+            },
             BitboardType::WhiteKnights => {
-                self.piece_bitboards[PieceKind::Knight as usize] = bitboard
+                self.piece_bitboards[PieceKind::Knight as usize] = bitboard;
+                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
             }
             BitboardType::WhiteBishops => {
-                self.piece_bitboards[PieceKind::Bishop as usize] = bitboard
+                self.piece_bitboards[PieceKind::Bishop as usize] = bitboard;
+                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
             }
-            BitboardType::WhiteRooks => self.piece_bitboards[PieceKind::Rook as usize] = bitboard,
-            BitboardType::WhiteQueens => self.piece_bitboards[PieceKind::Queen as usize] = bitboard,
-            BitboardType::WhiteKing => self.piece_bitboards[PieceKind::King as usize] = bitboard,
-            BitboardType::BlackPawns => self.piece_bitboards[PieceKind::Pawn as usize] = bitboard,
+            BitboardType::WhiteRooks => {
+                self.piece_bitboards[PieceKind::Rook as usize] = bitboard;
+                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
+            },
+            BitboardType::WhiteQueens => {
+                self.piece_bitboards[PieceKind::Queen as usize] = bitboard;
+                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
+            },
+            BitboardType::WhiteKing => {
+                self.piece_bitboards[PieceKind::King as usize] = bitboard;
+                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
+            },
+            BitboardType::BlackPawns => {
+                self.piece_bitboards[PieceKind::Pawn as usize] = bitboard;
+                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
+            },
             BitboardType::BlackKnights => {
-                self.piece_bitboards[PieceKind::Knight as usize] = bitboard
+                self.piece_bitboards[PieceKind::Knight as usize] = bitboard;
+                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
             }
             BitboardType::BlackBishops => {
-                self.piece_bitboards[PieceKind::Bishop as usize] = bitboard
+                self.piece_bitboards[PieceKind::Bishop as usize] = bitboard;
+                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
             }
-            BitboardType::BlackRooks => self.piece_bitboards[PieceKind::Rook as usize] = bitboard,
-            BitboardType::BlackQueens => self.piece_bitboards[PieceKind::Queen as usize] = bitboard,
-            BitboardType::BlackKing => self.piece_bitboards[PieceKind::King as usize] = bitboard,
+            BitboardType::BlackRooks => {
+                self.piece_bitboards[PieceKind::Rook as usize] = bitboard;
+                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
+            },
+            BitboardType::BlackQueens => {
+                self.piece_bitboards[PieceKind::Queen as usize] = bitboard;
+                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
+            },
+            BitboardType::BlackKing => {
+                self.piece_bitboards[PieceKind::King as usize] = bitboard;
+                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
+            },
             BitboardType::WhiteOccupied => {
-                self.occupied_bitboards[Color::White as usize / 8] = bitboard
+                self.occupied_bitboards[Color::White as usize / 8] = bitboard;
             }
             BitboardType::BlackOccupied => {
-                self.occupied_bitboards[Color::Black as usize / 8] = bitboard
+                self.occupied_bitboards[Color::Black as usize / 8] = bitboard;
             }
             BitboardType::AllOccupied => {
                 self.occupied_bitboards[0] = bitboard;
@@ -305,51 +333,51 @@ impl Bitboards {
         match bitboard_type {
             BitboardType::WhitePawns => {
                 self.piece_bitboards[PieceKind::Pawn as usize]
-                    | self.occupied_bitboards[(Color::White as usize / 8)]
+                    | self.occupied_bitboards[Color::White as usize / 8]
             }
             BitboardType::WhiteKnights => {
                 self.piece_bitboards[PieceKind::Knight as usize]
-                    | self.occupied_bitboards[(Color::White as usize / 8)]
+                    | self.occupied_bitboards[Color::White as usize / 8]
             }
             BitboardType::WhiteBishops => {
                 self.piece_bitboards[PieceKind::Bishop as usize]
-                    | self.occupied_bitboards[(Color::White as usize / 8)]
+                    | self.occupied_bitboards[Color::White as usize / 8]
             }
             BitboardType::WhiteRooks => {
                 self.piece_bitboards[PieceKind::Rook as usize]
-                    | self.occupied_bitboards[(Color::White as usize / 8)]
+                    | self.occupied_bitboards[Color::White as usize / 8]
             }
             BitboardType::WhiteQueens => {
                 self.piece_bitboards[PieceKind::Queen as usize]
-                    | self.occupied_bitboards[(Color::White as usize / 8)]
+                    | self.occupied_bitboards[Color::White as usize / 8]
             }
             BitboardType::WhiteKing => {
                 self.piece_bitboards[PieceKind::King as usize]
-                    | self.occupied_bitboards[(Color::White as usize / 8)]
+                    | self.occupied_bitboards[Color::White as usize / 8]
             }
             BitboardType::BlackPawns => {
                 self.piece_bitboards[PieceKind::Pawn as usize]
-                    | self.occupied_bitboards[(Color::Black as usize / 8)]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
             }
             BitboardType::BlackKnights => {
                 self.piece_bitboards[PieceKind::Knight as usize]
-                    | self.occupied_bitboards[(Color::Black as usize / 8)]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
             }
             BitboardType::BlackBishops => {
                 self.piece_bitboards[PieceKind::Bishop as usize]
-                    | self.occupied_bitboards[(Color::Black as usize / 8)]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
             }
             BitboardType::BlackRooks => {
                 self.piece_bitboards[PieceKind::Rook as usize]
-                    | self.occupied_bitboards[(Color::Black as usize / 8)]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
             }
             BitboardType::BlackQueens => {
                 self.piece_bitboards[PieceKind::Queen as usize]
-                    | self.occupied_bitboards[(Color::Black as usize / 8)]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
             }
             BitboardType::BlackKing => {
                 self.piece_bitboards[PieceKind::King as usize]
-                    | self.occupied_bitboards[(Color::Black as usize / 8)]
+                    | self.occupied_bitboards[Color::Black as usize / 8]
             }
             BitboardType::WhiteOccupied => self.occupied_bitboards[1],
             BitboardType::BlackOccupied => self.occupied_bitboards[2],
@@ -447,6 +475,21 @@ impl Bitboards {
     /// The bitboard for the given position.
     pub fn from_pos(pos: Position) -> Bitboard {
         1 << pos
+    }
+
+    /// Generates a bitboard for every move in a given move list.
+    ///
+    /// # Arguments
+    /// * `moves` The move list to generate the bitboard for.
+    ///
+    /// # Returns
+    /// The bitboard for the given move list.
+    pub fn from_simple_move_list(moves: SimpleMoves) -> Bitboard {
+        let mut bitboard = 0;
+        for (_, to) in moves {
+            bitboard |= Bitboards::from_pos(to);
+        }
+        bitboard
     }
 
     /// Returns the positions for a given bitboard.
