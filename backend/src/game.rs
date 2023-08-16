@@ -47,8 +47,8 @@ impl Game {
     ///     chess_board.play();
     /// ```
     pub fn play(&mut self) {
-        println!("{}", self.board);
         loop {
+            println!("{}", self.board);
             println!("{}'s turn. \nEnter a move (eg. e2 e4):\n", self.board.turn);
             let input = get_user_input();
             let parsed_input = parse_user_input(input);
@@ -70,7 +70,6 @@ impl Game {
                         continue;
                     }
                     self.board.make_simple_move((from, to));
-                    println!("{}", self.board);
                     if self.is_over() {
                         println!("Game over.");
                         break;
