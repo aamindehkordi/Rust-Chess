@@ -65,7 +65,7 @@ impl Game {
                         continue;
                     }
                     let mv_type = piece.get_move_type((from, to), &self.board);
-                    let mv = Move::new((from,to), mv_type);
+                    let mv = Move::new((from, to), mv_type);
                     let moves = generate_legal_moves(&self.board);
                     if !moves.contains(&mv) {
                         println!("Illegal move.");

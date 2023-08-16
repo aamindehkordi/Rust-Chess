@@ -109,7 +109,7 @@ impl PieceKind {
 pub struct Piece {
     pub color: Option<Color>,
     pub type_: PieceKind,
-        pub has_moved: bool,
+    pub has_moved: bool,
 }
 impl Piece {
     /// Creates a new piece.
@@ -174,11 +174,9 @@ impl Piece {
         let delta = (to as i8 - from as i8).abs();
 
         let is_possible_capture = to_piece_type != PieceKind::None;
-        let is_double_push = piece_type == PieceKind::Pawn
-            && !piece.has_moved
-            && (delta == 16 || delta == 32);
-        let is_en_passant =
-            piece_type == PieceKind::Pawn
+        let is_double_push =
+            piece_type == PieceKind::Pawn && !piece.has_moved && (delta == 16 || delta == 32);
+        let is_en_passant = piece_type == PieceKind::Pawn
             && (delta == 7 || delta == 9)
             && to_piece_type == PieceKind::None
             && to_piece_color == Some(piece_color.other());
@@ -186,10 +184,10 @@ impl Piece {
             && !piece.has_moved
             && (to == 2 || to == 6 || to == 58 || to == 62);
         let is_promotion = piece_type == PieceKind::Pawn
-            && (to < 8 || to > 55)
+            && !(8..=55).contains(&to)
             && to_piece_type == PieceKind::None;
         let is_promotion_capture = piece_type == PieceKind::Pawn
-            && (to < 8 || to > 55)
+            && !(8..=55).contains(&to)
             && is_possible_capture
             && to_piece_type != PieceKind::None;
         if is_en_passant {
@@ -206,7 +204,7 @@ impl Piece {
             MoveType::PromotionCapture(PieceKind::Queen)
         } else if is_possible_capture {
             MoveType::Capture
-        }else if is_double_push {
+        } else if is_double_push {
             MoveType::DoublePush
         } else {
             MoveType::Quiet

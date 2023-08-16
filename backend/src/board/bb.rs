@@ -1,6 +1,6 @@
 use crate::board::square::{Position, Square};
-use crate::moves::{CastleSide, Move, Moves};
-use crate::piece::{Color, Piece, PieceAsByte, PieceKind};
+use crate::moves::{CastleSide, Moves};
+use crate::piece::{Color, PieceAsByte, PieceKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// The type of bitboard.
@@ -232,52 +232,52 @@ impl Bitboards {
         match bitboard_type {
             BitboardType::WhitePawns => {
                 self.piece_bitboards[PieceKind::Pawn as usize] = bitboard;
-                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
-            },
+                self.occupied_bitboards[Color::White as usize / 8] = bitboard;
+            }
             BitboardType::WhiteKnights => {
                 self.piece_bitboards[PieceKind::Knight as usize] = bitboard;
-                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
+                self.occupied_bitboards[Color::White as usize / 8] = bitboard;
             }
             BitboardType::WhiteBishops => {
                 self.piece_bitboards[PieceKind::Bishop as usize] = bitboard;
-                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
+                self.occupied_bitboards[Color::White as usize / 8] = bitboard;
             }
             BitboardType::WhiteRooks => {
                 self.piece_bitboards[PieceKind::Rook as usize] = bitboard;
-                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
-            },
+                self.occupied_bitboards[Color::White as usize / 8] = bitboard;
+            }
             BitboardType::WhiteQueens => {
                 self.piece_bitboards[PieceKind::Queen as usize] = bitboard;
-                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
-            },
+                self.occupied_bitboards[Color::White as usize / 8] = bitboard;
+            }
             BitboardType::WhiteKing => {
                 self.piece_bitboards[PieceKind::King as usize] = bitboard;
-                self.occupied_bitboards[Color::White as usize/ 8] = bitboard;
-            },
+                self.occupied_bitboards[Color::White as usize / 8] = bitboard;
+            }
             BitboardType::BlackPawns => {
                 self.piece_bitboards[PieceKind::Pawn as usize] = bitboard;
-                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
-            },
+                self.occupied_bitboards[Color::Black as usize / 8] = bitboard;
+            }
             BitboardType::BlackKnights => {
                 self.piece_bitboards[PieceKind::Knight as usize] = bitboard;
-                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
+                self.occupied_bitboards[Color::Black as usize / 8] = bitboard;
             }
             BitboardType::BlackBishops => {
                 self.piece_bitboards[PieceKind::Bishop as usize] = bitboard;
-                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
+                self.occupied_bitboards[Color::Black as usize / 8] = bitboard;
             }
             BitboardType::BlackRooks => {
                 self.piece_bitboards[PieceKind::Rook as usize] = bitboard;
-                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
-            },
+                self.occupied_bitboards[Color::Black as usize / 8] = bitboard;
+            }
             BitboardType::BlackQueens => {
                 self.piece_bitboards[PieceKind::Queen as usize] = bitboard;
-                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
-            },
+                self.occupied_bitboards[Color::Black as usize / 8] = bitboard;
+            }
             BitboardType::BlackKing => {
                 self.piece_bitboards[PieceKind::King as usize] = bitboard;
-                self.occupied_bitboards[Color::Black as usize/ 8] = bitboard;
-            },
+                self.occupied_bitboards[Color::Black as usize / 8] = bitboard;
+            }
             BitboardType::WhiteOccupied => {
                 self.occupied_bitboards[Color::White as usize / 8] = bitboard;
             }

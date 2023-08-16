@@ -452,22 +452,28 @@ pub fn new_board_from_fen(fen: &str) -> Board {
 
     // Parse the board.
     for symbol in fen_board[0].chars() {
-        if symbol == ' ' { // End of board.
+        if symbol == ' ' {
+            // End of board.
             break;
-        } else if symbol == '/' { // End of rank.
+        } else if symbol == '/' {
+            // End of rank.
             file = 0;
             rank -= 1;
-        } else if symbol.is_ascii_digit() { // Empty squares.
+        } else if symbol.is_ascii_digit() {
+            // Empty squares.
             file += symbol.to_digit(10).unwrap();
-        } else { // Piece.
+        } else {
+            // Piece.
             let mut piece_color = Color::White;
-            if symbol.is_lowercase() { // Black piece.
+            if symbol.is_lowercase() {
+                // Black piece.
                 piece_color = Color::Black;
             }
             let mut piece_kind = PieceKind::None;
             // Get the piece kind from the symbol.
             for (piece_symbol, pk) in piece_kind_from_symbol.iter() {
-                if symbol.to_ascii_uppercase() == *piece_symbol { // Piece found.
+                if symbol.to_ascii_uppercase() == *piece_symbol {
+                    // Piece found.
                     piece_kind = *pk;
                 }
             }

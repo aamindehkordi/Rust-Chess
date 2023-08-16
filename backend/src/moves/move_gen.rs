@@ -1,7 +1,7 @@
 use crate::board::*;
 use crate::moves::CastleSide::{KingSide, QueenSide};
-use crate::moves::{Moves, DIRECTION_OFFSETS, Move, MoveType};
 use crate::moves::MoveType::{Capture, Castle, DoublePush, Quiet};
+use crate::moves::{Move, MoveType, Moves, DIRECTION_OFFSETS};
 use crate::piece::*;
 
 /// Generates all possible moves for a given board.
@@ -154,7 +154,7 @@ pub fn generate_pawn_moves(board: &Board, from: usize) -> Moves {
 
     // En Passant: Check if the last move was a two-square pawn advance
     if board.bb.en_passant_square != 0 {
-        let en_passant_square = board.bb.en_passant_square as usize;
+        let en_passant_square = board.bb.en_passant_square;
         let en_passant_direction = if pawn_color == Some(Color::White) {
             8
         } else {
@@ -162,7 +162,7 @@ pub fn generate_pawn_moves(board: &Board, from: usize) -> Moves {
         };
         let en_passant_square = (en_passant_square as i8 + en_passant_direction) as usize;
         if en_passant_square == from {
-            let simple = (from, board.bb.en_passant_square as usize);
+            let simple = (from, board.bb.en_passant_square);
             let mv = Move::new(simple, MoveType::EnPassant);
             moves.push(mv);
         }
@@ -176,7 +176,12 @@ pub fn generate_pawn_moves(board: &Board, from: usize) -> Moves {
             0
         }
     {
-        let promotion_pieces = [PieceKind::Queen, PieceKind::Rook, PieceKind::Bishop, PieceKind::Knight];
+        let promotion_pieces = [
+            PieceKind::Queen,
+            PieceKind::Rook,
+            PieceKind::Bishop,
+            PieceKind::Knight,
+        ];
         for promotion_piece in promotion_pieces.iter() {
             let promotion = MoveType::Promotion(*promotion_piece);
             let pro_capture = MoveType::PromotionCapture(*promotion_piece);
@@ -326,7 +331,7 @@ pub fn generate_king_moves(board: &Board, from: usize) -> Moves {
     // For each direction.
     for direction in DIRECTION_OFFSETS.iter() {
         // The end square.
-        let mut end_square_pos = from as i8 + direction;
+        let end_square_pos = from as i8 + direction;
         if !(0..=63).contains(&end_square_pos) {
             continue;
         }
@@ -515,8 +520,6 @@ mod tests {
 
     #[test]
     fn move_gen_test() {
-        use crate::board::Board;
-
         let board = new_board_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
         let num_moves_1 = recursive_move_gen_test(&board, 1, 20);

@@ -1,4 +1,3 @@
-use crate::board::Board;
 use crate::board::square::Position;
 use crate::piece::PieceKind;
 
@@ -45,10 +44,7 @@ pub struct Move {
 
 impl Move {
     pub fn new(simple: FromTo, move_type: MoveType) -> Move {
-        Move {
-            simple,
-            move_type,
-        }
+        Move { simple, move_type }
     }
 }
 

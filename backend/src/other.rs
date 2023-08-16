@@ -1,4 +1,4 @@
-use crate::board::bb::{Bitboard, Bitboards};
+use crate::board::bb::Bitboards;
 use crate::board::square::Square;
 use crate::board::Board;
 use crate::game::Game;
