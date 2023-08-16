@@ -1,9 +1,9 @@
-use crate::board::bb::Bitboards;
+use crate::board::bb::{Bitboard, Bitboards};
 use crate::board::square::Square;
 use crate::board::Board;
 use crate::game::Game;
 use crate::piece::{Color, Piece, PieceKind};
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 impl Display for Square {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -33,6 +33,32 @@ impl Display for Board {
                 board.push('\n');
             }
         }
+        write!(f, "{}", board)
+    }
+}
+
+impl Display for Bitboards {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut board = String::new();
+
+        let mut white = self.occupied_bitboards[1];
+        let mut black = self.occupied_bitboards[2];
+
+        for _ in 0..8 {
+            for _ in 0..8 {
+                if white & 1 == 1 {
+                    board.push('W');
+                } else if black & 1 == 1 {
+                    board.push('B');
+                } else {
+                    board.push('_');
+                }
+                white >>= 1;
+                black >>= 1;
+            }
+            board.push('\n');
+        }
+
         write!(f, "{}", board)
     }
 }
