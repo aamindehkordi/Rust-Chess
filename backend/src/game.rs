@@ -34,7 +34,7 @@ impl Game {
 
     pub fn custom(fen: &str) -> Game {
         Game {
-            board: Board::new_from_fen(fen),
+            board: new_board_from_fen(fen),
         }
     }
 

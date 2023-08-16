@@ -66,134 +66,9 @@ impl Board {
     /// ```
     pub fn new_standard() -> Board {
         let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        Board::new_from_fen(fen)
+        new_board_from_fen(fen)
     }
 
-    /// Creates a new board from a fen string.
-    ///
-    /// # Arguments
-    /// * `fen` - The fen string.
-    ///
-    /// # Returns
-    /// A new board.
-    ///
-    /// # Example
-    /// ```rs
-    ///    let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-    ///    let board = Board::new_from_fen(fen);
-    /// ```
-    pub fn new_from_fen(fen: &str) -> Board {
-        let mut board = Board::new();
-
-        // Dictionary of piece kinds.
-        let piece_kind_from_symbol = [
-            ('K', PieceKind::King),
-            ('Q', PieceKind::Queen),
-            ('R', PieceKind::Rook),
-            ('B', PieceKind::Bishop),
-            ('N', PieceKind::Knight),
-            ('P', PieceKind::Pawn),
-        ];
-
-        // Split the fen into parts.
-        let fen_board: Vec<&str> = fen.split(' ').collect();
-
-        // Parse the turn.
-        board.turn = match fen_board[1] {
-            "w" => Color::White,
-            "b" => Color::Black,
-            _ => panic!("Invalid turn."),
-        };
-
-        // Parse the castling rights.
-        let castling_rights = fen_board[2];
-        for symbol in castling_rights.chars() {
-            match symbol {
-                'K' => board.bb.castling_rights[0] = true,
-                'Q' => board.bb.castling_rights[1] = true,
-                'k' => board.bb.castling_rights[2] = true,
-                'q' => board.bb.castling_rights[3] = true,
-                '-' => (),
-                _ => panic!("Invalid castling rights."),
-            }
-        }
-
-        // Parse the en passant square.
-        let en_passant_square = fen_board[3];
-        if en_passant_square != "-" {
-            let file = en_passant_square.chars().next().unwrap() as u8 - 97;
-            let rank = en_passant_square.chars().nth(1).unwrap() as u8 - 49;
-            board.bb.en_passant_square = Some(idx(rank as usize, file as usize));
-        }
-
-        // Parse the half move clock.
-        //board.bb.half_move_clock = fen_board[4].parse::<u8>().unwrap();
-
-        // Parse the full move number.
-        //board.bb.full_move_number = fen_board[5].parse::<u8>().unwrap();
-
-        // Set the file and rank to 0. (a1)
-        let mut file = 0;
-        let mut rank = 7;
-
-        // Parse the board.
-        for symbol in fen_board[0].chars() {
-            if symbol == ' ' { // End of board.
-                break;
-            } else if symbol == '/' { // End of rank.
-                file = 0;
-                rank -= 1;
-            } else if symbol.is_ascii_digit() { // Empty squares.
-                file += symbol.to_digit(10).unwrap();
-            } else { // Piece.
-                let mut piece_color = Color::White;
-                if symbol.is_lowercase() { // Black piece.
-                    piece_color = Color::Black;
-                }
-                let mut piece_kind = PieceKind::None;
-                // Get the piece kind from the symbol.
-                for (piece_symbol, pk) in piece_kind_from_symbol.iter() {
-                    if symbol.to_ascii_uppercase() == *piece_symbol { // Piece found.
-                        piece_kind = *pk;
-                    }
-                }
-                // Get the piece and position.
-                let pos = idx(rank as usize, file as usize);
-                let piece = piece_color as u8 + piece_kind as u8;
-                // Get the bitboard type.
-                let bitboard_type = match piece_color {
-                    Color::White => match piece_kind {
-                        PieceKind::Pawn => BitboardType::WhitePawns,
-                        PieceKind::Knight => BitboardType::WhiteKnights,
-                        PieceKind::Bishop => BitboardType::WhiteBishops,
-                        PieceKind::Rook => BitboardType::WhiteRooks,
-                        PieceKind::Queen => BitboardType::WhiteQueens,
-                        PieceKind::King => BitboardType::WhiteKing,
-                        _ => BitboardType::WhiteOccupied,
-                    },
-                    Color::Black => match piece_kind {
-                        PieceKind::Pawn => BitboardType::BlackPawns,
-                        PieceKind::Knight => BitboardType::BlackKnights,
-                        PieceKind::Bishop => BitboardType::BlackBishops,
-                        PieceKind::Rook => BitboardType::BlackRooks,
-                        PieceKind::Queen => BitboardType::BlackQueens,
-                        PieceKind::King => BitboardType::BlackKing,
-                        _ => BitboardType::BlackOccupied,
-                    },
-                };
-                // Set the bitboard and piece.
-                board.bb.set_bit(bitboard_type, pos);
-                board.squares[pos].set_piece(piece);
-                // Increment the file.
-                file += 1;
-            }
-        }
-        // Generate the legal moves.
-        board.legal_moves = generate_legal_moves(&board);
-        // Update the attacked squares.
-        board.update_attacked_squares();
-        board
-    }
 
     /// Returns the square at the given position.
     ///
@@ -404,4 +279,130 @@ fn precomputed_move_data() -> NumSquaresToEdge {
         }
     }
     num_squares_to_edge
+}
+
+/// Creates a new board from a fen string.
+///
+/// # Arguments
+/// * `fen` - The fen string.
+///
+/// # Returns
+/// A new board.
+///
+/// # Example
+/// ```rs
+///    let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+///    let board = Board::new_from_fen(fen);
+/// ```
+pub fn new_board_from_fen(fen: &str) -> Board {
+    let mut board = Board::new();
+
+    // Dictionary of piece kinds.
+    let piece_kind_from_symbol = [
+        ('K', PieceKind::King),
+        ('Q', PieceKind::Queen),
+        ('R', PieceKind::Rook),
+        ('B', PieceKind::Bishop),
+        ('N', PieceKind::Knight),
+        ('P', PieceKind::Pawn),
+    ];
+
+    // Split the fen into parts.
+    let fen_board: Vec<&str> = fen.split(' ').collect();
+
+    // Parse the turn.
+    board.turn = match fen_board[1] {
+        "w" => Color::White,
+        "b" => Color::Black,
+        _ => panic!("Invalid turn."),
+    };
+
+    // Parse the castling rights.
+    let castling_rights = fen_board[2];
+    for symbol in castling_rights.chars() {
+        match symbol {
+            'K' => board.bb.castling_rights[0] = true,
+            'Q' => board.bb.castling_rights[1] = true,
+            'k' => board.bb.castling_rights[2] = true,
+            'q' => board.bb.castling_rights[3] = true,
+            '-' => (),
+            _ => panic!("Invalid castling rights."),
+        }
+    }
+
+    // Parse the en passant square.
+    let en_passant_square = fen_board[3];
+    if en_passant_square != "-" {
+        let file = en_passant_square.chars().next().unwrap() as u8 - 97;
+        let rank = en_passant_square.chars().nth(1).unwrap() as u8 - 49;
+        board.bb.en_passant_square = Some(idx(rank as usize, file as usize));
+    }
+
+    // Parse the half move clock.
+    //board.bb.half_move_clock = fen_board[4].parse::<u8>().unwrap();
+
+    // Parse the full move number.
+    //board.bb.full_move_number = fen_board[5].parse::<u8>().unwrap();
+
+    // Set the file and rank to 0. (a1)
+    let mut file = 0;
+    let mut rank = 7;
+
+    // Parse the board.
+    for symbol in fen_board[0].chars() {
+        if symbol == ' ' { // End of board.
+            break;
+        } else if symbol == '/' { // End of rank.
+            file = 0;
+            rank -= 1;
+        } else if symbol.is_ascii_digit() { // Empty squares.
+            file += symbol.to_digit(10).unwrap();
+        } else { // Piece.
+            let mut piece_color = Color::White;
+            if symbol.is_lowercase() { // Black piece.
+                piece_color = Color::Black;
+            }
+            let mut piece_kind = PieceKind::None;
+            // Get the piece kind from the symbol.
+            for (piece_symbol, pk) in piece_kind_from_symbol.iter() {
+                if symbol.to_ascii_uppercase() == *piece_symbol { // Piece found.
+                    piece_kind = *pk;
+                }
+            }
+            // Get the piece and position.
+            let pos = idx(rank as usize, file as usize);
+            let piece = piece_color as u8 + piece_kind as u8;
+            // Get the bitboard type.
+            let bitboard_type = match piece_color {
+                Color::White => match piece_kind {
+                    PieceKind::Pawn => BitboardType::WhitePawns,
+                    PieceKind::Knight => BitboardType::WhiteKnights,
+                    PieceKind::Bishop => BitboardType::WhiteBishops,
+                    PieceKind::Rook => BitboardType::WhiteRooks,
+                    PieceKind::Queen => BitboardType::WhiteQueens,
+                    PieceKind::King => BitboardType::WhiteKing,
+                    _ => BitboardType::WhiteOccupied,
+                },
+                Color::Black => match piece_kind {
+                    PieceKind::Pawn => BitboardType::BlackPawns,
+                    PieceKind::Knight => BitboardType::BlackKnights,
+                    PieceKind::Bishop => BitboardType::BlackBishops,
+                    PieceKind::Rook => BitboardType::BlackRooks,
+                    PieceKind::Queen => BitboardType::BlackQueens,
+                    PieceKind::King => BitboardType::BlackKing,
+                    _ => BitboardType::BlackOccupied,
+                },
+            };
+            // Set the bitboard and piece.
+            board.bb.set_bit(bitboard_type, pos);
+            board.squares[pos].set_piece(piece);
+            // Increment the file.
+            file += 1;
+        }
+    }
+    // Generate the legal moves.
+    board.legal_moves = generate_legal_moves(&board);
+    // Update the attacked squares.
+    board.update_attacked_squares();
+    board
 }

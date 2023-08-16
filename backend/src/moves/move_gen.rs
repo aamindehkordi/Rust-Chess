@@ -474,7 +474,7 @@ mod tests {
     fn move_gen_test() {
         use crate::board::Board;
 
-        let board = Board::new_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+        let board = new_board_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 
         let num_moves_1 = recursive_move_gen_test(&board, 1, 20);
         assert_eq!(num_moves_1, 20);
