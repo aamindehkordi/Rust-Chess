@@ -17,9 +17,12 @@ pub enum CastleSide {
     QueenSide = 1,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum MoveType {
     /// A move that does not capture or promote.
     Quiet,
+    /// A move that moves a pawn two squares.
+    DoublePush,
     /// A move that captures a piece.
     Capture,
     /// A move that captures a piece en passant.
@@ -32,6 +35,7 @@ pub enum MoveType {
     PromotionCapture(PieceKind),
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Move {
     /// The position of the piece to move.
     pub simple: FromTo,
@@ -39,9 +43,18 @@ pub struct Move {
     pub move_type: MoveType,
 }
 
+impl Move {
+    pub fn new(simple: FromTo, move_type: MoveType) -> Move {
+        Move {
+            simple,
+            move_type,
+        }
+    }
+}
+
 /// A list of moves.
 /// Each move is a pair of positions.
-pub type SimpleMoves = Vec<FromTo>;
+pub type Moves = Vec<Move>;
 
 /// A move is a pair of positions.
 /// The first position is the position of the piece to move.

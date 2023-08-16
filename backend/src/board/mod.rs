@@ -19,16 +19,16 @@ pub struct Board {
     /// The bitboards of the board.
     pub bb: Bitboards,
     /// The move history of the board.
-    pub move_history: SimpleMoves,
+    pub move_history: Moves,
     /// The legal moves of the board.
-    pub legal_moves: SimpleMoves,
+    pub legal_moves: Moves,
     /// Precomputed values for the number of squares to the edge of the board from any square.
     pub num_squares_to_edge: NumSquaresToEdge,
     /// The turn of the board.
     pub turn: Color,
 }
 impl Board {
-    /// Creates a new board.
+    /// Creates a new empty board.
     ///
     /// # Returns
     /// A new board with the squares initialized.
@@ -49,7 +49,7 @@ impl Board {
             squares,
             bb: Bitboards::new(),
             legal_moves: Vec::new(),
-            move_history: SimpleMoves::new(),
+            move_history: Moves::new(),
             num_squares_to_edge: precomputed_move_data(),
             turn: Color::White,
         }
@@ -69,6 +69,16 @@ impl Board {
         new_board_from_fen(fen)
     }
 
+    /// Creates a new custom chess board.
+    ///
+    /// # Arguments
+    /// * `fen` - The fen string.
+    ///
+    /// # Returns
+    /// A new custom chess board.
+    pub fn new_custom(fen: &str) -> Board {
+        new_board_from_fen(fen)
+    }
 
     /// Returns the square at the given position.
     ///
@@ -176,7 +186,7 @@ impl Board {
         king_position
     }
 
-    /// Updates the attacked squares.
+    /// Updates the attacked squares of the board by iterating through the legal moves of the current turn.
     fn update_attacked_squares(&mut self) {
         self.bb.reset();
         let mut position;
@@ -189,7 +199,7 @@ impl Board {
             if square.is_occupied() {
                 // Update the attacked squares.
                 for mv in self.legal_moves.iter() {
-                    if mv.1 == position {
+                    if mv.simple.1 == position {
                         square.is_attacked = true;
                     }
                 }
@@ -197,6 +207,104 @@ impl Board {
         }
 
         self.bb.update(&self.squares);
+    }
+
+    pub fn make_move(&mut self, mv: Move) {
+        match mv.move_type {
+            MoveType::Quiet => self.make_simple_move(mv.simple),
+            MoveType::DoublePush => {
+                self.make_simple_move(mv.simple);
+                self.bb.en_passant_square = mv.simple.1;
+            }
+            MoveType::Capture => {
+                self.make_simple_move(mv.simple);
+            }
+            MoveType::EnPassant => {
+                self.make_simple_move(mv.simple);
+                let (_, to) = mv.simple;
+                self.squares[to].set_piece(0);
+            }
+            MoveType::Castle(side) => {
+                let rank = if self.turn == Color::White { 0 } else { 7 };
+                let cols: [usize; 3] = match side {
+                    CastleSide::KingSide => [7, 5, 6],
+                    CastleSide::QueenSide => [0, 3, 2],
+                };
+                let king_square = self.squares[idx(rank, 4)];
+                let rook_square = self.squares[idx(rank, cols[0])];
+                self.move_piece(king_square.position, idx(rank, cols[2]));
+                self.move_piece(rook_square.position, idx(rank, cols[1]));
+            }
+            MoveType::Promotion(piece_kind) => {
+                self.make_simple_move(mv.simple);
+                let (_, to) = mv.simple;
+                let piece_color = self.turn;
+                let piece = Piece::new(piece_color as u8 + piece_kind as u8);
+                self.squares[to].set_piece(piece.to_byte());
+            }
+            MoveType::PromotionCapture(piece_kind) => {
+                self.make_simple_move(mv.simple);
+                let (_, to) = mv.simple;
+                let piece_color = self.turn;
+                let piece = Piece::new(piece_color as u8 + piece_kind as u8);
+                self.squares[to].set_piece(piece.to_byte());
+            }
+        }
+        self.move_history.push(mv);
+        self.turn = self.turn.other();
+        self.update_attacked_squares();
+    }
+
+    pub fn undo_move(&mut self) {
+        let mv = self.move_history.pop();
+        if mv.is_none() {
+            return;
+        }
+        let mv = mv.unwrap();
+        match mv.move_type {
+            MoveType::Quiet => self.undo_simple_move(mv.simple),
+            MoveType::DoublePush => {
+                self.undo_simple_move(mv.simple);
+                self.bb.en_passant_square = mv.simple.1;
+            }
+            MoveType::Capture => {
+                self.undo_simple_move(mv.simple);
+            }
+            MoveType::EnPassant => {
+                self.undo_simple_move(mv.simple);
+                let (_, to) = mv.simple;
+                let piece_color = self.turn.other();
+                let piece = Piece::new(piece_color as u8 + PieceKind::Pawn as u8);
+                self.squares[to].set_piece(piece.to_byte());
+            }
+            MoveType::Castle(side) => {
+                let rank = if self.turn == Color::White { 0 } else { 7 };
+                let cols: [usize; 3] = match side {
+                    CastleSide::KingSide => [7, 5, 6],
+                    CastleSide::QueenSide => [0, 3, 2],
+                };
+                let king_square = self.squares[idx(rank, cols[2])];
+                let rook_square = self.squares[idx(rank, cols[1])];
+                self.move_piece(king_square.position, idx(rank, 4));
+                self.move_piece(rook_square.position, idx(rank, cols[0]));
+            }
+            MoveType::Promotion(_) => {
+                self.undo_simple_move(mv.simple);
+                let (_, to) = mv.simple;
+                let piece_color = self.turn.other();
+                let piece = Piece::new(piece_color as u8 + PieceKind::Pawn as u8);
+                self.squares[to].set_piece(piece.to_byte());
+            }
+            MoveType::PromotionCapture(_) => {
+                self.undo_simple_move(mv.simple);
+                let (_, to) = mv.simple;
+                let piece_color = self.turn.other();
+                let piece = Piece::new(piece_color as u8 + PieceKind::Pawn as u8);
+                self.squares[to].set_piece(piece.to_byte());
+            }
+        }
+        self.turn = self.turn.other();
+        self.update_attacked_squares();
     }
 
     /// Makes a simple move.
@@ -208,18 +316,12 @@ impl Board {
         let from = mv.0;
         let to = mv.1;
         self.move_piece(from, to);
-        self.turn = self.turn.other();
-        self.move_history.push(mv);
-        self.update_attacked_squares();
     }
 
-    /// Unmakes a simple move.
-    pub fn unmake_simple_move(&mut self) {
-        let mv = self.move_history.pop();
-        if mv.is_none() {
-            return;
-        }
-        let mv = mv.unwrap();
+    pub fn undo_simple_move(&mut self, mv: FromTo) {
+        let from = mv.1;
+        let to = mv.0;
+        self.move_piece(to, from);
     }
 
     pub fn is_check(&self) -> bool {
@@ -335,7 +437,7 @@ pub fn new_board_from_fen(fen: &str) -> Board {
     if en_passant_square != "-" {
         let file = en_passant_square.chars().next().unwrap() as u8 - 97;
         let rank = en_passant_square.chars().nth(1).unwrap() as u8 - 49;
-        board.bb.en_passant_square = Some(idx(rank as usize, file as usize));
+        board.bb.en_passant_square = idx(rank as usize, file as usize);
     }
 
     // Parse the half move clock.

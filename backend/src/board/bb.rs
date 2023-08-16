@@ -1,5 +1,5 @@
 use crate::board::square::{Position, Square};
-use crate::moves::{CastleSide, Move, SimpleMoves};
+use crate::moves::{CastleSide, Move, Moves};
 use crate::piece::{Color, Piece, PieceAsByte, PieceKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -143,7 +143,7 @@ pub struct Bitboards {
     pub castling_rights: [bool; 4],
 
     /// The en passant square.
-    pub en_passant_square: Option<Position>,
+    pub en_passant_square: Position,
 }
 
 impl Bitboards {
@@ -157,7 +157,7 @@ impl Bitboards {
             occupied_bitboards: [0; 3],
             attacked_bitboards: [0; 2],
             castling_rights: [false; 4],
-            en_passant_square: None,
+            en_passant_square: 0,
         }
     }
 
@@ -433,9 +433,10 @@ impl Bitboards {
     ///
     /// # Returns
     /// The bitboard for the given move list.
-    pub fn from_simple_move_list(moves: SimpleMoves) -> Bitboard {
+    pub fn from_simple_move_list(moves: Moves) -> Bitboard {
         let mut bitboard = 0;
-        for (_, to) in moves {
+        for mv in moves {
+            let (_, to) = mv.simple;
             bitboard |= Bitboards::from_pos(to);
         }
         bitboard

@@ -1,6 +1,6 @@
 use crate::board::*;
 use crate::moves::move_gen::*;
-use crate::moves::FromTo;
+use crate::moves::{FromTo, Move};
 
 /// A game is a board and a turn.
 pub struct Game {
@@ -64,12 +64,14 @@ impl Game {
                         println!("It is not {}'s turn.", piece.color.unwrap());
                         continue;
                     }
+                    let mv_type = piece.get_move_type((from, to), &self.board);
+                    let mv = Move::new((from,to), mv_type);
                     let moves = generate_legal_moves(&self.board);
-                    if !moves.contains(&(from, to)) {
+                    if !moves.contains(&mv) {
                         println!("Illegal move.");
                         continue;
                     }
-                    self.board.make_simple_move((from, to));
+                    self.board.make_move(mv);
                     if self.is_over() {
                         println!("Game over.");
                         break;
