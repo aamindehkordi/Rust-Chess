@@ -141,6 +141,9 @@ pub struct Bitboards {
     /// * 2: Black King Side
     /// * 3: Black Queen Side
     pub castling_rights: [bool; 4],
+
+    /// The en passant square.
+    pub en_passant_square: Option<Position>,
 }
 
 impl Bitboards {
@@ -154,6 +157,7 @@ impl Bitboards {
             occupied_bitboards: [0; 3],
             attacked_bitboards: [0; 2],
             castling_rights: [false; 4],
+            en_passant_square: None,
         }
     }
 
@@ -292,6 +296,19 @@ impl Bitboards {
         }
     }
 
+    /// Gets a bit in the given bitboard type.
+    ///
+    /// # Arguments
+    /// * `bitboard_type` The bitboard type to get the bit in.
+    /// * `position` The position of the bit to get.
+    ///
+    /// # Returns
+    /// The bit in the given bitboard type at the given position.
+    pub fn get_bit(&self, bitboard_type: BitboardType, position: Position) -> bool {
+        let bitboard = self.get_bitboard(bitboard_type);
+        bitboard & (1 << position) != 0
+    }
+
     /// Sets a bit in the given bitboard type.
     ///
     /// # Arguments
@@ -386,74 +403,6 @@ impl Bitboards {
     /// True if the color can castle on the given side, false otherwise.
     pub fn can_castle(&self, side: CastleSide, color: Color) -> bool {
         self.castling_rights[(side as usize) + (color as usize / 8)]
-    }
-
-    /// Initializes the bitboards from a FEN string.
-    ///
-    /// # Arguments
-    /// * `fen` The FEN string to initialize the bitboards from.
-    ///
-    /// # Example
-    /// ```rs
-    ///    let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-    ///    let mut board = Board::new_standard();
-    ///    board.bb.initialize_from_fen(fen);
-    /// ```
-    pub fn initialize_from_fen(&mut self, fen: &str) {
-        let mut fen_split = fen.split_whitespace();
-        let mut rank = 7;
-        let mut file = 0;
-        let mut char_iter = fen_split.next().unwrap().chars();
-        let piece_kind_from_symbol = [
-            ('P', PieceKind::Pawn),
-            ('N', PieceKind::Knight),
-            ('B', PieceKind::Bishop),
-            ('R', PieceKind::Rook),
-            ('Q', PieceKind::Queen),
-            ('K', PieceKind::King),
-        ];
-        while let Some(c) = char_iter.next() {
-            if c == '/' {
-                rank -= 1;
-                file = 0;
-            } else if c.is_ascii_digit() {
-                file += c.to_digit(10).unwrap();
-            } else {
-                let mut piece_color = Color::White;
-                if c.is_lowercase() {
-                    piece_color = Color::Black;
-                }
-                let mut piece_kind = PieceKind::None;
-                for (piece_symbol, piece_kind_) in piece_kind_from_symbol.iter() {
-                    if c.to_ascii_uppercase() == *piece_symbol {
-                        piece_kind = *piece_kind_;
-                    }
-                }
-                let pos: Position = rank * 8usize + file as usize;
-                let board_type = match piece_color {
-                    Color::White => match piece_kind {
-                        PieceKind::Pawn => BitboardType::WhitePawns,
-                        PieceKind::Knight => BitboardType::WhiteKnights,
-                        PieceKind::Bishop => BitboardType::WhiteBishops,
-                        PieceKind::Rook => BitboardType::WhiteRooks,
-                        PieceKind::Queen => BitboardType::WhiteQueens,
-                        PieceKind::King => BitboardType::WhiteKing,
-                        _ => BitboardType::WhiteOccupied,
-                    },
-                    Color::Black => match piece_kind {
-                        PieceKind::Pawn => BitboardType::BlackPawns,
-                        PieceKind::Knight => BitboardType::BlackKnights,
-                        PieceKind::Bishop => BitboardType::BlackBishops,
-                        PieceKind::Rook => BitboardType::BlackRooks,
-                        PieceKind::Queen => BitboardType::BlackQueens,
-                        PieceKind::King => BitboardType::BlackKing,
-                        _ => BitboardType::BlackOccupied,
-                    },
-                };
-                self.set_bit(board_type, pos);
-                file += 1;
-            }
-        }
     }
 
     /// Sets the castling rights for a given side.
