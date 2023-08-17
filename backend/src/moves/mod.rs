@@ -5,8 +5,8 @@ pub mod move_gen;
 
 /// A list of offsets for each direction.
 /// The directions are in the following order:
-/// North West, North, North East, West, East, South West, South, South East.
-pub const DIRECTION_OFFSETS: [i8; 8] = [-9, -8, -7, -1, 1, 7, 8, 9];
+/// North, South, East, West, North East, North West, South East, South West.
+pub const DIRECTION_OFFSETS: [i8; 8] = [-8, 8, 1, -1, -7, -9, 9, 7];
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum CastleSide {

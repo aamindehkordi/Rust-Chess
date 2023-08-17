@@ -173,14 +173,14 @@ impl Board {
     ///
     /// # Returns
     /// The position of the king.
-    pub fn get_king_position(&self, color: Color) -> Position {
-        let mut king_position = 0;
+    pub fn get_king_position(&self, color: Color) -> Option<Position> {
+        let mut king_position = None;
         for (i, square) in self.squares.iter().enumerate() {
             if square.is_occupied()
                 && square.piece.type_ == PieceKind::King
                 && square.piece.color == Some(color)
             {
-                king_position = i;
+                king_position = Some(i);
             }
         }
         king_position
@@ -326,6 +326,10 @@ impl Board {
 
     pub fn is_check(&self) -> bool {
         let king_position = self.get_king_position(self.turn);
+        if king_position.is_none() {
+            return false;
+        }
+        let king_position = king_position.unwrap();
         self.squares[king_position].is_attacked
     }
 

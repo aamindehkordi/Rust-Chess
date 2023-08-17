@@ -71,9 +71,14 @@ pub fn generate_legal_moves(board: &Board) -> Moves {
         let mut board_copy = board.clone();
 
         // Make the move temporarily
-        board_copy.make_simple_move(mv.simple);
+        board_copy.make_move(mv);
         // Get the position of the king
         let king_pos = board_copy.get_king_position(board_copy.turn.other());
+        if king_pos.is_none() {
+            legal_moves.push(mv);
+            continue;
+        }
+        let king_pos = king_pos.unwrap();
         //Get opponent response moves
         let response_moves = generate_all_moves(&board_copy);
 
@@ -278,38 +283,38 @@ pub fn generate_sliding_moves(board: &Board, start_square: usize) -> Moves {
         0
     };
     // The index of the last direction to check.
-    let end_dir_idx = if piece.type_ == PieceKind::Rook { 4 } else { 8 };
+    let end_dir_idx = if piece.type_ == PieceKind::Rook { 4 } else { 7 };
 
     // For each direction.
     for direction_idx in start_dir_idx..end_dir_idx {
         let direction = DIRECTION_OFFSETS[direction_idx];
         // For each square in the direction.
-        for num_squares in 1..num_squares_to_edge[direction_idx] {
+        for num_squares  in 0..num_squares_to_edge[direction_idx] {
             // The end square offset.
-            let end_square_offset = start_square as i8 + direction * num_squares as i8;
-            if !(0..=63).contains(&end_square_offset) {
+            let end_square_off = start_square as i8 + direction * (num_squares + 1) as i8;
+            if !(0..=63).contains(&end_square_off) {
                 break;
             }
             // The end square.
-            let end_square = end_square_offset as usize;
+            let end_square_pos = end_square_off as usize;
             // The piece on the end square.
-            let piece_on_end_square = board.squares[end_square].piece;
+            let piece_on_end_square = board.squares[end_square_pos].piece;
 
+            let simple = (start_square, end_square_pos);
             // Blocked by a piece of the same color.
-            if is_color(piece_on_end_square, board.turn) {
-                break;
+            if piece_on_end_square.type_ != PieceKind::None {
+                if is_color(piece_on_end_square, piece.color.unwrap()) {
+                    break;
+                } else { // Blocked by a piece of the opposite color.
+                    let mv = Move::new(simple, Capture);
+                    moves.push(mv);
+                    break;
+                }
             }
-
-            let simple = (start_square, end_square);
-            let mv = Move::new(simple, Quiet);
-
-            // Blocked by a piece of the opposite color.
-            if is_color(piece_on_end_square, board.turn.other()) {
-                let mv = Move::new(simple, Capture);
+            else { // Not blocked.
+                let mv = Move::new(simple, Quiet);
                 moves.push(mv);
-                break;
             }
-            moves.push(mv);
         }
     }
 
@@ -497,7 +502,7 @@ mod tests {
             b.make_move(mv);
             let sq = b.squares[mv.simple.1];
             let piece = sq.piece;
-            println!("{} from {} to {}", piece, mv.simple.0, mv.simple.1);
+            println!("{}\n{} from {} to {}", b, piece, mv.simple.0, mv.simple.1);
             b.undo_move();
         }
     }
@@ -530,6 +535,14 @@ mod tests {
 
         let num_moves_3 = recursive_move_gen_test(&board, 3, 8902);
         assert_eq!(num_moves_3, 8902); // 7800
+    }
+
+    #[test]
+    fn queen_test() {
+        let board = new_board_from_fen("8/8/8/8/8/8/8/Q7 w - - 0 1");
+        println!("{}", board);
+        let num_moves = recursive_move_gen_test(&board, 1, 21);
+        assert_eq!(num_moves, 21);
     }
 
     #[test]
